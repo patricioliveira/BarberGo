@@ -1,44 +1,122 @@
-# Aula Zero
+# BarberGo Monorepo
 
-- [x] Setup do banco
-- [x] Seeding do banco (colocar dados)
-- [] Introdução ao Next.js
-- [] Tailwind e Shadcn
-- [] Git Hooks
+Este é um monorepo que contém duas aplicações Next.js para o sistema BarberGo:
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+- **Hall App** (`apps/hall`): Aplicação principal com múltiplas barbearias
+- **Exclusive App** (`apps/exclusive`): Aplicação para barbearias exclusivas
 
-## Getting Started
+## Estrutura do Projeto
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+├── apps/
+│   ├── hall/           # App principal (barbergo.vercel.app)
+│   └── exclusive/      # App para barbearias exclusivas (slug-barbearia.vercel.app)
+├── packages/
+│   ├── shared/         # Utilitários e tipos compartilhados
+│   ├── ui/            # Componentes UI compartilhados
+│   └── database/      # Schema e configuração do banco
+└── turbo.json         # Configuração do Turborepo
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuração
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. Instalar dependências
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```bash
+npm install
+```
 
-## Learn More
+### 2. Configurar variáveis de ambiente
 
-To learn more about Next.js, take a look at the following resources:
+#### Para Hall App (`apps/hall/.env.local`):
+```env
+DATABASE_URL="postgresql://..."
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+NEXT_AUTH_SECRET="..."
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+#### Para Exclusive App (`apps/exclusive/.env.local`):
+```env
+DATABASE_URL="postgresql://..."
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+NEXT_AUTH_SECRET="..."
+BARBERSHOP_SLUG="nome-da-barbearia"
+BRAND_NAME="Nome da Barbearia"
+LOGO_URL="/logo.png"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### 3. Configurar banco de dados
 
-## Deploy on Vercel
+```bash
+# Gerar cliente Prisma
+cd packages/database
+npx prisma generate
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Executar migrações
+npx prisma migrate dev
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+# Popular banco (opcional)
+npm run db:seed
+```
+
+## Desenvolvimento
+
+### Executar todas as aplicações:
+```bash
+npm run dev
+```
+
+### Executar aplicação específica:
+```bash
+# Hall app (porta 3000)
+cd apps/hall
+npm run dev
+
+# Exclusive app (porta 3001)
+cd apps/exclusive
+npm run dev
+```
+
+## Deploy na Vercel
+
+### Hall App (barbergo.vercel.app)
+1. Conecte o repositório na Vercel
+2. Configure o Root Directory como `apps/hall`
+3. Configure as variáveis de ambiente
+4. Deploy
+
+### Exclusive App (slug-barbearia.vercel.app)
+1. Crie um novo projeto na Vercel para cada barbearia
+2. Configure o Root Directory como `apps/exclusive`
+3. Configure as variáveis de ambiente específicas da barbearia:
+   - `BARBERSHOP_SLUG`: slug da barbearia
+   - `BRAND_NAME`: nome da barbearia
+   - `DATABASE_URL`: banco específico da barbearia
+4. Deploy
+
+## Comandos Úteis
+
+```bash
+# Build todas as aplicações
+npm run build
+
+# Lint todas as aplicações
+npm run lint
+
+# Type check
+npm run type-check
+
+# Limpar builds
+npm run clean
+```
+
+## Adicionando Nova Barbearia Exclusiva
+
+1. Crie um novo banco de dados no Neon
+2. Execute as migrações no novo banco
+3. Adicione a barbearia no banco com `isExclusive: true`
+4. Crie novo projeto na Vercel apontando para `apps/exclusive`
+5. Configure as variáveis de ambiente específicas
+6. Deploy

@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./app/*"],
+      "@barbergo/shared": ["../../packages/shared/src"],
+      "@barbergo/ui": ["../../packages/ui/src"],
+      "@barbergo/database": ["../../packages/database/src"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
