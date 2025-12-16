@@ -12,8 +12,10 @@ import {
   useFormContext,
 } from "react-hook-form"
 
-import { cn } from "@/app/_lib/utils"
-import { Label } from "@/app/_components/ui/label"
+// CORREÇÃO 1: Importar cn de @barbergo/shared
+import { cn } from "@barbergo/shared"
+// CORREÇÃO 2: Importar Label do arquivo local
+import { Label } from "./label"
 
 const Form = FormProvider
 

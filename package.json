@@ -2,11 +2,9 @@
   "name": "barbergo-monorepo",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
+    "postinstall": "npm run db:generate -w @barbergo/database",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "start": "turbo run start",

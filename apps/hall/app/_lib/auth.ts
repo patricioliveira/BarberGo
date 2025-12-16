@@ -3,6 +3,7 @@ import { AuthOptions } from "next-auth"
 import { db } from "@barbergo/database"
 import { Adapter } from "next-auth/adapters"
 import GoogleProvider from "next-auth/providers/google"
+import NextAuth from "next-auth" // <--- Importação adicionada
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(db) as Adapter,
@@ -21,5 +22,8 @@ export const authOptions: AuthOptions = {
       return session
     },
   },
-  secret: process.env.NEXT_AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET, // <--- Corrigido para NEXTAUTH_SECRET
 }
+
+// <--- Exportação do handler adicionada abaixo
+export const handler = NextAuth(authOptions)

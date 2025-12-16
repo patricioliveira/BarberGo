@@ -1,9 +1,10 @@
 import * as React from "react"
 
-import { cn } from "@/app/_lib/utils"
+// CORREÇÃO: Importar de @barbergo/shared
+import { cn } from "@barbergo/shared"
 
 export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+  extends React.InputHTMLAttributes<HTMLInputElement> { }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {

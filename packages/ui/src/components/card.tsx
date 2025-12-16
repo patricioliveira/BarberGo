@@ -1,6 +1,7 @@
 import * as React from "react"
 
-import { cn } from "@/app/_lib/utils"
+// CORREÇÃO: Importar de @barbergo/shared
+import { cn } from "@barbergo/shared"
 
 const Card = React.forwardRef<
   HTMLDivElement,

@@ -4,7 +4,8 @@ import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
-import { cn } from "@/app/_lib/utils"
+// CORREÇÃO: Importar de @barbergo/shared
+import { cn } from "@barbergo/shared"
 
 const Dialog = DialogPrimitive.Root
 
