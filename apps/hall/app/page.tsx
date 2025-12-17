@@ -1,124 +1,78 @@
 import Header from "./_components/header"
-import { Button } from "@barbergo/ui"
+import { Input, Button } from "@barbergo/ui"
+import { SearchIcon } from "lucide-react"
 import Image from "next/image"
-import { db } from "@barbergo/database"
 import BarbershopItem from "./_components/barbershop-item"
-import { quickSearchOptions } from "./_constants/search"
-import BookingItem from "./_components/booking-item"
-import { getServerSession } from "next-auth"
-import { authOptions } from "./_lib/auth"
+import { db } from "@barbergo/database"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
-const Home = async () => {
-  const session = await getServerSession(authOptions)
+export default async function Home() {
+  const barbershops = await db.barbershop.findMany({})
 
-  const barbershops = await db.barbershop.findMany({
-    where: {
-      isExclusive: false,
-    },
+  // Data formatada: "Sexta, 02 de Fevereiro"
+  const currentDate = format(new Date(), "EEEE',' dd 'de' MMMM", {
+    locale: ptBR,
   })
 
-  const popularBarbershops = await db.barbershop.findMany({
-    where: {
-      isExclusive: false,
-    },
-    orderBy: {
-      name: "desc",
-    },
-  })
-
-  const confirmedBookings = session?.user
-    ? await db.booking.findMany({
-      where: {
-        userId: (session.user as any).id,
-        date: {
-          gte: new Date(),
-        },
-      },
-      include: {
-        service: {
-          include: {
-            barbershop: true,
-          },
-        },
-      },
-      orderBy: {
-        date: "asc",
-      },
-    })
-    : []
+  // Capitalizar a primeira letra da data
+  const formattedDate = currentDate.charAt(0).toUpperCase() + currentDate.slice(1)
 
   return (
-    <div>
+    <div className="h-full">
       <Header />
-      <div className="p-5">
-        <h2 className="text-xl font-bold">Olá, {session?.user ? session.user.name : "Bem vindo"}!</h2>
-        <p className="capitalize text-gray-400">
-          {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
+
+      <div className="px-5 pt-5">
+        {/* Saudação */}
+        <h2 className="text-xl font-bold">Olá, Faça seu login!</h2>
+        <p className="capitalize text-sm text-gray-03 mt-1">
+          {formattedDate}
         </p>
 
-        <div className="mt-6">
-          <div className="flex gap-3 overflow-x-scroll [&::-webkit-scrollbar]:hidden">
-            {quickSearchOptions.map((option) => (
-              <Button className="gap-2" variant="secondary" key={option.title}>
-                <Image
-                  src={option.imageUrl}
-                  width={16}
-                  height={16}
-                  alt={option.title}
-                />
-                {option.title}
-              </Button>
+        {/* Busca */}
+        <div className="flex items-center gap-2 mt-6">
+          <Input
+            placeholder="Buscar Barbearias"
+            className="bg-card border-none rounded-xl text-gray-03"
+          />
+          <Button size="icon" className="bg-primary hover:bg-primary/80 rounded-xl">
+            <SearchIcon size={20} />
+          </Button>
+        </div>
+
+        {/* Banner (Opcional - Se tiver no design, caso contrário removemos) */}
+        {/* <div className="relative mt-6 h-[150px] w-full rounded-xl overflow-hidden hidden md:block">
+             <Image src="/banner-01.png" alt="Banner" fill className="object-cover" />
+        </div> */}
+
+        {/* Recomendados (Scroll Horizontal) */}
+        <div className="mt-6 mb-[4.5rem]">
+          <h2 className="text-xs mb-3 uppercase text-gray-03 font-bold">Recomendados</h2>
+
+          <div className="flex gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+            {barbershops.map((shop) => (
+              <BarbershopItem key={shop.id} barbershop={shop} />
             ))}
           </div>
         </div>
 
-        <div className="relative mt-6 h-[150px] w-full">
-          <Image
-            src="/banner-01.png"
-            fill
-            className="rounded-xl object-cover"
-            alt="Agende nos melhores com BarberGo"
-          />
-        </div>
+        {/* Populares (Scroll Horizontal) */}
+        <div className="mt-6 mb-[4.5rem]">
+          <h2 className="text-xs mb-3 uppercase text-gray-03 font-bold">Populares</h2>
 
-        {confirmedBookings.length > 0 && (
-          <>
-            <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
-              Agendamentos
-            </h2>
-            <div className="flex gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-              {confirmedBookings.map((booking) => (
-                <BookingItem
-                  key={booking.id}
-                  booking={JSON.parse(JSON.stringify(booking))}
-                />
-              ))}
-            </div>
-          </>
-        )}
-
-        <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
-          Recomendados
-        </h2>
-        <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
-          {barbershops.map((barbershop) => (
-            <BarbershopItem key={barbershop.id} barbershop={barbershop} />
-          ))}
-        </div>
-
-        <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
-          Populares
-        </h2>
-        <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
-          {popularBarbershops.map((barbershop) => (
-            <BarbershopItem key={barbershop.id} barbershop={barbershop} />
-          ))}
+          <div className="flex gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+            {barbershops.map((shop) => (
+              <BarbershopItem key={shop.id} barbershop={shop} />
+            ))}
+          </div>
         </div>
       </div>
+
+      <footer className="w-full bg-card py-6 px-5 border-t border-border">
+        <p className="text-gray-03 text-xs font-bold opacity-75">
+          © 2026 Copyright BarberGO
+        </p>
+      </footer>
     </div>
   )
 }
-
-export default Home

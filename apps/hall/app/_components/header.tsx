@@ -1,82 +1,110 @@
 "use client"
 
-import { Button, Card, CardContent, Avatar, AvatarImage, AvatarFallback } from "@barbergo/ui"
-import { MenuIcon, LogInIcon, LogOutIcon, LayoutDashboardIcon } from "lucide-react"
-import { signIn, signOut, useSession } from "next-auth/react"
+import { Card, CardContent, Button, Sheet, SheetTrigger, SheetContent, Avatar, AvatarImage, AvatarFallback } from "@barbergo/ui"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@barbergo/ui"
+import { MenuIcon, LogInIcon, LogOutIcon, CalendarIcon, UserIcon, ChevronDownIcon } from "lucide-react"
+import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@barbergo/ui"
+import SideMenu from "./side-menu"
+import AuthDialog from "./auth-dialog"
+import { useState } from "react"
 
 const Header = () => {
     const { data: session } = useSession()
-
-    const handleLoginClick = () => signIn("google")
-    const handleLogoutClick = () => signOut()
+    const [isAuthOpen, setIsAuthOpen] = useState(false)
 
     return (
-        <Card className="rounded-none border-0 border-b">
-            <CardContent className="flex flex-row items-center justify-between p-5">
-                <Link href="/">
-                    <h1 className="text-xl font-bold">BarberGo</h1>
-                </Link>
+        <>
+            <Card className="rounded-none border-none bg-card shadow-md z-50 relative">
+                <CardContent className="flex flex-row items-center justify-between p-5 md:px-10">
 
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <Button variant="outline" size="icon">
-                            <MenuIcon />
-                        </Button>
-                    </SheetTrigger>
-
-                    <SheetContent>
-                        <SheetHeader>
-                            <SheetTitle className="text-left">Menu</SheetTitle>
-                        </SheetHeader>
-
-                        <div className="flex flex-col gap-3 py-4">
-                            {session?.user ? (
-                                <div className="flex flex-col gap-3">
-                                    <div className="flex items-center gap-2 py-2">
-                                        <Avatar>
-                                            <AvatarImage src={session.user.image ?? ""} />
-                                            <AvatarFallback>{session.user.name?.[0]}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-sm">{session.user.name}</span>
-                                            <span className="text-xs text-muted-foreground">{session.user.email}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Link para o Dashboard (Só aparece se logado) */}
-                                    <Button variant="outline" className="justify-start gap-2" asChild>
-                                        <Link href="/admin">
-                                            <LayoutDashboardIcon size={18} />
-                                            Painel de Gestão
-                                        </Link>
-                                    </Button>
-
-                                    <Button variant="destructive" className="justify-start gap-2" onClick={handleLogoutClick}>
-                                        <LogOutIcon size={18} />
-                                        Sair da conta
-                                    </Button>
-                                </div>
-                            ) : (
-                                <Button variant="outline" className="justify-start gap-2" asChild>
-                                    <Link href="/login">
-                                        <LogInIcon size={18} />
-                                        Fazer Login
-                                    </Link>
-                                </Button>
-                            )}
+                    {/* LOGO */}
+                    <Link href="/" className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                            <span className="font-bold text-xl text-white">FSW</span>
+                            <span className="font-bold text-xl text-primary">Barber</span>
                         </div>
-                    </SheetContent>
-                </Sheet>
-            </CardContent>
-        </Card>
+                    </Link>
+
+                    {/* DESKTOP ACTIONS */}
+                    <div className="hidden md:flex items-center gap-8">
+                        {/* O link "Início" pode ficar visível ou ir para o dropdown também, dependendo da preferência. Vou manter aqui para acesso rápido. */}
+                        <Link href="/" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                            Início
+                        </Link>
+
+                        {session?.user ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="flex items-center gap-3 hover:bg-transparent p-0">
+                                        <div className="flex items-center gap-2 text-right">
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-sm font-bold text-white leading-none">{session.user.name}</span>
+                                                <span className="text-xs text-gray-500">Cliente</span>
+                                            </div>
+                                            <Avatar className="h-10 w-10 border border-[#26272B]">
+                                                <AvatarImage src={session.user.image ?? ""} />
+                                                <AvatarFallback className="bg-[#26272B]">{session.user.name?.[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <ChevronDownIcon size={16} className="text-gray-500" />
+                                        </div>
+                                    </Button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent className="w-56 bg-[#1A1B1F] border-[#26272B] text-white">
+                                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                                    <DropdownMenuSeparator className="bg-[#26272B]" />
+
+                                    <DropdownMenuItem className="cursor-pointer focus:bg-[#26272B]" asChild>
+                                        <Link href="/appointments" className="flex items-center gap-2 w-full">
+                                            <CalendarIcon size={16} />
+                                            Agendamentos
+                                        </Link>
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator className="bg-[#26272B]" />
+
+                                    <DropdownMenuItem
+                                        className="cursor-pointer text-red-500 focus:bg-red-500/10 focus:text-red-500"
+                                        onClick={() => signOut()}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <LogOutIcon size={16} />
+                                            Sair
+                                        </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <Button
+                                onClick={() => setIsAuthOpen(true)}
+                                className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl px-6"
+                            >
+                                <LogInIcon className="mr-2 h-4 w-4" />
+                                Fazer Login
+                            </Button>
+                        )}
+                    </div>
+
+                    {/* MOBILE MENU */}
+                    <div className="md:hidden">
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-white hover:bg-transparent">
+                                    <MenuIcon size={24} />
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent className="p-0 border-l border-secondary">
+                                <SideMenu />
+                            </SheetContent>
+                        </Sheet>
+                    </div>
+
+                </CardContent>
+            </Card>
+
+            <AuthDialog isOpen={isAuthOpen} onOpenChange={setIsAuthOpen} />
+        </>
     )
 }
 

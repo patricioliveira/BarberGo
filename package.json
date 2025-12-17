@@ -16,6 +16,7 @@
     "type-check": "turbo run type-check"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
@@ -24,5 +25,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3"
   }
 }
