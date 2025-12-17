@@ -2,7 +2,10 @@
   "name": "barbergo-monorepo",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "postinstall": "npm run db:generate -w @barbergo/database",
     "dev": "turbo run dev",
@@ -13,6 +16,9 @@
     "type-check": "turbo run type-check"
   },
   "devDependencies": {
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
     "turbo": "^1.10.12",
     "typescript": "^5"
   },

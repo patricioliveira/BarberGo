@@ -5,6 +5,13 @@
 /packages/ui/node_modules
 /packages/database/node_modules
 /packages/ui/node_modules
+/exclusive/node_modules
+/hall/node_modules
+apps/exclusive/node_modules
+apps/hall/node_modules
+
+# packages
+/packages
 /.pnp
 .pnp.js
 .yarn/install-state.gz

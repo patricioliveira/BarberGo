@@ -1,14 +1,14 @@
-import PhoneItem from "@/app/_components/phone-item"
-import ServiceItem from "@/app/_components/service-item"
-import SidebarSheet from "@/app/_components/sidebar-sheet"
-import { Button } from "@barbergo/ui"
+
+import { Button, SheetContent } from "@barbergo/ui"
 import { Sheet, SheetTrigger } from "@barbergo/ui"
 import { db } from "@barbergo/database"
 import { ChevronLeftIcon, MapPinIcon, MenuIcon, StarIcon } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { appConfig } from "@/app/config"
+import ServiceItem from "../../_components/service-item"
+import PhoneItem from "../../_components/phone-item"
+import { appConfig } from "../../config"
 
 interface BarbershopPageProps {
   params: {
@@ -64,7 +64,7 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
               <MenuIcon />
             </Button>
           </SheetTrigger>
-          <SidebarSheet />
+          <SheetContent />
         </Sheet>
       </div>
 
