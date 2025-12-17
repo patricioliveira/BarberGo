@@ -15,7 +15,12 @@ export const authOptions: AuthOptions = {
     ],
     callbacks: {
         async session({ session, user }) {
-            session.user = { ...session.user, id: user.id } as any
+            session.user = {
+                ...session.user,
+                id: user.id,
+                // @ts-ignore (O TypeScript pode reclamar, mas vamos corrigir a tipagem depois)
+                role: user.role,
+            } as any
             return session
         },
     },
