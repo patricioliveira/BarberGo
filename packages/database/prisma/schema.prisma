@@ -2,13 +2,27 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// prisma/schema.prisma
 datasource db {
-  provider  = "postgresql"
-  url  	    = env("DATABASE_URL")
-  // uncomment next line if you use Prisma <5.10
-  // directUrl = env("DATABASE_URL_UNPOOLED")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
+
+// --- ENUMS ---
+
+// Define o papel do usuário no sistema
+enum UserRole {
+  USER   // Cliente comum (Padrão)
+  ADMIN  // Dono de Barbearia ou Gestor
+}
+
+// Define o estado do agendamento
+enum BookingStatus {
+  CONFIRMED // Confirmado (Padrão ao criar)
+  CANCELED  // Cancelado pelo usuário ou barbeiro
+  COMPLETED // Concluído (Serviço realizado)
+}
+
+// --- MODELS ---
 
 model User {
   id            String    @id @default(cuid())
@@ -16,12 +30,81 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  
+  // Controle de Permissão
+  role          UserRole  @default(USER)
+
   accounts      Account[]
   sessions      Session[]
   bookings      Booking[]
+  
+  // Relação: Barbearias que este usuário é DONO
+  managedBarbershops Barbershop[] @relation("BarbershopOwner")
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+model Barbershop {
+  id          String              @id @default(uuid())
+  name        String
+  slug        String              @unique
+  address     String
+  phones      String[]
+  description String
+  imageUrl    String
+  isExclusive Boolean             @default(false)
+  
+  // Relação com o Dono (Admin)
+  ownerId     String?
+  owner       User?               @relation("BarbershopOwner", fields: [ownerId], references: [id])
+
+  // Horários de Funcionamento
+  // Exemplo de JSON: { "segunda": { "inicio": "09:00", "fim": "18:00", "intervalo": "12:00-13:00" }, "terca": ... }
+  openingHours Json?
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  services    BarbershopService[]
+  
+  // Para facilitar queries inversas, podemos adicionar bookings aqui se necessário, 
+  // mas o acesso via Service -> Booking já existe implicitamente ou via query direta.
+  // Vamos deixar explicito para facilitar o dashboard:
+  bookings    Booking[]           @relation("BarbershopBookings")
+}
+
+model BarbershopService {
+  id           String     @id @default(uuid())
+  name         String
+  description  String
+  imageUrl     String
+  price        Decimal    @db.Decimal(10, 2)
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+  bookings     Booking[]
+}
+
+model Booking {
+  id        String            @id @default(uuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  serviceId String
+  service   BarbershopService @relation(fields: [serviceId], references: [id])
+  date      DateTime
+  
+  // Novo status
+  status    BookingStatus     @default(CONFIRMED)
+
+  // Relação direta com Barbearia (Opcional, mas ajuda MUITO na performance do Dashboard do Admin)
+  // Sem isso, para pegar "todos agendamentos da minha barbearia", você teria que fazer um join complicado via Service.
+  barbershopId String
+  barbershop   Barbershop @relation("BarbershopBookings", fields: [barbershopId], references: [id])
+
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+// --- NextAuth Models (Mantidos inalterados) ---
 
 model Account {
   userId            String
@@ -60,40 +143,4 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
-}
-
-model Barbershop {
-  id          String              @id @default(uuid())
-  name        String
-  slug        String              @unique
-  address     String
-  phones      String[]
-  description String
-  imageUrl    String
-  isExclusive Boolean             @default(false)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  services    BarbershopService[]
-}
-
-model BarbershopService {
-  id           String     @id @default(uuid())
-  name         String
-  description  String
-  imageUrl     String
-  price        Decimal    @db.Decimal(10, 2)
-  barbershopId String
-  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
-  bookings     Booking[]
-}
-
-model Booking {
-  id        String            @id @default(uuid())
-  userId    String
-  user      User              @relation(fields: [userId], references: [id])
-  serviceId String
-  service   BarbershopService @relation(fields: [serviceId], references: [id])
-  date      DateTime
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
 }
