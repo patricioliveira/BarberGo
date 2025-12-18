@@ -44,7 +44,7 @@ const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
 
                     <Button className="w-full mt-3 rounded-xl bg-[#26272B] hover:bg-[#3E3F45] text-white" variant="secondary" asChild>
                         <Link href={`/barbershop/${barbershop.id}`}>
-                            Reservar
+                            Agendar
                         </Link>
                     </Button>
                 </div>

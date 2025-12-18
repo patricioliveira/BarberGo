@@ -8,6 +8,7 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { getServerSession } from "next-auth"
 import { authOptions } from "./_lib/auth"
+import Footer from "./_components/footer"
 
 export default async function Home() {
   const session = await getServerSession(authOptions)
@@ -80,11 +81,7 @@ export default async function Home() {
       </div>
 
       {/* Footer também alinhado */}
-      <footer className="w-full bg-card py-6 px-5 md:px-10 border-t border-border">
-        <p className="text-gray-03 text-xs font-bold opacity-75">
-          © 2026 Copyright BarberGO
-        </p>
-      </footer>
+      <Footer />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { authOptions } from "../_lib/auth"
 import { redirect } from "next/navigation"
 import { db } from "@barbergo/database"
 import Header from "../_components/header"
+import Footer from "../_components/footer"
 import AppointmentsClient from "@/_components/appointments-client"
 
 export default async function AppointmentsPage() {
@@ -12,7 +13,6 @@ export default async function AppointmentsPage() {
         redirect("/")
     }
 
-    // Busca agendamentos reais do usuário
     const bookings = await db.booking.findMany({
         where: {
             userId: session.user.id,
@@ -26,16 +26,24 @@ export default async function AppointmentsPage() {
         },
     })
 
-    // Serializa os dados (Data obj -> String) se necessário, ou passa direto
-    // O componente client receberá os dados
+    // CORREÇÃO: Converter Decimal para Number
+    const serializedBookings = bookings.map((booking) => ({
+        ...booking,
+        service: {
+            ...booking.service,
+            price: Number(booking.service.price),
+        },
+    }))
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen bg-background text-foreground flex flex-col">
             <Header />
-            <div className="container mx-auto p-5 md:py-10">
+            <div className="container mx-auto p-5 md:py-10 flex-1">
                 <h1 className="text-2xl font-bold mb-6">Agendamentos</h1>
-                <AppointmentsClient initialBookings={bookings} />
+                {/* Passamos os dados serializados */}
+                <AppointmentsClient initialBookings={serializedBookings} />
             </div>
+            <Footer />
         </div>
     )
 }

@@ -3,15 +3,15 @@
 import { useState } from "react"
 import { Booking, Barbershop, BarbershopService } from "@prisma/client"
 import { Card, CardContent, Button, Badge } from "@barbergo/ui"
-import { CalendarIcon, MapPinIcon, PhoneIcon } from "lucide-react"
+import { MapPinIcon, PhoneIcon } from "lucide-react"
 import { format, isFuture } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import Image from "next/image"
 import { toast } from "sonner"
 
-// Tipagem estendida para incluir as relações
+// CORREÇÃO: Definir que o service.price é number
 type BookingWithDetails = Booking & {
-    service: BarbershopService
+    service: Omit<BarbershopService, "price"> & { price: number }
     barbershop: Barbershop
 }
 
@@ -20,21 +20,25 @@ interface AppointmentsClientProps {
 }
 
 const AppointmentsClient = ({ initialBookings }: AppointmentsClientProps) => {
-    // Estado para o agendamento selecionado (inicia com o primeiro da lista, se existir)
+    // ... (O resto do código permanece IGUAL, pois ele já trata price como número no display)
+    // ...
+    // No trecho de exibição do preço:
+    // Intl.NumberFormat(..., currency: "BRL").format(selectedBooking.service.price)
+    // Funcionará perfeitamente porque agora é number.
+
+    // ... Copie o restante do código anterior se precisar, mas a mudança principal é na tipagem acima.
+
     const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(
         initialBookings.length > 0 ? initialBookings[0] : null
     )
 
-    const confirmedBookings = initialBookings.filter(b => isFuture(new Date(b.date)))
-    const finishedBookings = initialBookings.filter(b => !isFuture(new Date(b.date)))
-
+    // ... resto do componente ...
     const handleCancel = () => {
-        // Aqui você implementará a Server Action ou API Call para cancelar
         toast.info("Função de cancelar será implementada em breve.")
     }
 
-    // Componente de Item da Lista
     const BookingItem = ({ booking }: { booking: BookingWithDetails }) => {
+        // ... (código igual)
         const isSelected = selectedBooking?.id === booking.id
         return (
             <button
@@ -42,6 +46,7 @@ const AppointmentsClient = ({ initialBookings }: AppointmentsClientProps) => {
                 className={`w-full text-left rounded-xl p-3 mb-3 transition-all ${isSelected ? "bg-[#26272B] border border-primary/50" : "bg-[#1A1B1F] hover:bg-[#26272B]"
                     }`}
             >
+                {/* ... conteúdo do item ... */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="relative h-10 w-10 min-w-[40px] rounded-full overflow-hidden border border-[#26272B]">
@@ -68,10 +73,12 @@ const AppointmentsClient = ({ initialBookings }: AppointmentsClientProps) => {
         return <div className="text-center text-gray-500 mt-10">Você ainda não tem agendamentos.</div>
     }
 
+    const confirmedBookings = initialBookings.filter(b => isFuture(new Date(b.date)))
+    const finishedBookings = initialBookings.filter(b => !isFuture(new Date(b.date)))
+
     return (
         <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-200px)]">
-
-            {/* ESQUERDA: LISTA (Scrollável) */}
+            {/* Lista Esquerda */}
             <div className="w-full lg:w-1/3 overflow-y-auto pr-2 custom-scrollbar">
                 {confirmedBookings.length > 0 && (
                     <div className="mb-6">
@@ -79,7 +86,6 @@ const AppointmentsClient = ({ initialBookings }: AppointmentsClientProps) => {
                         {confirmedBookings.map(booking => <BookingItem key={booking.id} booking={booking} />)}
                     </div>
                 )}
-
                 {finishedBookings.length > 0 && (
                     <div>
                         <h3 className="text-gray-500 text-xs font-bold uppercase mb-3 ml-1">Finalizados</h3>
@@ -88,10 +94,10 @@ const AppointmentsClient = ({ initialBookings }: AppointmentsClientProps) => {
                 )}
             </div>
 
-            {/* DIREITA: DETALHES (Fixo no Desktop, Modal/Página no Mobile se quiser refinar) */}
+            {/* Detalhes Direita */}
             {selectedBooking && (
                 <div className="hidden lg:block w-full lg:w-2/3 bg-[#1A1B1F] rounded-2xl p-6 h-full border border-[#26272B]">
-                    {/* Mapa (Imagem estática por enquanto) */}
+                    {/* Mapa */}
                     <div className="relative w-full h-40 rounded-xl overflow-hidden mb-5">
                         <Image src="/map.png" fill alt="Mapa" className="object-cover opacity-60" />
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -121,7 +127,6 @@ const AppointmentsClient = ({ initialBookings }: AppointmentsClientProps) => {
                             </p>
                         </div>
 
-                        {/* Contatos */}
                         <div className="flex gap-3">
                             {selectedBooking.barbershop.phones.map((phone, idx) => (
                                 <Button key={idx} variant="outline" className="bg-[#141518] border-[#26272B] gap-2">
@@ -130,14 +135,13 @@ const AppointmentsClient = ({ initialBookings }: AppointmentsClientProps) => {
                             ))}
                         </div>
 
-                        {/* Card de Resumo do Agendamento */}
                         <div className="bg-[#141518] p-5 rounded-xl border border-[#26272B]">
                             <div className="flex items-center justify-between mb-4">
                                 <Badge variant={isFuture(new Date(selectedBooking.date)) ? "default" : "secondary"}>
                                     {isFuture(new Date(selectedBooking.date)) ? "Confirmado" : "Finalizado"}
                                 </Badge>
                                 <span className="font-bold text-primary">
-                                    {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(selectedBooking.service.price))}
+                                    {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(selectedBooking.service.price)}
                                 </span>
                             </div>
 
