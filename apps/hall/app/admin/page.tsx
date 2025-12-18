@@ -93,9 +93,8 @@ export default async function AdminPage() {
                     )}
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-7">
-                    {/* GRÁFICO (4 cols) */}
-                    <Card className="col-span-4 bg-[#1A1B1F] border-none">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-7">
+                    <Card className="col-span-1 md:col-span-4 bg-[#1A1B1F] border-none">
                         <CardHeader>
                             <CardTitle>{isAdmin ? "Receita da Loja" : "Meu Desempenho"} (30 dias)</CardTitle>
                         </CardHeader>
@@ -104,8 +103,8 @@ export default async function AdminPage() {
                         </CardContent>
                     </Card>
 
-                    {/* AGENDA (3 cols) */}
-                    <Card className="col-span-3 bg-[#1A1B1F] border-none">
+                    {/* AGENDA (Ocupa 100% no mobile, 3 colunas no desktop) */}
+                    <Card className="col-span-1 md:col-span-3 bg-[#1A1B1F] border-none">
                         <CardHeader>
                             <CardTitle>Próximos Clientes</CardTitle>
                         </CardHeader>

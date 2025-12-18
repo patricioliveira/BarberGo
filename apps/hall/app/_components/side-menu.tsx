@@ -3,7 +3,7 @@
 import { Avatar, AvatarImage } from "@barbergo/ui"
 import { Button } from "@barbergo/ui"
 import { SheetHeader, SheetTitle } from "@barbergo/ui"
-import { CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, UserIcon } from "lucide-react"
+import { CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, ShieldCheck, UserIcon } from "lucide-react"
 import Link from "next/link"
 import { signIn, signOut, useSession } from "next-auth/react"
 
@@ -54,6 +54,16 @@ const SideMenu = () => {
                     </Link>
                 </Button>
 
+                {/* Idealmente, verifique se o usuário é admin antes de mostrar, mas por hora adicionamos a rota */}
+                {data?.user && (
+                    <Button variant="outline" className="justify-start" asChild>
+                        <Link href="/admin">
+                            <ShieldCheck size={18} className="mr-2" />
+                            Painel Admin
+                        </Link>
+                    </Button>
+                )}
+                
                 {data?.user && (
                     <Button variant="outline" className="justify-start" asChild>
                         <Link href="/bookings">

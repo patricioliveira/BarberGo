@@ -16,7 +16,7 @@ const AdminOverviewChart = ({ data }: AdminOverviewChartProps) => {
     const maxTotal = Math.max(...data.map((d) => d.total)) || 1
 
     return (
-        <div className="flex items-end gap-2 h-[300px] w-full pt-10">
+        <div className="flex items-end h-[300px] w-full pt-10">
             {data.map((item, index) => {
                 const heightPercentage = Math.round((item.total / maxTotal) * 100)
 
