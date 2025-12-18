@@ -7,7 +7,7 @@ import AuthProvider from "./_providers/auth"; // Importa o AuthProvider
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "BarberGo Hall",
+  title: "barberGO",
   description: "Encontre as melhores barbearias",
 };
 

@@ -16,13 +16,12 @@ const Header = () => {
     return (
         <>
             <Card className="rounded-none border-none bg-card shadow-md z-50 relative">
-                <CardContent className="flex flex-row items-center justify-between p-5 md:px-10">
+                <CardContent className="flex flex-row items-center justify-between p-3 md:px-10">
 
                     {/* LOGO */}
-                    <Link href="/" className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                            <span className="font-bold text-xl text-white">FSW</span>
-                            <span className="font-bold text-xl text-primary">Barber</span>
+                    <Link href="/" className="flex items-center">
+                        <div className="flex items-center">
+                            <img src="/logo.svg" alt="Logo BarberGO" className="h-[2.6rem]" />
                         </div>
                     </Link>
 
