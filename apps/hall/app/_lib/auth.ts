@@ -47,7 +47,7 @@ export const authOptions: AuthOptions = {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role, // Passando a role
+          role: user.role,
         } as any
       },
     }),

@@ -9,17 +9,16 @@ datasource db {
 
 // --- ENUMS ---
 
-// Define o papel do usuário no sistema
 enum UserRole {
-  USER   // Cliente comum (Padrão)
-  ADMIN  // Dono de Barbearia ou Gestor
+  USER
+  ADMIN
+  STAFF
 }
 
-// Define o estado do agendamento
 enum BookingStatus {
-  CONFIRMED // Confirmado (Padrão ao criar)
-  CANCELED  // Cancelado pelo usuário ou barbeiro
-  COMPLETED // Concluído (Serviço realizado)
+  CONFIRMED
+  CANCELED
+  COMPLETED
 }
 
 // --- MODELS ---
@@ -31,8 +30,9 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  // Controle de Permissão
   role          UserRole  @default(USER)
+
+  staffProfile  BarberStaff?
 
   accounts      Account[]
   sessions      Session[]
@@ -46,31 +46,49 @@ model User {
 }
 
 model Barbershop {
-  id          String              @id @default(uuid())
-  name        String
-  slug        String              @unique
-  address     String
-  phones      String[]
-  description String
-  imageUrl    String
-  isExclusive Boolean             @default(false)
+  id             String              @id @default(uuid())
+  name           String
+  slug           String              @unique
+  address        String
+  phones         String[]
+  description    String
+  imageUrl       String
+  isExclusive    Boolean             @default(false)
+
+  cnpj           String?
+  openingHours   Json?
+  isClosed       Boolean             @default(false)
+  paymentMethods String[]
+  views          Int                 @default(0)
   
   // Relação com o Dono (Admin)
-  ownerId     String?
-  owner       User?               @relation("BarbershopOwner", fields: [ownerId], references: [id])
+  ownerId        String?
+  owner          User?               @relation("BarbershopOwner", fields: [ownerId], references: [id])
 
-  // Horários de Funcionamento
-  // Exemplo de JSON: { "segunda": { "inicio": "09:00", "fim": "18:00", "intervalo": "12:00-13:00" }, "terca": ... }
-  openingHours Json?
-
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  services    BarbershopService[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   
-  // Para facilitar queries inversas, podemos adicionar bookings aqui se necessário, 
-  // mas o acesso via Service -> Booking já existe implicitamente ou via query direta.
-  // Vamos deixar explicito para facilitar o dashboard:
-  bookings    Booking[]           @relation("BarbershopBookings")
+  services       BarbershopService[]
+  // users User[] <--- REMOVIDO PARA CORRIGIR O ERRO (Já temos o owner acima)
+  
+  bookings       Booking[]           @relation("BarbershopBookings")
+  staff          BarberStaff[]
+}
+
+model BarberStaff {
+  id           String     @id @default(cuid())
+  name         String
+  jobTitle     String     @default("Barbeiro")
+  imageUrl     String?
+  email        String?    @unique
+  
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+  
+  userId       String?    @unique
+  user         User?      @relation(fields: [userId], references: [id])
+  
+  bookings     Booking[]
 }
 
 model BarbershopService {
@@ -86,26 +104,24 @@ model BarbershopService {
 }
 
 model Booking {
-  id        String            @id @default(uuid())
-  userId    String
-  user      User              @relation(fields: [userId], references: [id])
-  serviceId String
-  service   BarbershopService @relation(fields: [serviceId], references: [id])
-  date      DateTime
+  id           String            @id @default(uuid())
+  userId       String
+  user         User              @relation(fields: [userId], references: [id])
+  serviceId    String
+  service      BarbershopService @relation(fields: [serviceId], references: [id])
+  date         DateTime
   
-  // Novo status
-  status    BookingStatus     @default(CONFIRMED)
+  status       BookingStatus     @default(CONFIRMED)
 
-  // Relação direta com Barbearia (Opcional, mas ajuda MUITO na performance do Dashboard do Admin)
-  // Sem isso, para pegar "todos agendamentos da minha barbearia", você teria que fazer um join complicado via Service.
   barbershopId String
-  barbershop   Barbershop @relation("BarbershopBookings", fields: [barbershopId], references: [id])
+  barbershop   Barbershop        @relation("BarbershopBookings", fields: [barbershopId], references: [id])
+  
+  staffId      String?
+  staff        BarberStaff?      @relation(fields: [staffId], references: [id])
 
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 }
-
-// --- NextAuth Models (Mantidos inalterados) ---
 
 model Account {
   userId            String
@@ -120,10 +136,10 @@ model Account {
   id_token          String?
   session_state     String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([provider, providerAccountId])
 }
@@ -134,8 +150,8 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model VerificationToken {

@@ -1,15 +1,15 @@
 import { DefaultSession } from "next-auth"
+import { UserRole } from "@prisma/client"
 
 declare module "next-auth" {
     interface Session {
         user: {
             id: string
-            role?: string // ou enum UserRole se você exportar do prisma
+            role: UserRole
         } & DefaultSession["user"]
     }
 
     interface User {
-        id: string
-        role?: string
+        role: UserRole
     }
 }
