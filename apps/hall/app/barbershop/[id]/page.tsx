@@ -24,7 +24,6 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
         return notFound()
     }
 
-    // CORREÇÃO: Converter Decimal para Number para o Next.js aceitar
     const serializedBarbershop = {
         ...barbershop,
         services: barbershop.services.map((service) => ({

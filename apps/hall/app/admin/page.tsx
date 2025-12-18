@@ -19,6 +19,25 @@ export default async function AdminDashboard() {
         }
     })
 
+    const bookings = await db.booking.findMany({
+        include: {
+            service: true,
+            user: true, // Inclui dados do cliente
+        },
+        orderBy: {
+            date: "desc",
+        },
+    })
+
+    // CORREÇÃO: Serializar para evitar erro do Decimal
+    const serializedBookings = bookings.map((booking) => ({
+        ...booking,
+        service: {
+            ...booking.service,
+            price: Number(booking.service.price),
+        },
+    }))
+
     // Calcula totais somando todas as barbearias dele
     const totalBookings = myBarbershops.reduce((acc, shop) => acc + shop.bookings.length, 0)
     const totalShops = myBarbershops.length

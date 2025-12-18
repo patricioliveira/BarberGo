@@ -26,7 +26,6 @@ export default async function AppointmentsPage() {
         },
     })
 
-    // CORREÇÃO: Converter Decimal para Number
     const serializedBookings = bookings.map((booking) => ({
         ...booking,
         service: {
