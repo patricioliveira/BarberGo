@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 import {
     Button, Input, Label, Card, CardContent, CardHeader, CardTitle,
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -26,10 +26,19 @@ export default function ProfilePage() {
     // Identifica se é usuário Google (pela imagem ou ausência de senha se implementado no session)
     const isGoogleAccount = session?.user?.image?.includes("googleusercontent.com")
 
+    if (status === "loading") {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background text-white">
+                <Loader2 className="animate-spin text-primary" size={40} />
+            </div>
+        )
+    }
+        
+    if (!session?.user) {
+        redirect("/")
+    }
+
     useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/")
-        }
         if (session?.user) {
             setName(session.user.name || "")
             setEmail(session.user.email || "")
@@ -71,14 +80,6 @@ export default function ProfilePage() {
             alert(res.error)
         }
         setIsLoading(false)
-    }
-
-    if (status === "loading") {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background text-white">
-                <Loader2 className="animate-spin text-primary" size={40} />
-            </div>
-        )
     }
 
     return (

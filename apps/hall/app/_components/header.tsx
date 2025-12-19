@@ -92,7 +92,7 @@ const Header = () => {
                                 <DropdownMenuSeparator className="bg-[#26272B]" />
 
                                 <DropdownMenuItem
-                                    onClick={() => signOut()}
+                                    onClick={() => signOut({ callbackUrl: "/" })}
                                     className="text-red-500 hover:bg-red-500/10 hover:text-red-500 cursor-pointer flex items-center gap-2"
                                 >
                                     <LogOutIcon size={16} />

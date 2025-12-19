@@ -1,13 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 import Header from "../../_components/header"
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "@barbergo/ui"
 import { ChevronLeft, Clock, Save, AlertCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { getStaffHoursData, updateStaffHours } from "../../_actions/manage-staff-hours"
 import { toast } from "sonner"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/_lib/auth"
 
 type WorkingHour = { day: string; open: string; close: string; isOpen: boolean }
 
@@ -21,11 +23,17 @@ const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChang
     </button>
 )
 
-export default function MyHoursPage() {
+export default async function MyHoursPage() {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [data, setData] = useState<{ staffHours: WorkingHour[], shopHours: WorkingHour[], staffId: string, shopName: string } | null>(null)
+
+    const session = await getServerSession(authOptions)
+        
+    if (!session?.user) {
+        redirect("/")
+    }
 
     useEffect(() => {
         const load = async () => {

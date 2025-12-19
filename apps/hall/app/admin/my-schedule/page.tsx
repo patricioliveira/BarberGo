@@ -8,10 +8,19 @@ import { ptBR } from "date-fns/locale"
 import { ChevronLeft, CheckCircle2, Clock, XCircle, User } from "lucide-react"
 import Link from "next/link"
 import { getAdminDashboard } from "../../_actions/get-admin-dashboard"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/_lib/auth"
+import { redirect } from "next/navigation"
 
-export default function MySchedulePage() {
+export default async function MySchedulePage() {
     const [bookings, setBookings] = useState<any[]>([])
     const [filter, setFilter] = useState<"CONFIRMED" | "FINISHED" | "CANCELED">("CONFIRMED")
+
+    const session = await getServerSession(authOptions)
+        
+    if (!session?.user) {
+        redirect("/")
+    }
 
     useEffect(() => {
         const load = async () => {

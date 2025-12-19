@@ -15,21 +15,38 @@ import { getAdminDashboard } from "../_actions/get-admin-dashboard"
 import { ConfirmDialog } from "../_components/confirm-dialog"
 import { toggleStaffStatus } from "../_actions/manage-staff"
 import { toast } from "sonner"
+import router from "next/router"
+import { redirect } from "next/navigation"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/_lib/auth"
 
-export default function AdminPage() {
+export default async function AdminPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [stats, setStats] = useState<any>(null)
     const [viewMode, setViewMode] = useState<"shop" | "personal">("shop")
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
 
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user) {
+        redirect("/")
+    }
+
     useEffect(() => { load() }, [])
 
     const load = async () => {
-        setIsLoading(true)
-        const data = await getAdminDashboard()
-        setStats(data)
-        if (data.role === "STAFF") setViewMode("personal")
-        setIsLoading(false)
+        try {
+            setIsLoading(true)
+            const data = await getAdminDashboard()
+            setStats(data)
+            if (data.role === "STAFF") setViewMode("personal")
+        } catch (error) {
+            // Se a Action falhar (ex: Unauthorized), redireciona suavemente para a home
+            console.error("Erro de autorização:", error)
+            router.push("/")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     if (isLoading || !stats) return <div className="min-h-screen flex items-center justify-center bg-background text-white"><Loader2 className="animate-spin text-primary" size={40} /></div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import {
     Button,
@@ -44,6 +44,8 @@ import { ConfirmDialog } from "../../_components/confirm-dialog"
 import { getBarbershopSettings } from "@/_actions/get-barbershop-settings"
 import { addOrUpdateStaff, toggleStaffStatus, deleteStaff } from "@/_actions/manage-staff"
 import { toast } from "sonner"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/_lib/auth"
 
 // --- COMPONENTE SWITCH ESTILIZADO ---
 const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (c: boolean) => void }) => (
@@ -70,9 +72,8 @@ const DEFAULT_HOURS: WorkingHour[] = [
     { day: "Domingo", open: "00:00", close: "00:00", isOpen: false },
 ]
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
     const router = useRouter()
-    const { data: session } = useSession()
     const [isDirty, setIsDirty] = useState(false)
     const [activeTab, setActiveTab] = useState("general")
     const [isLoading, setIsLoading] = useState(true)
@@ -100,6 +101,12 @@ export default function SettingsPage() {
         const n = value.replace(/\D/g, "")
         if (n.length <= 10) return n.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3")
         return n.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
+    }
+
+    const session = await getServerSession(authOptions)
+        
+    if (!session?.user) {
+        redirect("/")
     }
 
     useEffect(() => {

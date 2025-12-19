@@ -14,7 +14,7 @@ const SideMenu = () => {
     const [isAuthOpen, setIsAuthOpen] = useState(false)
 
     const handleLoginClick = () => setIsAuthOpen(true)
-    const handleLogoutClick = () => signOut()
+    const handleLogoutClick = () => signOut({ callbackUrl: "/" })
 
     return (
         <>
