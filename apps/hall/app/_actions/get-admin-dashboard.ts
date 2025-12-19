@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@barbergo/database"
-import { startOfDay, endOfDay, startOfMonth, endOfMonth, eachDayOfInterval, format } from "date-fns"
+import { startOfMonth, endOfMonth, eachDayOfInterval, format } from "date-fns"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../_lib/auth"
 
@@ -9,97 +9,92 @@ export const getAdminDashboard = async () => {
     const session = await getServerSession(authOptions)
     if (!session?.user) throw new Error("Unauthorized")
 
-    // 1. Identificar quem é o usuário
+    // 1. Identificar quem é o usuário e incluir a relação correta: managedBarbershops
     const user = await db.user.findUnique({
-        where: { id: session.user.id },
-        include: { staffProfile: true }
+        where: { id: (session.user as any).id },
+        include: {
+            staffProfile: true,
+            managedBarbershops: true // CORREÇÃO: Nome correto da relação no schema.prisma
+        }
     })
 
     if (!user) throw new Error("User not found")
 
-    // 2. Definir o Contexto (Barbearia e Filtros)
-    let barbershopId = ""
-    let staffFilterId: string | undefined = undefined
+    // Verifica se o usuário possui um perfil de Barbeiro vinculado
+    const staffProfile = user.staffProfile
 
-    if (user.role === "ADMIN") {
-        // Se for ADMIN, pega a barbearia que ele é dono
-        // (Simplificado: pegando a primeira, num cenário real seria where: { ownerId: user.id })
-        const shop = await db.barbershop.findFirst()
-        if (!shop) throw new Error("Nenhuma barbearia vinculada")
-        barbershopId = shop.id
-        // Admin vê tudo, sem filtro de staffFilterId (a menos que ele selecione na UI)
-    }
-    else if (user.role === "STAFF") {
-        // Se for STAFF, pega a barbearia do perfil dele e FORÇA o filtro
-        if (!user.staffProfile) throw new Error("Perfil de funcionário não configurado")
-        barbershopId = user.staffProfile.barbershopId
-        staffFilterId = user.staffProfile.id // <--- O PULO DO GATO: Staff só vê o dele
-    }
-    else {
-        throw new Error("Acesso negado")
-    }
+    const isAdmin = user.role === "ADMIN"
+    const isBarber = !!staffProfile
 
-    // 3. Consultas ao Banco (Com os filtros aplicados)
+    // 2. Definir a Barbearia alvo
+    // CORREÇÃO: Acessando managedBarbershops em vez de barbershops
+    const barbershopId = isAdmin
+        ? user.managedBarbershops[0]?.id
+        : staffProfile?.barbershopId
+
+    if (!barbershopId) throw new Error("Unidade não encontrada")
+
     const now = new Date()
     const startMonth = startOfMonth(now)
     const endMonth = endOfMonth(now)
 
-    // Condição de Busca Dinâmica
-    const whereCondition: any = {
-        barbershopId,
-        date: { gte: startMonth, lte: endMonth },
-        ...(staffFilterId && { staffId: staffFilterId }) // Aplica filtro se existir
-    }
-
-    const bookings = await db.booking.findMany({
-        where: whereCondition,
-        include: { service: true, user: true, staff: true },
-        orderBy: { date: "desc" }
+    // --- 1. DADOS DA LOJA (Geral) ---
+    const shopBookings = await db.booking.findMany({
+        where: { barbershopId, date: { gte: startMonth, lte: endMonth } },
+        include: { service: true, user: true, staff: true }
     })
 
-    // Buscar dados da barbearia (apenas Admin vê views e status de fechamento)
     const barbershop = await db.barbershop.findUnique({
         where: { id: barbershopId },
         select: { views: true, isClosed: true }
     })
 
-    // 4. Cálculos e Métricas
-    const totalRevenue = bookings.reduce((acc, b) => acc + Number(b.service.price), 0)
-    const totalBookings = bookings.length
+    // --- 2. DADOS PESSOAIS (Se for barbeiro) ---
+    let personalBookings: any[] = []
+    if (isBarber) {
+        personalBookings = await db.booking.findMany({
+            where: { staffId: staffProfile!.id, date: { gte: startMonth, lte: endMonth } },
+            include: { service: true, user: true }
+        })
+    }
 
-    // Agendamentos de Hoje (Query separada para performance ou filtro JS simples)
-    const todayBookings = bookings.filter(b => {
-        const d = new Date(b.date)
-        const n = new Date()
-        return d.getDate() === n.getDate() && d.getMonth() === n.getMonth()
+    // Funções de Cálculo
+    const calculateKpis = (bookingsList: any[]) => ({
+        revenue: bookingsList.reduce((acc, b) => acc + Number(b.service.price), 0),
+        bookings: bookingsList.length,
+        today: bookingsList.filter(b => format(b.date, "yyyy-MM-dd") === format(now, "yyyy-MM-dd")).length
     })
 
-    // Gráfico Diário
-    const daysInMonth = eachDayOfInterval({ start: startMonth, end: endMonth })
-    const chartData = daysInMonth.map(day => {
-        const dayRevenue = bookings
-            .filter(b => format(b.date, "yyyy-MM-dd") === format(day, "yyyy-MM-dd"))
-            .reduce((acc, b) => acc + Number(b.service.price), 0)
-        return { date: format(day, "dd"), total: dayRevenue }
-    })
-
-    // Serialização
-    const safeBookings = bookings.map(b => ({
-        ...b,
-        service: { ...b.service, price: Number(b.service.price) }
-    }))
+    const calculateChart = (bookingsList: any[]) => {
+        const days = eachDayOfInterval({ start: startMonth, end: endMonth })
+        return days.map(day => ({
+            date: format(day, "dd"),
+            total: bookingsList
+                .filter(b => format(b.date, "yyyy-MM-dd") === format(day, "yyyy-MM-dd"))
+                .reduce((acc, b) => acc + Number(b.service.price), 0)
+        }))
+    }
 
     return {
-        role: user.role, // Retornamos a role para o Front decidir o que mostrar
+        role: user.role,
+        isBarber,
+        barberId: staffProfile?.id,
         kpi: {
-            revenue: totalRevenue,
-            bookings: totalBookings,
-            today: todayBookings.length,
-            // Staff não vê views da loja, só Admin
-            views: user.role === "ADMIN" ? (barbershop?.views || 0) : null,
+            ...calculateKpis(shopBookings),
+            views: barbershop?.views || 0,
             isClosed: barbershop?.isClosed || false
         },
-        chartData,
-        bookings: safeBookings
+        chartData: calculateChart(shopBookings),
+        bookings: shopBookings.slice(0, 10).map(b => ({
+            ...b,
+            service: { ...b.service, price: Number(b.service.price) }
+        })),
+
+        personalKpi: isBarber ? { ...calculateKpis(personalBookings), isActive: true } : null,
+        personalChartData: isBarber ? calculateChart(personalBookings) : null,
+        personalBookings: personalBookings.slice(0, 10).map(b => ({
+            ...b,
+            service: { ...b.service, price: Number(b.service.price) }
+        }))
     }
 }
