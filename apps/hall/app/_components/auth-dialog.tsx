@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation"
 interface AuthDialogProps {
     isOpen: boolean
     onOpenChange: (open: boolean) => void
-    callbackUrl?: string // Adicionado para flexibilidade
+    callbackUrl?: string
 }
 
 const AuthDialog = ({ isOpen, onOpenChange, callbackUrl = "/" }: AuthDialogProps) => {
@@ -29,7 +29,6 @@ const AuthDialog = ({ isOpen, onOpenChange, callbackUrl = "/" }: AuthDialogProps
 
     const handleGoogleLogin = () => {
         setIsLoading(true)
-        // Usa o callbackUrl passado via props
         signIn("google", { callbackUrl }).finally(() => setIsLoading(false))
     }
 
@@ -68,7 +67,7 @@ const AuthDialog = ({ isOpen, onOpenChange, callbackUrl = "/" }: AuthDialogProps
                 toast.success("Login realizado com sucesso!")
                 onOpenChange(false)
 
-                // Redireciona e recarrega
+                // Força o redirecionamento para a URL correta com os parâmetros
                 router.push(callbackUrl)
                 router.refresh()
             }

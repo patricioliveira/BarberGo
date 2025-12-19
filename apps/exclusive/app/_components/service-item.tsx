@@ -35,7 +35,7 @@ const ServiceItem = ({ service, isAuthenticated, barbershop }: ServiceItemProps)
                             }).format(Number(service.price))}
                         </p>
                         <Button variant="secondary" onClick={() => alert("Agendamento em breve!")}>
-                            Reservar
+                            Adicionar serviço
                         </Button>
                     </div>
                 </div>

@@ -42,7 +42,7 @@ const ServiceItem = ({ service, isSelected, onSelect }: ServiceItemProps) => {
                             className={`text-xs h-8 rounded-lg ${isSelected ? "bg-primary text-white" : "bg-[#141518] text-white hover:bg-[#26272B]"}`}
                             onClick={onSelect}
                         >
-                            {isSelected ? "Selecionado" : "Reservar"}
+                            {isSelected ? "Selecionado" : "Adicionar Serviço"}
                         </Button>
                     </div>
                 </div>
