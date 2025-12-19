@@ -1,33 +1,45 @@
 "use server"
 
 import { db } from "@barbergo/database"
-import { hash } from "bcryptjs" // Certifique-se de ter instalado
+import { authOptions } from "@/_lib/auth"
+import { getServerSession } from "next-auth"
 import { revalidatePath } from "next/cache"
+import { hash } from "bcryptjs"
 
-export const addOrUpdateStaff = async (params: {
-    barbershopId: string,
-    name: string,
-    email: string,
-    jobTitle: string,
-    userId?: string // Caso seja o próprio admin se adicionando
-}) => {
+interface AddStaffParams {
+    barbershopId: string
+    name: string
+    email: string
+    jobTitle: string
+    userId?: string // Usado quando o admin adiciona a si mesmo
+}
+
+export const addOrUpdateStaff = async (params: AddStaffParams) => {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) return { error: "Não autorizado" }
+
     try {
-        let targetUserId = params.userId;
+        let targetUserId = params.userId
 
-        // Se não for o próprio admin, verifica o e-mail
+        // 1. Lógica de Usuário (se não for o próprio admin)
         if (!targetUserId) {
-            const existingUser = await db.user.findUnique({ where: { email: params.email } });
+            const existingUser = await db.user.findUnique({
+                where: { email: params.email }
+            })
 
             if (existingUser) {
-                targetUserId = existingUser.id;
-                // Atualiza o cargo do usuário para STAFF se for comum
+                targetUserId = existingUser.id
+                // Se o usuário já existe e é apenas cliente, promove a STAFF
                 if (existingUser.role === "USER") {
-                    await db.user.update({ where: { id: targetUserId }, data: { role: "STAFF" } });
+                    await db.user.update({
+                        where: { id: targetUserId },
+                        data: { role: "STAFF" }
+                    })
                 }
             } else {
-                // Cria novo usuário com senha temporária
-                const tempPassword = Math.random().toString(36).slice(-8); // Senha aleatória de 8 dígitos
-                const hashedPassword = await hash(tempPassword, 10);
+                // Cria novo usuário com senha aleatória
+                const tempPassword = Math.random().toString(36).slice(-8) // Ex: a7k2m9p1
+                const hashedPassword = await hash(tempPassword, 10)
 
                 const newUser = await db.user.create({
                     data: {
@@ -36,15 +48,22 @@ export const addOrUpdateStaff = async (params: {
                         password: hashedPassword,
                         role: "STAFF",
                     }
-                });
-                targetUserId = newUser.id;
+                })
+                targetUserId = newUser.id
 
-                // TODO: Enviar e-mail aqui com a 'tempPassword'
-                console.log(`Usuário criado: ${params.email} | Senha: ${tempPassword}`);
+                // IMPORTANTE: Aqui você dispararia um e-mail com a 'tempPassword'
+                console.log(`USUÁRIO CRIADO: ${params.email} | SENHA: ${tempPassword}`)
             }
         }
 
-        // Cria o registro de BarberStaff
+        // 2. Verifica se já é barbeiro nessa loja
+        const alreadyStaff = await db.barberStaff.findFirst({
+            where: { email: params.email, barbershopId: params.barbershopId }
+        })
+
+        if (alreadyStaff) return { error: "Este profissional já está cadastrado nesta unidade." }
+
+        // 3. Cria o registro de BarberStaff
         await db.barberStaff.create({
             data: {
                 name: params.name,
@@ -54,16 +73,27 @@ export const addOrUpdateStaff = async (params: {
                 userId: targetUserId,
                 isActive: true
             }
-        });
+        })
 
-        revalidatePath("/admin/settings");
-        return { success: true };
+        revalidatePath("/admin/settings")
+        return { success: true }
     } catch (error) {
-        return { error: "Erro ao cadastrar funcionário." };
+        console.error(error)
+        return { error: "Erro ao gerenciar equipe." }
     }
 }
 
 export const toggleStaffStatus = async (staffId: string, isActive: boolean) => {
-    await db.barberStaff.update({ where: { id: staffId }, data: { isActive } });
-    revalidatePath("/admin/settings");
+    await db.barberStaff.update({
+        where: { id: staffId },
+        data: { isActive }
+    })
+    revalidatePath("/admin/settings")
+}
+
+export const deleteStaff = async (staffId: string) => {
+    await db.barberStaff.delete({
+        where: { id: staffId }
+    })
+    revalidatePath("/admin/settings")
 }
