@@ -62,7 +62,7 @@ const SideMenu = () => {
                     <Button variant="outline" className="justify-start" asChild>
                         <Link href="/admin">
                             <ShieldCheck size={18} className="mr-2" />
-                            Painel Admin
+                            Painel {data.user.role === 'ADMIN' ? 'Admin' : 'Staff'}
                         </Link>
                     </Button>
                 )}

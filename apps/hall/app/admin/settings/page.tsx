@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { redirect, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import {
     Button,
@@ -29,7 +29,6 @@ import {
     Clock,
     Phone,
     Store,
-    MapPin,
     UserPlus,
     Check,
     X,
@@ -44,8 +43,8 @@ import { ConfirmDialog } from "../../_components/confirm-dialog"
 import { getBarbershopSettings } from "@/_actions/get-barbershop-settings"
 import { addOrUpdateStaff, toggleStaffStatus, deleteStaff } from "@/_actions/manage-staff"
 import { toast } from "sonner"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/_lib/auth"
+
+// REMOVIDO: imports de server-side (getServerSession, authOptions, redirect)
 
 // --- COMPONENTE SWITCH ESTILIZADO ---
 const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (c: boolean) => void }) => (
@@ -72,8 +71,10 @@ const DEFAULT_HOURS: WorkingHour[] = [
     { day: "Domingo", open: "00:00", close: "00:00", isOpen: false },
 ]
 
-export default async function SettingsPage() {
+export default function SettingsPage() { // REMOVIDO: async
     const router = useRouter()
+    const { data: session, status } = useSession()
+
     const [isDirty, setIsDirty] = useState(false)
     const [activeTab, setActiveTab] = useState("general")
     const [isLoading, setIsLoading] = useState(true)
@@ -94,7 +95,7 @@ export default async function SettingsPage() {
     const [staff, setStaff] = useState<StaffMember[]>([])
     const [services, setServices] = useState<Service[]>([])
 
-    // Melhoria: Verifica se o Admin já está na lista de staff
+    // Verifica se o Admin já está na lista de staff usando a sessão do cliente
     const isAdminAlreadyStaff = staff.some((m) => m.email === session?.user?.email)
 
     const formatPhone = (value: string) => {
@@ -103,32 +104,39 @@ export default async function SettingsPage() {
         return n.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
     }
 
-    const session = await getServerSession(authOptions)
-        
-    if (!session?.user) {
-        redirect("/")
-    }
-
+    // 1. Controle de Autenticação e Carga de Dados
     useEffect(() => {
-        const load = async () => {
-            const data = await getBarbershopSettings()
-            if (data) {
-                setStoreData({
-                    id: data.id,
-                    name: data.name || "",
-                    address: data.address || "",
-                    phones: data.phones || [],
-                    paymentMethods: data.paymentMethods || [],
-                    isClosed: data.isClosed || false
-                })
-                if (data.openingHours) setHours(data.openingHours as unknown as WorkingHour[])
-                setStaff(data.staff.map((s: any) => ({ id: s.id, name: s.name, email: s.email || "", jobTitle: s.jobTitle, isActive: s.isActive })))
-                setServices(data.services.map((s: any) => ({ id: s.id, name: s.name, description: s.description || "", price: s.price, duration: s.duration })))
-            }
-            setIsLoading(false)
+        if (status === "unauthenticated") {
+            router.push("/")
+            return
         }
-        load()
-    }, [])
+
+        if (status === "authenticated") {
+            const load = async () => {
+                try {
+                    const data = await getBarbershopSettings()
+                    if (data) {
+                        setStoreData({
+                            id: data.id,
+                            name: data.name || "",
+                            address: data.address || "",
+                            phones: data.phones || [],
+                            paymentMethods: data.paymentMethods || [],
+                            isClosed: data.isClosed || false
+                        })
+                        if (data.openingHours) setHours(data.openingHours as unknown as WorkingHour[])
+                        setStaff(data.staff.map((s: any) => ({ id: s.id, name: s.name, email: s.email || "", jobTitle: s.jobTitle, isActive: s.isActive })))
+                        setServices(data.services.map((s: any) => ({ id: s.id, name: s.name, description: s.description || "", price: s.price, duration: s.duration })))
+                    }
+                } catch (error) {
+                    toast.error("Erro ao carregar configurações.")
+                } finally {
+                    setIsLoading(false)
+                }
+            }
+            load()
+        }
+    }, [status, router])
 
     const openConfirm = (title: string, description: string, onConfirm: () => void, variant: "default" | "destructive" = "default") => {
         setDialogConfig({ isOpen: true, title, description, onConfirm, variant })
@@ -190,7 +198,7 @@ export default async function SettingsPage() {
         }
     }
 
-    if (isLoading) return <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white gap-4"><Loader2 className="animate-spin text-primary" size={40} /><p>Carregando...</p></div>
+    if (isLoading || status === "loading") return <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white gap-4"><Loader2 className="animate-spin text-primary" size={40} /><p>Carregando...</p></div>
 
     return (
         <div className="container mx-auto p-4 md:p-8 max-w-5xl pb-24 text-white">
@@ -203,7 +211,6 @@ export default async function SettingsPage() {
                 variant={dialogConfig.variant}
             />
 
-            {/* MODAL ADICIONAR FUNCIONÁRIO */}
             <Dialog open={isNewStaffModalOpen} onOpenChange={setIsNewStaffModalOpen}>
                 <DialogContent className="bg-[#1A1B1F] border-secondary text-white max-w-[400px]">
                     <DialogHeader>
@@ -236,7 +243,6 @@ export default async function SettingsPage() {
                     <TabsTrigger value="staff">Equipe</TabsTrigger>
                 </TabsList>
 
-                {/* TAB GERAL: UNIDADE E PAGAMENTOS */}
                 <TabsContent value="general" className="space-y-6">
                     <Card className="bg-[#1A1B1F] border-none text-white">
                         <CardHeader><CardTitle className="text-primary flex items-center gap-2"><Store size={20} /> Unidade</CardTitle></CardHeader>
@@ -263,7 +269,6 @@ export default async function SettingsPage() {
                                 <Button variant="outline" className="w-full border-dashed" onClick={() => { setStoreData({ ...storeData, phones: [...storeData.phones, ""] }); setIsDirty(true) }}><Plus size={16} className="mr-2" /> Adicionar Telefone</Button>
                             </div>
 
-                            {/* SEÇÃO DE PAGAMENTOS */}
                             <div className="space-y-4 pt-4 border-t border-secondary">
                                 <Label className="flex items-center gap-2"><CreditCard size={16} /> Formas de Pagamento Aceitas</Label>
                                 <div className="flex flex-wrap gap-2 mb-4">
@@ -296,7 +301,6 @@ export default async function SettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* TAB HORÁRIOS */}
                 <TabsContent value="hours">
                     <Card className="bg-[#1A1B1F] border-none text-white">
                         <CardHeader><CardTitle className="text-primary flex items-center gap-2"><Clock size={20} /> Horários</CardTitle></CardHeader>
@@ -311,7 +315,6 @@ export default async function SettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* TAB SERVIÇOS */}
                 <TabsContent value="services" className="space-y-4">
                     <div className="flex justify-end"><Button size="sm" onClick={() => { setServices([...services, { id: Date.now().toString(), name: "", description: "", price: "0.00", duration: 30 }]); setIsDirty(true) }}><Plus size={16} className="mr-2" /> Novo Serviço</Button></div>
                     {services.map((s, i) => (
@@ -326,7 +329,6 @@ export default async function SettingsPage() {
                     ))}
                 </TabsContent>
 
-                {/* TAB EQUIPE */}
                 <TabsContent value="staff" className="space-y-4">
                     <div className="flex flex-col sm:flex-row justify-between gap-3 mb-6">
                         <Button

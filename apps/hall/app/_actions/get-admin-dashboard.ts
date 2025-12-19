@@ -90,7 +90,7 @@ export const getAdminDashboard = async () => {
             service: { ...b.service, price: Number(b.service.price) }
         })),
 
-        personalKpi: isBarber ? { ...calculateKpis(personalBookings), isActive: true } : null,
+        personalKpi: isBarber ? { ...calculateKpis(personalBookings), isActive: user.staffProfile?.isActive ?? false } : null,
         personalChartData: isBarber ? calculateChart(personalBookings) : null,
         personalBookings: personalBookings.slice(0, 10).map(b => ({
             ...b,

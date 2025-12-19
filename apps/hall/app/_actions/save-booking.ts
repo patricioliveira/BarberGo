@@ -5,9 +5,10 @@ import { revalidatePath } from "next/cache"
 
 interface SaveBookingParams {
     barbershopId: string
-    serviceIds: string[] // Agora recebe um Array de IDs
+    serviceIds: string[]
     userId: string
     date: Date
+    staffId: string // Adicionado para identificar o barbeiro no banco
 }
 
 export const saveBooking = async ({
@@ -15,8 +16,9 @@ export const saveBooking = async ({
     serviceIds,
     userId,
     date,
+    staffId,
 }: SaveBookingParams) => {
-    // Cria todos os agendamentos em uma única transação
+    // Cria todos os agendamentos vinculando ao barbeiro selecionado
     await db.$transaction(
         serviceIds.map((serviceId) =>
             db.booking.create({
@@ -25,6 +27,7 @@ export const saveBooking = async ({
                     userId,
                     date,
                     barbershopId,
+                    staffId, // Vincula o agendamento ao profissional
                 },
             })
         )

@@ -3,7 +3,7 @@
 import { db } from "@barbergo/database"
 import { endOfDay, startOfDay } from "date-fns"
 
-export const getDayBookings = async (barbershopId: string, date: Date) => {
+export const getDayBookings = async (barbershopId: string, date: Date, staffId?: string) => {
     const bookings = await db.booking.findMany({
         where: {
             barbershopId,
@@ -11,9 +11,11 @@ export const getDayBookings = async (barbershopId: string, date: Date) => {
                 lte: endOfDay(date),
                 gte: startOfDay(date),
             },
+            // Se um staffId for passado, filtramos apenas os horários dele
+            ...(staffId && { staffId }),
         },
         include: {
-            service: true // Precisamos saber a duração do serviço agendado para calcular quando ele termina
+            service: true
         }
     })
 

@@ -1,15 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { redirect, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation" // Correção: Importar de next/navigation
 import Header from "../../_components/header"
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from "@barbergo/ui"
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@barbergo/ui"
 import { ChevronLeft, Clock, Save, AlertCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { getStaffHoursData, updateStaffHours } from "../../_actions/manage-staff-hours"
 import { toast } from "sonner"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/_lib/auth"
+import { useSession } from "next-auth/react" // Hook correto para Client Components
 
 type WorkingHour = { day: string; open: string; close: string; isOpen: boolean }
 
@@ -23,32 +22,37 @@ const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChang
     </button>
 )
 
-export default async function MyHoursPage() {
+export default function MyHoursPage() { // REMOVIDO: async
     const router = useRouter()
+    const { status } = useSession() // Hook para pegar a sessão no cliente
+
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [data, setData] = useState<{ staffHours: WorkingHour[], shopHours: WorkingHour[], staffId: string, shopName: string } | null>(null)
 
-    const session = await getServerSession(authOptions)
-        
-    if (!session?.user) {
-        redirect("/")
-    }
-
+    // 1. Proteção de Rota e Carga de Dados
     useEffect(() => {
-        const load = async () => {
-            try {
-                const res = await getStaffHoursData()
-                setData(res)
-            } catch (err) {
-                toast.error("Erro ao carregar seus dados.")
-                router.push("/admin")
-            } finally {
-                setIsLoading(false)
-            }
+        if (status === "unauthenticated") {
+            router.push("/")
+            return
         }
-        load()
-    }, [router])
+
+        if (status === "authenticated") {
+            const load = async () => {
+                try {
+                    setIsLoading(true)
+                    const res = await getStaffHoursData()
+                    setData(res)
+                } catch (err) {
+                    toast.error("Erro ao carregar seus dados.")
+                    router.push("/admin")
+                } finally {
+                    setIsLoading(false)
+                }
+            }
+            load()
+        }
+    }, [status, router])
 
     const handleToggleDay = (index: number) => {
         if (!data) return
@@ -83,12 +87,26 @@ export default async function MyHoursPage() {
             }
         }
 
-        const res = await updateStaffHours(data.staffId, data.staffHours)
-        if (res.success) toast.success("Agenda atualizada com sucesso!")
-        setIsSaving(false)
+        try {
+            const res = await updateStaffHours(data.staffId, data.staffHours)
+            if (res.success) {
+                toast.success("Agenda atualizada com sucesso!")
+            }
+        } catch (error) {
+            toast.error("Erro ao salvar escala.")
+        } finally {
+            setIsSaving(false)
+        }
     }
 
-    if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary" size={40} /></div>
+    // Loader enquanto carrega autenticação ou dados
+    if (isLoading || status === "loading") {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <Loader2 className="animate-spin text-primary" size={40} />
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-background text-white pb-10">
@@ -96,7 +114,9 @@ export default async function MyHoursPage() {
             <div className="container mx-auto p-4 md:p-8 space-y-6 max-w-3xl">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" asChild><Link href="/admin"><ChevronLeft /></Link></Button>
+                        <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
+                            <Link href="/admin"><ChevronLeft /></Link>
+                        </Button>
                         <div>
                             <h1 className="text-2xl font-bold">Meus Horários</h1>
                             <p className="text-muted-foreground text-sm">Escala Individual em: {data?.shopName}</p>

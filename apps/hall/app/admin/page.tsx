@@ -4,35 +4,36 @@ import { useState, useEffect } from "react"
 import Header from "../_components/header"
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@barbergo/ui"
 import {
-    CalendarIcon, DollarSign, Users, Eye, Lock, ShieldCheck, User,
+    CalendarIcon, DollarSign, Users, ShieldCheck, User,
     CalendarCheck2, Settings2, Power, Loader2, Store
 } from "lucide-react"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import AdminOverviewChart from "./_components/admin-overview-chart"
 import AdminBookingList from "./_components/admin-booking-list"
 import { getAdminDashboard } from "../_actions/get-admin-dashboard"
 import { ConfirmDialog } from "../_components/confirm-dialog"
 import { toggleStaffStatus } from "../_actions/manage-staff"
 import { toast } from "sonner"
-import router from "next/router"
-import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/_lib/auth"
 
-export default async function AdminPage() {
+export default function AdminPage() {
+    const router = useRouter()
+    const { status } = useSession()
+
     const [isLoading, setIsLoading] = useState(true)
     const [stats, setStats] = useState<any>(null)
     const [viewMode, setViewMode] = useState<"shop" | "personal">("shop")
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
 
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user) {
-        redirect("/")
-    }
-
-    useEffect(() => { load() }, [])
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            router.push("/")
+        } else if (status === "authenticated") {
+            load()
+        }
+    }, [status, router])
 
     const load = async () => {
         try {
@@ -41,7 +42,6 @@ export default async function AdminPage() {
             setStats(data)
             if (data.role === "STAFF") setViewMode("personal")
         } catch (error) {
-            // Se a Action falhar (ex: Unauthorized), redireciona suavemente para a home
             console.error("Erro de autorização:", error)
             router.push("/")
         } finally {
@@ -49,16 +49,35 @@ export default async function AdminPage() {
         }
     }
 
-    if (isLoading || !stats) return <div className="min-h-screen flex items-center justify-center bg-background text-white"><Loader2 className="animate-spin text-primary" size={40} /></div>
+    if (isLoading || !stats) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background text-white">
+                <Loader2 className="animate-spin text-primary" size={40} />
+            </div>
+        )
+    }
 
     const isAdmin = stats.role === "ADMIN"
     const isBarber = stats.isBarber
     const showPersonal = viewMode === "personal"
 
-    const handleInactivate = async () => {
-        const res = await toggleStaffStatus(stats.barberId, false)
-        toast.success("Seu atendimento foi pausado e agenda limpa.")
-        load()
+    // Verifica o status atual do profissional
+    const isStaffActive = stats.personalKpi?.isActive
+
+    const handleToggleStatus = async () => {
+        try {
+            const nextStatus = !isStaffActive
+            await toggleStaffStatus(stats.barberId, nextStatus)
+
+            toast.success(
+                nextStatus
+                    ? "Atendimento reativado! Você já aparece nas buscas."
+                    : "Atendimento pausado e agenda limpa."
+            )
+            load()
+        } catch (error) {
+            toast.error("Erro ao atualizar status.")
+        }
     }
 
     return (
@@ -66,7 +85,6 @@ export default async function AdminPage() {
             <Header />
             <div className="container mx-auto p-4 md:p-6 space-y-8">
 
-                {/* HEADER COM SELETOR ORGANIZADO E RESPONSIVO */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="space-y-1">
                         <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
@@ -81,7 +99,6 @@ export default async function AdminPage() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-                        {/* Seletor de Visão (Apenas se Admin for Barbeiro) */}
                         {isAdmin && isBarber && (
                             <div className="bg-[#1A1B1F] p-1 rounded-lg border border-secondary flex gap-1 h-11 md:h-10 shadow-sm">
                                 <Button
@@ -103,7 +120,6 @@ export default async function AdminPage() {
                             </div>
                         )}
 
-                        {/* Grupo de Ações - Grid no Mobile, Flex no Desktop */}
                         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
                             {showPersonal ? (
                                 <>
@@ -117,13 +133,16 @@ export default async function AdminPage() {
                                             <Settings2 size={16} className="mr-2 text-primary" /> Horários
                                         </Link>
                                     </Button>
+
+                                    {/* BOTÃO DINÂMICO DE ATIVAR/INATIVAR */}
                                     <Button
-                                        variant="destructive"
+                                        variant={isStaffActive ? "destructive" : "default"}
                                         size="sm"
                                         onClick={() => setIsConfirmOpen(true)}
-                                        className="h-11 md:h-10 col-span-2 sm:col-auto text-xs px-4 font-semibold"
+                                        className={`h-11 md:h-10 col-span-2 sm:col-auto text-xs px-4 font-semibold ${!isStaffActive ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
                                     >
-                                        <Power size={16} className="mr-2" /> Inativar Atendimento
+                                        <Power size={16} className="mr-2" />
+                                        {isStaffActive ? "Inativar Atendimento" : "Ativar Atendimento"}
                                     </Button>
                                 </>
                             ) : (
@@ -137,7 +156,6 @@ export default async function AdminPage() {
                     </div>
                 </div>
 
-                {/* KPIS */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <KpiCard title={showPersonal ? "Meus Resultados" : "Faturamento Loja"} icon={DollarSign} value={showPersonal ? stats.personalKpi.revenue : stats.kpi.revenue} isMoney />
                     <KpiCard title={showPersonal ? "Minha Agenda" : "Agendamentos Mês"} icon={CalendarIcon} value={showPersonal ? stats.personalKpi.bookings : stats.kpi.bookings} />
@@ -145,7 +163,6 @@ export default async function AdminPage() {
                     <KpiCard title="Status" icon={ShieldCheck} value={showPersonal ? (stats.personalKpi.isActive ? "Ativo" : "Inativo") : (stats.kpi.isClosed ? "Fechada" : "Aberta")} />
                 </div>
 
-                {/* GRÁFICO E LISTA */}
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-7">
                     <Card className="col-span-1 md:col-span-4 bg-[#1A1B1F] border-none shadow-md">
                         <CardHeader><CardTitle className="text-white">{showPersonal ? "Minha Produtividade" : "Receita da Loja"}</CardTitle></CardHeader>
@@ -158,10 +175,16 @@ export default async function AdminPage() {
                 </div>
             </div>
 
+            {/* DIALOG DE CONFIRMAÇÃO DINÂMICO */}
             <ConfirmDialog
                 isOpen={isConfirmOpen} onOpenChange={setIsConfirmOpen}
-                title="Deseja se inativar?" description="Seus agendamentos pendentes serão cancelados e você não aparecerá mais nas buscas."
-                onConfirm={handleInactivate} variant="destructive"
+                title={isStaffActive ? "Deseja se inativar?" : "Reativar Atendimento?"}
+                description={isStaffActive
+                    ? "Seus agendamentos pendentes serão cancelados e você não aparecerá mais nas buscas para clientes."
+                    : "Você voltará a aparecer nas buscas e clientes poderão agendar horários com você novamente."
+                }
+                onConfirm={handleToggleStatus}
+                variant={isStaffActive ? "destructive" : "default"}
             />
         </div>
     )
@@ -170,8 +193,18 @@ export default async function AdminPage() {
 function KpiCard({ title, icon: Icon, value, sub, isMoney }: any) {
     return (
         <Card className="bg-[#1A1B1F] border-none shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-gray-400">{title}</CardTitle><Icon className="h-4 w-4 text-primary" /></CardHeader>
-            <CardContent><div className="text-2xl font-bold text-white">{isMoney && typeof value === 'number' ? Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value) : value}</div>{sub && <p className="text-xs text-gray-500">{sub}</p>}</CardContent>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-400">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-white">
+                    {isMoney && typeof value === 'number'
+                        ? Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+                        : value}
+                </div>
+                {sub && <p className="text-xs text-gray-500">{sub}</p>}
+            </CardContent>
         </Card>
     )
 }
