@@ -1,6 +1,4 @@
 import Header from "./_components/header"
-import { Input, Button } from "@barbergo/ui"
-import { SearchIcon } from "lucide-react"
 import Image from "next/image"
 import BarbershopItem from "./_components/barbershop-item"
 import { db } from "@barbergo/database"
@@ -9,30 +7,40 @@ import { ptBR } from "date-fns/locale"
 import { getServerSession } from "next-auth"
 import { authOptions } from "./_lib/auth"
 import Footer from "./_components/footer"
+import Search from "./_components/search"
 
-export default async function Home() {
+// Interface para os parâmetros de busca da URL
+interface HomeProps {
+  searchParams: {
+    search?: string
+  }
+}
+
+export default async function Home({ searchParams }: HomeProps) {
   const session = await getServerSession(authOptions)
-  const barbershops = await db.barbershop.findMany({})
 
-  // Data formatada: "Sexta, 02 de Fevereiro"
+  // Busca as barbearias filtrando pelo nome se houver um termo de pesquisa
+  const barbershops = await db.barbershop.findMany({
+    where: searchParams.search ? {
+      name: {
+        contains: searchParams.search,
+        mode: 'insensitive', // Ignora maiúsculas/minúsculas
+      }
+    } : {},
+  })
+
   const currentDate = format(new Date(), "EEEE',' dd 'de' MMMM", {
     locale: ptBR,
   })
 
-  // Capitalizar a primeira letra da data
   const formattedDate = currentDate.charAt(0).toUpperCase() + currentDate.slice(1)
-
-  // Pegar primeiro nome do usuário logado
   const userName = session?.user?.name?.split(" ")[0]
 
   return (
     <div className="h-full">
       <Header />
 
-      {/* AJUSTE AQUI: Adicionado md:px-10 para alinhar com o Header no Desktop */}
       <div className="px-5 md:px-10 pt-5">
-
-        {/* Saudação Dinâmica */}
         <h2 className="text-xl font-bold">
           {session?.user ? `Olá, ${userName}!` : "Olá, Faça seu login!"}
         </h2>
@@ -41,46 +49,43 @@ export default async function Home() {
           {session?.user ? "Vamos agendar um corte hoje?" : formattedDate}
         </p>
 
-        {/* Busca */}
-        <div className="flex items-center gap-2 mt-6">
-          <Input
-            placeholder="Buscar Barbearias"
-            className="bg-card border-none rounded-xl text-gray-03"
-          />
-          <Button size="icon" className="bg-primary hover:bg-primary/80 rounded-xl">
-            <SearchIcon size={20} />
-          </Button>
-        </div>
+        {/* Substituímos o HTML estático pelo componente interativo */}
+        <Search />
 
-        {/* Banner */}
         <div className="relative mt-6 h-[400px] w-full rounded-xl overflow-hidden hidden md:block">
           <Image src="/banner-01.png" alt="Banner" fill className="object-cover" />
         </div>
 
-        {/* Recomendados */}
+        {/* Seção de resultados ou recomendações */}
         <div className="mt-6 mb-[4.5rem]">
-          <h2 className="text-xs mb-3 uppercase text-gray-03 font-bold">Recomendados</h2>
+          <h2 className="text-xs mb-3 uppercase text-gray-03 font-bold">
+            {searchParams.search ? `Resultados para "${searchParams.search}"` : "Recomendados"}
+          </h2>
 
           <div className="flex gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            {barbershops.map((shop) => (
-              <BarbershopItem key={shop.id} barbershop={shop} />
-            ))}
+            {barbershops.length > 0 ? (
+              barbershops.map((shop) => (
+                <BarbershopItem key={shop.id} barbershop={shop} />
+              ))
+            ) : (
+              <p className="text-sm text-gray-400">Nenhuma barbearia encontrada.</p>
+            )}
           </div>
         </div>
 
-        {/* Populares */}
-        <div className="mt-6 mb-[4.5rem]">
-          <h2 className="text-xs mb-3 uppercase text-gray-03 font-bold">Populares</h2>
-
-          <div className="flex gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            {barbershops.map((shop) => (
-              <BarbershopItem key={shop.id} barbershop={shop} />
-            ))}
+        {/* Exibe Populares apenas se não estiver buscando, ou mantenha como desejar */}
+        {!searchParams.search && (
+          <div className="mt-6 mb-[4.5rem]">
+            <h2 className="text-xs mb-3 uppercase text-gray-03 font-bold">Populares</h2>
+            <div className="flex gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+              {barbershops.map((shop) => (
+                <BarbershopItem key={shop.id} barbershop={shop} />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Footer também alinhado */}
       <Footer />
     </div>
   )
