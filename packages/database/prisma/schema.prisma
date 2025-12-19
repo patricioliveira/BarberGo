@@ -81,7 +81,9 @@ model BarberStaff {
   jobTitle     String     @default("Barbeiro")
   imageUrl     String?
   email        String?    @unique
-  
+  isActive     Boolean    @default(true)
+  openingHours Json? 
+
   barbershopId String
   barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
   
@@ -89,6 +91,8 @@ model BarberStaff {
   user         User?      @relation(fields: [userId], references: [id])
   
   bookings     Booking[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model BarbershopService {

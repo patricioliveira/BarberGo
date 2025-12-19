@@ -6,17 +6,19 @@ import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label 
 import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 interface AuthDialogProps {
     isOpen: boolean
     onOpenChange: (open: boolean) => void
+    callbackUrl?: string // Adicionado para flexibilidade
 }
 
-const AuthDialog = ({ isOpen, onOpenChange }: AuthDialogProps) => {
+const AuthDialog = ({ isOpen, onOpenChange, callbackUrl = "/" }: AuthDialogProps) => {
+    const router = useRouter()
     const [variant, setVariant] = useState<"LOGIN" | "REGISTER">("LOGIN")
     const [isLoading, setIsLoading] = useState(false)
 
-    // Estados do formulário
     const [name, setName] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -27,7 +29,8 @@ const AuthDialog = ({ isOpen, onOpenChange }: AuthDialogProps) => {
 
     const handleGoogleLogin = () => {
         setIsLoading(true)
-        signIn("google", { callbackUrl: "/" }).finally(() => setIsLoading(false))
+        // Usa o callbackUrl passado via props
+        signIn("google", { callbackUrl }).finally(() => setIsLoading(false))
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -64,7 +67,10 @@ const AuthDialog = ({ isOpen, onOpenChange }: AuthDialogProps) => {
 
                 toast.success("Login realizado com sucesso!")
                 onOpenChange(false)
-                window.location.reload() // Recarrega para atualizar sessão
+
+                // Redireciona e recarrega
+                router.push(callbackUrl)
+                router.refresh()
             }
         } catch (error: any) {
             toast.error(error.message)
@@ -85,6 +91,7 @@ const AuthDialog = ({ isOpen, onOpenChange }: AuthDialogProps) => {
                 <div className="flex flex-col gap-4 py-4">
                     <Button
                         variant="outline"
+                        type="button"
                         className="w-full gap-2 border-[#26272B] bg-[#141518] hover:bg-[#26272B] text-white h-12 rounded-xl"
                         onClick={handleGoogleLogin}
                         disabled={isLoading}
@@ -155,6 +162,7 @@ const AuthDialog = ({ isOpen, onOpenChange }: AuthDialogProps) => {
                         <p className="text-sm text-gray-400">
                             {variant === "LOGIN" ? "Novo por aqui?" : "Já tem uma conta?"}{" "}
                             <button
+                                type="button"
                                 onClick={toggleVariant}
                                 className="text-primary hover:underline font-bold"
                             >

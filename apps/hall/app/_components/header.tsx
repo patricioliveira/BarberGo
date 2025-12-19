@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { Card, CardContent, Button, Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, Avatar, AvatarImage, AvatarFallback } from "@barbergo/ui"
-import { MenuIcon, CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, UserIcon, LayoutDashboardIcon } from "lucide-react"
+import { MenuIcon, CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, UserIcon, LayoutDashboardIcon, UserRoundPen } from "lucide-react"
 import { signIn, signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import SideMenu from "./side-menu"
@@ -74,6 +74,13 @@ const Header = () => {
                                         <DropdownMenuSeparator className="bg-[#26272B]" />
                                     </>
                                 )}
+
+                                <DropdownMenuItem asChild className="hover:bg-[#26272B] cursor-pointer">
+                                    <Link href="/profile" className="flex items-center gap-2 w-full">
+                                        <UserRoundPen size={16} />
+                                        Editar Perfil
+                                    </Link>
+                                </DropdownMenuItem>
 
                                 <DropdownMenuItem asChild className="hover:bg-[#26272B] cursor-pointer">
                                     <Link href="/appointments" className="flex items-center gap-2 w-full">

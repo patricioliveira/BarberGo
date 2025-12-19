@@ -3,7 +3,7 @@
 import { Avatar, AvatarImage } from "@barbergo/ui"
 import { Button } from "@barbergo/ui"
 import { SheetHeader, SheetTitle } from "@barbergo/ui"
-import { CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, ShieldCheck, UserIcon } from "lucide-react"
+import { CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, ShieldCheck, UserIcon, UserRoundPen } from "lucide-react"
 import Link from "next/link"
 import { signIn, signOut, useSession } from "next-auth/react"
 import { useState } from "react"
@@ -66,10 +66,19 @@ const SideMenu = () => {
                         </Link>
                     </Button>
                 )}
+
+                {data?.user && (
+                    <Button variant="outline" className="justify-start" asChild>
+                        <Link href="/profile">
+                            <UserRoundPen size={18} className="mr-2" />
+                            Editar Perfil
+                        </Link>
+                    </Button>
+                )}
                 
                 {data?.user && (
                     <Button variant="outline" className="justify-start" asChild>
-                        <Link href="/bookings">
+                        <Link href="/appointments">
                             <CalendarIcon size={18} className="mr-2" />
                             Agendamentos
                         </Link>
