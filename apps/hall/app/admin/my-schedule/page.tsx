@@ -10,6 +10,7 @@ import Link from "next/link"
 import { getAdminDashboard } from "../../_actions/get-admin-dashboard"
 import { useSession } from "next-auth/react" // Hook correto
 import { useRouter } from "next/navigation" // Router correto
+import Footer from "@/_components/footer"
 
 export default function MySchedulePage() {
     const { data: session, status } = useSession()
@@ -144,6 +145,8 @@ export default function MySchedulePage() {
                     )}
                 </div>
             </div>
+
+            <Footer />
         </div>
     )
 }

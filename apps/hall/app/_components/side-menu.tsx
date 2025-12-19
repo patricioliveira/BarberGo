@@ -16,6 +16,8 @@ const SideMenu = () => {
     const handleLoginClick = () => setIsAuthOpen(true)
     const handleLogoutClick = () => signOut({ callbackUrl: "/" })
 
+    const hasAdminAccess = data?.user?.role === "ADMIN" || data?.user?.role === "STAFF"
+
     return (
         <>
             <SheetHeader className="border-b border-solid border-secondary p-5 text-left">
@@ -58,7 +60,7 @@ const SideMenu = () => {
                 </Button>
 
                 {/* Idealmente, verifique se o usuário é admin antes de mostrar, mas por hora adicionamos a rota */}
-                {data?.user && (
+                {data?.user && hasAdminAccess && (
                     <Button variant="outline" className="justify-start" asChild>
                         <Link href="/admin">
                             <ShieldCheck size={18} className="mr-2" />

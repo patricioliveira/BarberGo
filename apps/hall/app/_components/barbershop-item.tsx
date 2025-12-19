@@ -14,7 +14,7 @@ interface BarbershopItemProps {
 
 const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
     return (
-        <Card className="min-w-[167px] max-w-[167px] rounded-2xl bg-card border-none shadow-md">
+        <Card className="w-[167px] min-w-[167px] rounded-2xl bg-card border-none shadow-md flex-none">
             <CardContent className="px-1 py-1 pb-4">
                 {/* Imagem com Badge de Rating */}
                 <div className="relative w-full h-[159px]">
@@ -28,7 +28,7 @@ const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
                     <Image
                         src={barbershop.imageUrl}
                         fill
-                        className="rounded-2xl object-cover filter brightness-75"
+                        className="rounded-2xl object-cover"
                         alt={barbershop.name}
                     />
                 </div>
@@ -38,7 +38,7 @@ const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
                     <h2 className="font-bold text-white overflow-hidden text-ellipsis text-nowrap">
                         {barbershop.name}
                     </h2>
-                    <p className="text-sm text-gray-03 overflow-hidden text-ellipsis text-nowrap">
+                    <p className="text-sm text-gray-400 overflow-hidden text-ellipsis text-nowrap">
                         {barbershop.address}
                     </p>
 

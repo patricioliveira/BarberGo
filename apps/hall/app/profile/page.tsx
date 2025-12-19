@@ -12,6 +12,7 @@ import Header from "@/_components/header"
 import { Loader2, KeyRound, Mail, ShieldCheck } from "lucide-react"
 import Image from "next/image"
 import { changePassword, updateProfile } from "@/_actions/update-user"
+import Footer from "@/_components/footer"
 
 export default function ProfilePage() {
     const { data: session, status, update } = useSession()
@@ -231,6 +232,7 @@ export default function ProfilePage() {
                     </CardContent>
                 </Card>
             </div>
+            <Footer />
         </div>
     )
 }

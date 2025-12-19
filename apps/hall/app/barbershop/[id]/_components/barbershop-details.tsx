@@ -1,6 +1,6 @@
 "use client"
 
-import { Barbershop, BarbershopService } from "@prisma/client"
+import { Barbershop, BarbershopService, BarberStaff } from "@prisma/client"
 import Image from "next/image"
 import { MapPinIcon, PhoneIcon, ClockIcon, CreditCardIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 import ServiceItem from "./service-item"
@@ -20,6 +20,7 @@ type ServiceWithNumberPrice = Omit<BarbershopService, "price"> & { price: number
 interface BarbershopDetailsProps {
     barbershop: Barbershop & {
         services: ServiceWithNumberPrice[]
+        staff: BarberStaff[]
     }
 }
 

@@ -9,6 +9,7 @@ import Link from "next/link"
 import { getStaffHoursData, updateStaffHours } from "../../_actions/manage-staff-hours"
 import { toast } from "sonner"
 import { useSession } from "next-auth/react" // Hook correto para Client Components
+import Footer from "@/_components/footer"
 
 type WorkingHour = { day: string; open: string; close: string; isOpen: boolean }
 
@@ -182,6 +183,7 @@ export default function MyHoursPage() { // REMOVIDO: async
                     </CardContent>
                 </Card>
             </div>
+            <Footer />
         </div>
     )
 }

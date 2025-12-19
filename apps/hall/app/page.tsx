@@ -8,8 +8,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "./_lib/auth"
 import Footer from "./_components/footer"
 import Search from "./_components/search"
+import HorizontalScroll from "./_components/horizontal-scroll" // Importe o componente
 
-// Interface para os parâmetros de busca da URL
 interface HomeProps {
   searchParams: {
     search?: string
@@ -19,12 +19,11 @@ interface HomeProps {
 export default async function Home({ searchParams }: HomeProps) {
   const session = await getServerSession(authOptions)
 
-  // Busca as barbearias filtrando pelo nome se houver um termo de pesquisa
   const barbershops = await db.barbershop.findMany({
     where: searchParams.search ? {
       name: {
         contains: searchParams.search,
-        mode: 'insensitive', // Ignora maiúsculas/minúsculas
+        mode: 'insensitive',
       }
     } : {},
   })
@@ -37,7 +36,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const userName = session?.user?.name?.split(" ")[0]
 
   return (
-    <div className="h-full">
+    <div className="h-full overflow-x-hidden">
       <Header />
 
       <div className="px-5 md:px-10 pt-5">
@@ -45,24 +44,23 @@ export default async function Home({ searchParams }: HomeProps) {
           {session?.user ? `Olá, ${userName}!` : "Olá, Faça seu login!"}
         </h2>
 
-        <p className="capitalize text-sm text-gray-03 mt-1">
+        <p className="capitalize text-sm text-gray-400 mt-1">
           {session?.user ? "Vamos agendar um corte hoje?" : formattedDate}
         </p>
 
-        {/* Substituímos o HTML estático pelo componente interativo */}
         <Search />
 
         <div className="relative mt-6 h-[400px] w-full rounded-xl overflow-hidden hidden md:block">
           <Image src="/banner-01.png" alt="Banner" fill className="object-cover" />
         </div>
 
-        {/* Seção de resultados ou recomendações */}
-        <div className="mt-6 mb-[4.5rem]">
-          <h2 className="text-xs mb-3 uppercase text-gray-03 font-bold">
+        {/* Recomendados / Resultados */}
+        <div className="mt-6 mb-10">
+          <h2 className="text-xs mb-3 uppercase text-gray-400 font-bold">
             {searchParams.search ? `Resultados para "${searchParams.search}"` : "Recomendados"}
           </h2>
 
-          <div className="flex gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+          <HorizontalScroll>
             {barbershops.length > 0 ? (
               barbershops.map((shop) => (
                 <BarbershopItem key={shop.id} barbershop={shop} />
@@ -70,18 +68,19 @@ export default async function Home({ searchParams }: HomeProps) {
             ) : (
               <p className="text-sm text-gray-400">Nenhuma barbearia encontrada.</p>
             )}
-          </div>
+          </HorizontalScroll>
         </div>
 
-        {/* Exibe Populares apenas se não estiver buscando, ou mantenha como desejar */}
+        {/* Populares */}
         {!searchParams.search && (
           <div className="mt-6 mb-[4.5rem]">
-            <h2 className="text-xs mb-3 uppercase text-gray-03 font-bold">Populares</h2>
-            <div className="flex gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+            <h2 className="text-xs mb-3 uppercase text-gray-400 font-bold">Populares</h2>
+
+            <HorizontalScroll>
               {barbershops.map((shop) => (
                 <BarbershopItem key={shop.id} barbershop={shop} />
               ))}
-            </div>
+            </HorizontalScroll>
           </div>
         )}
       </div>

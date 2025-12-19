@@ -31,6 +31,7 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
             price: Number(service.price),
         })),
     }
-
+    
+    // @ts-ignore - staff agora está incluso no objeto
     return <BarbershopDetails barbershop={serializedBarbershop} />
 }

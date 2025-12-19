@@ -17,6 +17,7 @@ import { getAdminDashboard } from "../_actions/get-admin-dashboard"
 import { ConfirmDialog } from "../_components/confirm-dialog"
 import { toggleStaffStatus } from "../_actions/manage-staff"
 import { toast } from "sonner"
+import Footer from "@/_components/footer"
 
 export default function AdminPage() {
     const router = useRouter()
@@ -174,6 +175,8 @@ export default function AdminPage() {
                     </Card>
                 </div>
             </div>
+
+            <Footer />
 
             {/* DIALOG DE CONFIRMAÇÃO DINÂMICO */}
             <ConfirmDialog
