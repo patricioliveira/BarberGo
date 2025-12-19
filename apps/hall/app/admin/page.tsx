@@ -48,7 +48,10 @@ export default function AdminPage() {
 
     const notifications = useMemo(() => {
         if (!stats?.personalBookings) return []
-        return stats.personalBookings.filter((b: any) => b.status === "WAITING_CANCELLATION" || (isToday(new Date(b.date)) && b.status === "CONFIRMED"))
+        return stats.personalBookings.filter((b: any) =>
+            b.status === "WAITING_CANCELLATION" ||
+            (isToday(new Date(b.date)) && b.status === "CONFIRMED")
+        )
     }, [stats])
 
     if (isLoading || !stats) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary" size={40} /></div>
@@ -61,30 +64,31 @@ export default function AdminPage() {
             <div className="container mx-auto p-4 md:p-6 space-y-8 flex-1">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="space-y-1">
-                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-                            {viewMode === "personal" ? "Meu Perfil Profissional" : "Painel da Barbearia"}
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+                                {viewMode === "personal" ? "Meu Perfil Profissional" : "Painel da Barbearia"}
+                            </h2>
                             <Badge className={stats.role === "ADMIN" ? "bg-primary" : "bg-green-600"}>{stats.role}</Badge>
-                            {/* SININHO DE NOTIFICAÇÃO */}
                             <NotificationBell notifications={notifications} />
-                        </h2>
+                        </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
                         {stats.role === "ADMIN" && stats.isBarber && (
                             <div className="bg-[#1A1B1F] p-1 rounded-lg border border-secondary flex gap-1 h-11 md:h-10">
-                                <Button variant={viewMode === "shop" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("shop")} className="flex-1 text-xs gap-2"><Store size={14} /> Barberia</Button>
+                                <Button variant={viewMode === "shop" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("shop")} className="flex-1 text-xs gap-2"><Store size={14} /> Barbearia</Button>
                                 <Button variant={viewMode === "personal" ? "default" : "ghost"} size="sm" onClick={() => setViewMode("personal")} className="flex-1 text-xs gap-2"><User size={14} /> Individual</Button>
                             </div>
                         )}
                         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
                             {viewMode === "personal" ? (
                                 <>
-                                    <Button variant="outline" className="border-secondary h-11 text-xs" asChild><Link href="/admin/my-schedule"><CalendarCheck2 size={16} className="mr-2 text-primary" /> Agenda</Link></Button>
-                                    <Button variant="outline" className="border-secondary h-11 text-xs" asChild><Link href="/admin/my-hours"><Settings2 size={16} className="mr-2 text-primary" /> Horários</Link></Button>
-                                    <Button variant={isStaffActive ? "destructive" : "default"} size="sm" onClick={() => setIsConfirmOpen(true)} className={`h-11 col-span-2 sm:col-auto text-xs font-semibold ${!isStaffActive && 'bg-green-600'}`}><Power size={16} className="mr-2" /> {isStaffActive ? "Inativar" : "Ativar"}</Button>
+                                    <Button variant="outline" className="border-secondary h-11 text-xs text-white" asChild><Link href="/admin/my-schedule"><CalendarCheck2 size={16} className="mr-2 text-primary" /> Agenda</Link></Button>
+                                    <Button variant="outline" className="border-secondary h-11 text-xs text-white" asChild><Link href="/admin/my-hours"><Settings2 size={16} className="mr-2 text-primary" /> Horários</Link></Button>
+                                    <Button variant={isStaffActive ? "destructive" : "default"} size="sm" onClick={() => setIsConfirmOpen(true)} className={`h-11 col-span-2 sm:col-auto text-xs font-semibold ${!isStaffActive && 'bg-green-600 text-white'}`}><Power size={16} className="mr-2" /> {isStaffActive ? "Inativar" : "Ativar"}</Button>
                                 </>
                             ) : (
-                                <Button variant="outline" asChild className="h-11 w-full sm:w-auto text-xs border-secondary"><Link href="/admin/settings">Configurações</Link></Button>
+                                <Button variant="outline" asChild className="h-11 w-full sm:w-auto text-xs border-secondary text-white"><Link href="/admin/settings">Configurações</Link></Button>
                             )}
                         </div>
                     </div>
@@ -92,14 +96,18 @@ export default function AdminPage() {
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <KpiCard title={viewMode === "personal" ? "Meus Resultados" : "Faturamento da Barbearia"} icon={DollarSign} value={viewMode === "personal" ? stats.personalKpi.revenue : stats.kpi.revenue} isMoney />
+
+                    {/* KPI CORRIGIDA: Exibe apenas agendamentos não cancelados para bater com a lista */}
                     <KpiCard title="Minha Agenda" icon={CalendarIcon} value={viewMode === "personal" ? stats.personalKpi.bookings : stats.kpi.bookings} />
+
                     <KpiCard title="Agenda Hoje" icon={Users} value={viewMode === "personal" ? stats.personalKpi.today : stats.kpi.today} sub="Clientes agendados" />
                     <KpiCard title="Status" icon={ShieldCheck} value={viewMode === "personal" ? (isStaffActive ? "Ativo" : "Inativo") : (stats.kpi.isClosed ? "Fechada" : "Aberta")} />
                 </div>
 
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-7">
-                    <Card className="col-span-1 md:col-span-4 bg-[#1A1B1F] border-none"><CardHeader><CardTitle className="text-white">Produtividade</CardTitle></CardHeader><CardContent><AdminOverviewChart data={viewMode === "personal" ? stats.personalChartData : stats.chartData} /></CardContent></Card>
-                    <Card className="col-span-1 md:col-span-3 bg-[#1A1B1F] border-none"><CardHeader><CardTitle className="text-white">Próximos Clientes</CardTitle></CardHeader><CardContent><AdminBookingList bookings={viewMode === "personal" ? stats.personalBookings : stats.bookings} /></CardContent></Card>
+                    <Card className="col-span-1 md:col-span-4 bg-[#1A1B1F] border-none shadow-xl ring-1 ring-white/5"><CardHeader><CardTitle className="text-white text-sm uppercase tracking-widest font-bold">Produtividade (R$)</CardTitle></CardHeader><CardContent><AdminOverviewChart data={viewMode === "personal" ? stats.personalChartData : stats.chartData} /></CardContent></Card>
+
+                    <Card className="col-span-1 md:col-span-3 bg-[#1A1B1F] border-none shadow-xl ring-1 ring-white/5"><CardHeader><CardTitle className="text-white text-sm uppercase tracking-widest font-bold">Próximos Clientes</CardTitle></CardHeader><CardContent><AdminBookingList bookings={viewMode === "personal" ? stats.personalBookings : stats.bookings} /></CardContent></Card>
                 </div>
             </div>
             <Footer />
@@ -118,17 +126,17 @@ function NotificationBell({ notifications }: { notifications: any[] }) {
             <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative hover:bg-secondary rounded-full">
                     <Bell size={20} className="text-gray-400" />
-                    {unread > 0 && <span className="absolute top-1.5 right-1.5 flex h-4 w-4"><span className="animate-ping absolute h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative flex rounded-full h-4 w-4 bg-primary text-[10px] items-center justify-center font-bold">{unread}</span></span>}
+                    {unread > 0 && <span className="absolute top-1.5 right-1.5 flex h-4 w-4"><span className="animate-ping absolute h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative flex rounded-full h-4 w-4 bg-primary text-[10px] items-center justify-center font-bold text-white">{unread}</span></span>}
                 </Button>
             </SheetTrigger>
             <SheetContent className="bg-[#141518] border-l border-white/5 text-white w-full sm:max-w-md">
-                <SheetHeader className="mb-6"><SheetTitle className="text-white">Notificações</SheetTitle></SheetHeader>
-                <div className="space-y-4">
+                <SheetHeader className="mb-6 px-2"><SheetTitle className="text-white text-left">Notificações</SheetTitle></SheetHeader>
+                <div className="space-y-4 px-2">
                     {notifications.map(n => (
-                        <Link key={n.id} href="/admin/my-schedule" className="block p-4 rounded-2xl bg-[#1A1B1F] border border-white/5 hover:border-primary/30 transition-all">
+                        <Link key={n.id} href="/admin/my-schedule" className="block p-4 rounded-2xl bg-[#1A1B1F] border border-white/5 hover:border-primary/30 transition-all group">
                             <div className="flex gap-4">
                                 <div className={`p-2 rounded-xl h-fit ${n.status === 'WAITING_CANCELLATION' ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'}`}>{n.status === 'WAITING_CANCELLATION' ? <XCircle size={18} /> : <CalendarPlus size={18} />}</div>
-                                <div><p className="text-sm font-medium leading-tight">{n.status === 'WAITING_CANCELLATION' ? `Solicitação de cancelamento: ${n.user.name}` : `Agendamento para hoje: ${n.user.name}`}</p><p className="text-[10px] text-gray-500 mt-1 uppercase">{format(new Date(n.date), "dd MMM 'às' HH:mm", { locale: ptBR })}</p></div>
+                                <div><p className="text-sm font-medium leading-tight group-hover:text-primary transition-colors">{n.status === 'WAITING_CANCELLATION' ? `Solicitação de cancelamento: ${n.user.name}` : `Agendamento para hoje: ${n.user.name}`}</p><p className="text-[10px] text-gray-500 mt-1 uppercase font-bold">{format(new Date(n.date), "dd MMM 'às' HH:mm", { locale: ptBR })}</p></div>
                             </div>
                         </Link>
                     ))}
@@ -141,6 +149,6 @@ function NotificationBell({ notifications }: { notifications: any[] }) {
 
 function KpiCard({ title, icon: Icon, value, sub, isMoney }: any) {
     return (
-        <Card className="bg-[#1A1B1F] border-none shadow-sm"><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-gray-400">{title}</CardTitle><Icon className="h-4 w-4 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold text-white">{isMoney && typeof value === 'number' ? Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value) : value}</div>{sub && <p className="text-xs text-gray-500">{sub}</p>}</CardContent></Card>
+        <Card className="bg-[#1A1B1F] border-none shadow-sm ring-1 ring-white/5"><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-gray-400">{title}</CardTitle><Icon className="h-4 w-4 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold text-white">{isMoney && typeof value === 'number' ? Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value) : value}</div>{sub && <p className="text-xs text-gray-500">{sub}</p>}</CardContent></Card>
     )
 }

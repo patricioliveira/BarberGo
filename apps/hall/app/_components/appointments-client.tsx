@@ -8,13 +8,15 @@ import {
 } from "@barbergo/ui"
 import {
     MapPinIcon, PhoneIcon, UserIcon, CalendarIcon,
-    ClockIcon, CopyIcon, ChevronRight, TimerIcon, XCircleIcon, CheckCircle2
+    ClockIcon, CopyIcon, ChevronRight, TimerIcon, XCircleIcon, CheckCircle2,
+    CalendarX2, AlertCircle
 } from "lucide-react"
 import { format, isFuture, isToday } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import Image from "next/image"
 import { toast } from "sonner"
 import { requestCancellation } from "@/_actions/cancel-booking"
+import Link from "next/link"
 
 type BookingWithDetails = Booking & {
     service: Omit<BarbershopService, "price"> & { price: number }
@@ -31,6 +33,19 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
         initialBookings.length > 0 ? initialBookings[0] : null
     )
     const [isCancelling, setIsCancelling] = useState(false)
+
+    if (initialBookings.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-24 px-5 text-center">
+                <div className="bg-[#1A1B1F] p-8 rounded-full mb-6 ring-1 ring-white/10 shadow-2xl">
+                    <CalendarX2 size={64} className="text-gray-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Nenhum agendamento encontrado</h2>
+                <p className="text-gray-400 max-w-[350px] mb-8">Você ainda não realizou nenhum agendamento.</p>
+                <Button asChild className="rounded-xl px-8 font-bold"><Link href="/">Agendar agora</Link></Button>
+            </div>
+        )
+    }
 
     const handleCancelRequest = async (id: string) => {
         try {
@@ -49,7 +64,7 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
 
     const DetailsContent = ({ booking }: { booking: BookingWithDetails }) => (
         <div className="space-y-6">
-            <div className="relative h-40 rounded-[24px] overflow-hidden">
+            <div className="relative h-40 rounded-[24px] overflow-hidden border border-white/5">
                 <Image src="/map.png" fill alt="Map" className="object-cover opacity-40" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1A1B1F] to-transparent" />
                 <div className="absolute bottom-4 left-4 flex items-center gap-3">
@@ -66,9 +81,16 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
                     <h2 className="text-3xl font-bold text-white leading-tight">{booking.service.name}</h2>
                     <div className="flex gap-2 mt-2">
                         {booking.status === "WAITING_CANCELLATION" ? (
-                            <Badge className="bg-amber-500/10 text-amber-500 border-none">Aguardando Cancelamento</Badge>
+                            <Badge className="bg-amber-500/10 text-amber-500 border-none flex items-center gap-1">
+                                <TimerIcon size={12} className="animate-spin" /> Aguardando Cancelamento
+                            </Badge>
+                        ) : booking.status === "CANCELED" ? (
+                            <Badge variant="destructive" className="flex items-center gap-1">
+                                <XCircleIcon size={12} /> Cancelado
+                            </Badge>
                         ) : (
-                            <Badge className="bg-primary/10 text-primary border-none">
+                            <Badge className="bg-primary/10 text-primary border-none flex items-center gap-1">
+                                {isFuture(new Date(booking.date)) ? <CheckCircle2 size={12} /> : <CheckCircle2 size={12} />}
                                 {isFuture(new Date(booking.date)) ? "Confirmado" : "Finalizado"}
                             </Badge>
                         )}
@@ -107,6 +129,7 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
                 </div>
             </div>
 
+            {/* Lógica de botões ajustada */}
             {isFuture(new Date(booking.date)) && booking.status === "CONFIRMED" && (
                 <Button
                     variant="destructive"
@@ -119,9 +142,24 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
             )}
 
             {booking.status === "WAITING_CANCELLATION" && (
-                <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl flex items-center gap-3">
-                    <TimerIcon className="text-amber-500 animate-spin" size={20} />
-                    <p className="text-xs text-amber-200">Aguardando autorização do barbeiro.</p>
+                <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl flex flex-col gap-2">
+                    <div className="flex items-center gap-3">
+                        <TimerIcon className="text-amber-500 animate-spin" size={20} />
+                        <p className="text-sm font-bold text-amber-500">Solicitação em análise</p>
+                    </div>
+                    <p className="text-[11px] text-amber-200/60 leading-relaxed">
+                        O barbeiro foi notificado. Enquanto ele não aceitar, seu horário permanece reservado.
+                    </p>
+                    <Button disabled className="w-full mt-2 bg-amber-500/20 text-amber-500 border-amber-500/30">
+                        Aguardando Aprovação...
+                    </Button>
+                </div>
+            )}
+
+            {booking.status === "CANCELED" && (
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3">
+                    <AlertCircle className="text-red-500" size={20} />
+                    <p className="text-xs text-red-200">Este agendamento foi cancelado e o horário liberado.</p>
                 </div>
             )}
         </div>
@@ -130,6 +168,7 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-5 xl:col-span-4 space-y-6">
+                {/* PRÓXIMOS */}
                 {upcoming.length > 0 && (
                     <section>
                         <h3 className="text-xs font-black uppercase text-primary tracking-widest mb-4">Próximos</h3>
@@ -140,9 +179,9 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
                                         <SheetTrigger asChild>
                                             <div onClick={() => setSelectedBooking(b)}><AppointmentCard booking={b} active={selectedBooking?.id === b.id} /></div>
                                         </SheetTrigger>
-                                        <SheetContent side="bottom" className="bg-[#1A1B1F] border-none rounded-t-[32px] h-[85vh] text-white">
-                                            <SheetHeader className="mb-6"><SheetTitle className="text-white">Detalhes do Agendamento</SheetTitle></SheetHeader>
-                                            <DetailsContent booking={b} />
+                                        <SheetContent side="bottom" className="bg-[#141518] border-none rounded-t-[32px] h-[85vh] text-white">
+                                            <SheetHeader className="mb-6 px-2"><SheetTitle className="text-white text-left">Detalhes da Reserva</SheetTitle></SheetHeader>
+                                            <div className="overflow-y-auto h-full pb-10 px-2"><DetailsContent booking={b} /></div>
                                         </SheetContent>
                                     </Sheet>
                                 </div>
@@ -153,7 +192,31 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
                         ))}
                     </section>
                 )}
-                {past.map(b => <AppointmentCard key={b.id} booking={b} active={selectedBooking?.id === b.id} onClick={() => setSelectedBooking(b)} />)}
+
+                {/* HISTÓRICO - Corrigido para mostrar Detalhes no Mobile */}
+                {past.length > 0 && (
+                    <section>
+                        <h3 className="text-xs font-black uppercase text-gray-500 tracking-widest mb-4">Histórico</h3>
+                        {past.map(b => (
+                            <div key={b.id}>
+                                <div className="lg:hidden">
+                                    <Sheet>
+                                        <SheetTrigger asChild>
+                                            <div onClick={() => setSelectedBooking(b)}><AppointmentCard booking={b} active={selectedBooking?.id === b.id} /></div>
+                                        </SheetTrigger>
+                                        <SheetContent side="bottom" className="bg-[#141518] border-none rounded-t-[32px] h-[85vh] text-white">
+                                            <SheetHeader className="mb-6 px-2"><SheetTitle className="text-white text-left">Resumo do Serviço</SheetTitle></SheetHeader>
+                                            <div className="overflow-y-auto h-full pb-10 px-2"><DetailsContent booking={b} /></div>
+                                        </SheetContent>
+                                    </Sheet>
+                                </div>
+                                <div className="hidden lg:block">
+                                    <AppointmentCard booking={b} active={selectedBooking?.id === b.id} onClick={() => setSelectedBooking(b)} />
+                                </div>
+                            </div>
+                        ))}
+                    </section>
+                )}
             </div>
 
             <div className="hidden lg:block lg:col-span-7 xl:col-span-8 sticky top-8">
@@ -173,8 +236,9 @@ function AppointmentCard({ booking, active, onClick }: { booking: BookingWithDet
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-sm text-white truncate">{booking.service.name}</h4>
+                    <h4 className={`font-bold text-sm truncate ${booking.status === 'CANCELED' ? 'line-through text-gray-600' : 'text-white'}`}>{booking.service.name}</h4>
                     {booking.status === "WAITING_CANCELLATION" && <TimerIcon size={12} className="text-amber-500 animate-pulse" />}
+                    {booking.status === "CANCELED" && <XCircleIcon size={12} className="text-red-500" />}
                 </div>
                 <p className="text-xs text-gray-500 truncate">{booking.barbershop.name}</p>
             </div>

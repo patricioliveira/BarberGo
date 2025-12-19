@@ -10,6 +10,8 @@ export const requestCancellation = async (bookingId: string) => {
         data: { status: "WAITING_CANCELLATION" }
     })
     revalidatePath("/appointments")
+    revalidatePath("/admin")
+    revalidatePath("/admin/my-schedule")
 }
 
 // Chamada pelo BARBEIRO (ADMIN)
@@ -19,4 +21,6 @@ export const handleCancellationDecision = async (bookingId: string, accept: bool
         data: { status: accept ? "CANCELED" : "CONFIRMED" }
     })
     revalidatePath("/admin/my-schedule")
+    revalidatePath("/admin")
+    revalidatePath("/appointments")
 }
