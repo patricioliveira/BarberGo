@@ -19,6 +19,7 @@ enum BookingStatus {
   CONFIRMED
   CANCELED
   COMPLETED
+  WAITING_CANCELLATION
 }
 
 // --- MODELS ---

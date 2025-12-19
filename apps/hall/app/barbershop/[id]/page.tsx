@@ -17,6 +17,11 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
         },
         include: {
             services: true,
+            staff: {
+                include: {
+                    user: true
+                }
+            },
         },
     })
 

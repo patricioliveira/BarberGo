@@ -14,16 +14,15 @@ export default async function AppointmentsPage() {
     }
 
     const bookings = await db.booking.findMany({
-        where: {
-            userId: session.user.id,
-        },
+        where: { userId: session.user.id },
         include: {
             service: true,
             barbershop: true,
+            staff: {
+                include: { user: true }
+            }
         },
-        orderBy: {
-            date: "desc",
-        },
+        orderBy: { date: "desc" },
     })
 
     const serializedBookings = bookings.map((booking) => ({
@@ -37,9 +36,12 @@ export default async function AppointmentsPage() {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
             <Header />
-            <div className="container mx-auto p-5 md:py-10 flex-1">
-                <h1 className="text-2xl font-bold mb-6">Agendamentos</h1>
-                {/* Passamos os dados serializados */}
+            <div className="container mx-auto p-4 md:p-8 flex-1">
+                <header className="mb-8">
+                    <h1 className="text-3xl font-bold text-white tracking-tight">Meus Agendamentos</h1>
+                    <p className="text-gray-400">Gerencie suas reservas e histórico de serviços.</p>
+                </header>
+
                 <AppointmentsClient initialBookings={serializedBookings} />
             </div>
             <Footer />
