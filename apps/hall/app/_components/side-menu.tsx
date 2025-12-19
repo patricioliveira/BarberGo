@@ -6,11 +6,14 @@ import { SheetHeader, SheetTitle } from "@barbergo/ui"
 import { CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, ShieldCheck, UserIcon } from "lucide-react"
 import Link from "next/link"
 import { signIn, signOut, useSession } from "next-auth/react"
+import { useState } from "react"
+import AuthDialog from "./auth-dialog"
 
 const SideMenu = () => {
     const { data } = useSession()
+    const [isAuthOpen, setIsAuthOpen] = useState(false)
 
-    const handleLoginClick = () => signIn("google")
+    const handleLoginClick = () => setIsAuthOpen(true)
     const handleLogoutClick = () => signOut()
 
     return (
@@ -73,6 +76,7 @@ const SideMenu = () => {
                     </Button>
                 )}
             </div>
+            <AuthDialog isOpen={isAuthOpen} onOpenChange={setIsAuthOpen} />
         </>
     )
 }

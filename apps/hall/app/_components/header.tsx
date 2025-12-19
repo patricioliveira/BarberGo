@@ -14,9 +14,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@barbergo/ui"
+import AuthDialog from "./auth-dialog"
+import { useState } from "react"
 
 const Header = () => {
     const { data: session } = useSession()
+    const [isAuthOpen, setIsAuthOpen] = useState(false)
 
     // Verifica se tem permissão de acesso ao painel
     const hasAdminAccess = session?.user?.role === "ADMIN" || session?.user?.role === "STAFF"
@@ -91,12 +94,16 @@ const Header = () => {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     ) : (
-                        <Button onClick={() => signIn("google")} className="font-bold bg-primary hover:bg-primary/90">
-                            Fazer Login
-                        </Button>
+                            <Button
+                                onClick={() => setIsAuthOpen(true)}
+                                className="bg-primary hover:bg-primary/90 text-white font-bold rounded-xl px-6"
+                            >
+                                <LogInIcon className="mr-2 h-4 w-4" />
+                                Fazer Login
+                            </Button>
                     )}
                 </div>
-
+                <AuthDialog isOpen={isAuthOpen} onOpenChange={setIsAuthOpen} />
             </CardContent>
         </Card>
     )
