@@ -1,93 +1,99 @@
 "use client"
 
-import { Avatar, AvatarImage } from "@barbergo/ui"
-import { Button } from "@barbergo/ui"
-import { SheetHeader, SheetTitle } from "@barbergo/ui"
-import { CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, ShieldCheck, UserIcon, UserRoundPen } from "lucide-react"
-import Link from "next/link"
 import { signIn, signOut, useSession } from "next-auth/react"
-import { useState } from "react"
-import AuthDialog from "./auth-dialog"
+import { Button, SheetHeader, SheetTitle, Avatar, AvatarImage, AvatarFallback } from "@barbergo/ui"
+import { CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, UserIcon, LayoutDashboardIcon, UserRoundPen } from "lucide-react"
+import Link from "next/link"
+import PWAInstallButton from "./pwa-install-button" // Import do novo botão
 
 const SideMenu = () => {
-    const { data } = useSession()
-    const [isAuthOpen, setIsAuthOpen] = useState(false)
+    const { data: session } = useSession()
 
-    const handleLoginClick = () => setIsAuthOpen(true)
-    const handleLogoutClick = () => signOut({ callbackUrl: "/" })
-
-    const hasAdminAccess = data?.user?.role === "ADMIN" || data?.user?.role === "STAFF"
+    const handleLogoutClick = () => signOut()
+    const handleLoginClick = () => signIn("google")
 
     return (
         <>
-            <SheetHeader className="border-b border-solid border-secondary p-5 text-left">
-                <SheetTitle>Menu</SheetTitle>
+            <SheetHeader className="text-left border-b border-secondary p-5">
+                <SheetTitle className="text-white">Menu</SheetTitle>
             </SheetHeader>
 
-            {data?.user ? (
-                <div className="flex justify-between px-5 py-6">
-                    <div className="flex items-center gap-3">
-                        <Avatar>
-                            <AvatarImage src={data.user?.image ?? ""} />
-                        </Avatar>
+            {/* PERFIL / LOGIN */}
+            <div className="flex flex-col px-5 py-6 gap-3">
+                {session?.user ? (
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Avatar className="h-12 w-12 border border-primary/20">
+                                <AvatarImage src={session.user.image ?? ""} alt={session.user.name ?? ""} />
+                                <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                                    {session.user.name?.[0] ?? "U"}
+                                </AvatarFallback>
+                            </Avatar>
 
-                        <h2 className="font-bold">{data.user.name}</h2>
+                            <div className="flex flex-col">
+                                <p className="font-bold text-white">{session.user.name}</p>
+                                <p className="text-xs text-gray-400">{session.user.email}</p>
+                            </div>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={handleLogoutClick} className="text-gray-500 hover:text-red-500">
+                            <LogOutIcon size={18} />
+                        </Button>
                     </div>
-
-                    <Button variant="secondary" size="icon">
-                        <LogOutIcon onClick={handleLogoutClick} />
-                    </Button>
-                </div>
-            ) : (
-                <div className="flex flex-col gap-3 px-5 py-6">
-                    <div className="flex items-center gap-2">
-                        <UserIcon size={32} />
-                        <h2 className="font-bold">Olá, faça seu login!</h2>
+                ) : (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <UserIcon size={32} className="text-gray-500" />
+                            <h2 className="font-bold text-white">Olá, faça seu login!</h2>
+                        </div>
+                        <Button variant="secondary" className="w-full justify-start gap-2 rounded-xl" onClick={handleLoginClick}>
+                            <LogInIcon size={18} />
+                            Fazer Login
+                        </Button>
                     </div>
-                    <Button variant="secondary" className="w-full justify-start" onClick={handleLoginClick}>
-                        <LogInIcon className="mr-2" size={18} />
-                        Fazer Login
-                    </Button>
-                </div>
-            )}
+                )}
+            </div>
 
+            {/* NAVEGAÇÃO */}
             <div className="flex flex-col gap-3 px-5">
-                <Button variant="outline" className="justify-start" asChild>
+                <Button variant="outline" className="justify-start gap-2 border-secondary rounded-xl" asChild>
                     <Link href="/">
-                        <HomeIcon size={18} className="mr-2" />
+                        <HomeIcon size={18} />
                         Início
                     </Link>
                 </Button>
 
-                {/* Idealmente, verifique se o usuário é admin antes de mostrar, mas por hora adicionamos a rota */}
-                {data?.user && hasAdminAccess && (
-                    <Button variant="outline" className="justify-start" asChild>
-                        <Link href="/admin">
-                            <ShieldCheck size={18} className="mr-2" />
-                            Painel {data.user.role === 'ADMIN' ? 'Admin' : 'Staff'}
-                        </Link>
-                    </Button>
-                )}
+                {session?.user && (
+                    <>
+                        <Button variant="outline" className="justify-start gap-2 border-secondary rounded-xl" asChild>
+                            <Link href="/appointments">
+                                <CalendarIcon size={18} />
+                                Agendamentos
+                            </Link>
+                        </Button>
 
-                {data?.user && (
-                    <Button variant="outline" className="justify-start" asChild>
-                        <Link href="/profile">
-                            <UserRoundPen size={18} className="mr-2" />
-                            Editar Perfil
-                        </Link>
-                    </Button>
-                )}
-                
-                {data?.user && (
-                    <Button variant="outline" className="justify-start" asChild>
-                        <Link href="/appointments">
-                            <CalendarIcon size={18} className="mr-2" />
-                            Agendamentos
-                        </Link>
-                    </Button>
+                        <Button variant="outline" className="justify-start gap-2 border-secondary rounded-xl" asChild>
+                            <Link href="/profile">
+                                <UserRoundPen size={18} />
+                                Editar Perfil
+                            </Link>
+                        </Button>
+
+                        {(session.user.role === "ADMIN" || session.user.role === "STAFF") && (
+                            <Button variant="default" className="justify-start gap-2 bg-primary/10 text-primary hover:bg-primary hover:text-white border-none rounded-xl font-bold" asChild>
+                                <Link href="/admin">
+                                    <LayoutDashboardIcon size={18} />
+                                    Painel Administrativo
+                                </Link>
+                            </Button>
+                        )}
+                    </>
                 )}
             </div>
-            <AuthDialog isOpen={isAuthOpen} onOpenChange={setIsAuthOpen} />
+
+            {/* BOTÃO PWA (Aparece apenas se não estiver instalado) */}
+            <div className="mt-4 border-t border-white/5 pt-4">
+                <PWAInstallButton />
+            </div>
         </>
     )
 }

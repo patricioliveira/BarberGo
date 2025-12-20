@@ -1,0 +1,21 @@
+{
+    "name": "BarberGo - Seu Agendamento",
+    "short_name": "BarberGo",
+    "description": "Agende seu corte na palma da mão",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#141518",
+    "theme_color": "#815b40",
+    "icons": [
+        {
+            "src": "/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
