@@ -31,7 +31,6 @@ export default function MySchedulePage() {
     const [isLoading, setIsLoading] = useState(true)
     const [isProcessing, setIsProcessing] = useState<string | null>(null)
 
-    // Estados para o Modal de Confirmação
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
 
@@ -54,15 +53,14 @@ export default function MySchedulePage() {
 
     const onDecision = async () => {
         if (!selectedBookingId) return
-
         try {
             setIsProcessing(selectedBookingId)
             setIsConfirmOpen(false)
             await handleCancellationDecision(selectedBookingId, true)
-            toast.success("Agendamento cancelado com sucesso!")
+            toast.success("Ação realizada com sucesso!")
             await loadData()
         } catch (error) {
-            toast.error("Erro ao cancelar agendamento.")
+            toast.error("Erro ao processar.")
         } finally {
             setIsProcessing(null)
             setSelectedBookingId(null)
@@ -74,15 +72,34 @@ export default function MySchedulePage() {
         setIsConfirmOpen(true)
     }
 
-    const handleContactWhatsApp = (phone: string, name: string) => {
-        const cleanPhone = phone.replace(/\D/g, "")
-        const message = encodeURIComponent(`Olá ${name}, aqui é da Barbearia. Gostaria de falar sobre seu agendamento.`)
-        window.open(`https://wa.me/55${cleanPhone}?text=${message}`, "_blank")
+    // --- CORREÇÃO WHATSAPP ---
+    const handleContactWhatsApp = (phones: any[], name: string) => {
+        // Busca o número marcado como WhatsApp ou o primeiro da lista
+        const target = phones.find(p => p.isWhatsApp) || phones[0]
+
+        if (!target || !target.number) {
+            return toast.error("Este cliente não possui telefone cadastrado.")
+        }
+
+        // Limpa o número: remove (), -, espaços e mantém apenas números
+        const cleanPhone = target.number.replace(/\D/g, "")
+
+        // Texto da mensagem
+        const message = `Olá ${name}, aqui é da Barbearia. Gostaria de falar sobre seu agendamento.`
+
+        // URL universal do WhatsApp
+        const url = `https://api.whatsapp.com/send?phone=55${cleanPhone}&text=${encodeURIComponent(message)}`
+
+        // Abre em nova janela/app
+        window.open(url, "_blank", "noreferrer")
     }
 
-    const handleCopyPhone = (phone: string) => {
+    const handleCopyPhone = (phones: any[]) => {
+        const phone = phones[0]?.number
+        if (!phone) return toast.error("Telefone não encontrado.")
+
         navigator.clipboard.writeText(phone)
-        toast.success("Telefone copiado!")
+        toast.success("Telefone copiado para discagem!")
     }
 
     const processedBookings = useMemo(() => {
@@ -121,8 +138,8 @@ export default function MySchedulePage() {
                             <Link href="/admin"><ChevronLeft /></Link>
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold">Minha Agenda</h1>
-                            <p className="text-muted-foreground text-sm">Gestão de atendimentos</p>
+                            <h1 className="text-2xl font-bold tracking-tight">Minha Agenda</h1>
+                            <p className="text-muted-foreground text-sm">Gestão de contatos e horários</p>
                         </div>
                     </div>
 
@@ -130,8 +147,8 @@ export default function MySchedulePage() {
                         <div className="relative flex-1 md:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                             <Input
-                                placeholder="Buscar cliente ou serviço..."
-                                className="pl-10 bg-[#1A1B1F] border-secondary"
+                                placeholder="Buscar cliente..."
+                                className="pl-10 bg-[#1A1B1F] border-secondary h-11"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -139,10 +156,10 @@ export default function MySchedulePage() {
                         <Button
                             variant="outline"
                             size="icon"
-                            className="border-secondary text-white"
+                            className="border-secondary text-white h-11 w-11"
                             onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
                         >
-                            <ArrowUpDown size={18} className={sortOrder === "desc" ? "rotate-180 transition-transform" : "transition-transform"} />
+                            <ArrowUpDown size={18} className={sortOrder === "desc" ? "rotate-180 transition-transform" : ""} />
                         </Button>
                     </div>
                 </div>
@@ -165,88 +182,110 @@ export default function MySchedulePage() {
                 </div>
 
                 <div className="grid gap-4">
-                    {processedBookings.length > 0 ? processedBookings.map((booking) => (
-                        <Card key={booking.id} className="bg-[#1A1B1F] border-none ring-1 ring-white/5 overflow-hidden shadow-lg hover:ring-primary/30 transition-all">
-                            <CardContent className="p-0 flex items-stretch">
-                                <div className={`w-1.5 ${booking.status === 'WAITING_CANCELLATION' ? 'bg-amber-500 animate-pulse' :
+                    {processedBookings.length > 0 ? processedBookings.map((booking) => {
+                        const userPhones = (booking.user as any).UserPhone || []
+                        const hasPhone = userPhones.length > 0
+
+                        return (
+                            <Card key={booking.id} className="bg-[#1A1B1F] border-none ring-1 ring-white/5 overflow-hidden shadow-lg transition-all">
+                                <CardContent className="p-0 flex items-stretch">
+                                    <div className={`w-1.5 ${booking.status === 'WAITING_CANCELLATION' ? 'bg-amber-500 animate-pulse' :
                                         booking.status === 'CANCELED' ? 'bg-red-500' : 'bg-primary'
-                                    }`} />
+                                        }`} />
 
-                                <div className="p-4 flex flex-1 flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-center min-w-[65px]">
-                                            <p className="text-xl font-bold">{format(new Date(booking.date), "HH:mm")}</p>
-                                            <p className="text-[10px] text-gray-500 uppercase font-black">{format(new Date(booking.date), "dd MMM")}</p>
-                                        </div>
-                                        <div className="h-10 w-[1px] bg-white/10" />
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <User size={14} className="text-primary" />
-                                                <p className="font-bold text-white text-sm">{booking.user.name}</p>
+                                    <div className="p-4 flex flex-1 flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-center min-w-[65px]">
+                                                <p className="text-xl font-bold text-white">{format(new Date(booking.date), "HH:mm")}</p>
+                                                <p className="text-[10px] text-gray-500 uppercase font-black">{format(new Date(booking.date), "dd MMM")}</p>
                                             </div>
-                                            <p className="text-xs text-gray-400">{booking.service.name}</p>
+                                            <div className="h-10 w-[1px] bg-white/10" />
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <User size={14} className="text-primary" />
+                                                    <p className="font-bold text-white text-sm">{booking.user.name}</p>
+                                                </div>
+                                                <p className="text-xs text-gray-400">{booking.service.name}</p>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div className="flex flex-wrap items-center gap-2 justify-end">
-                                        {(booking.status === "CONFIRMED" || booking.status === "WAITING_CANCELLATION") && (
-                                            <>
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500 hover:bg-green-500/10" onClick={() => handleContactWhatsApp("999999999", booking.user.name)}>
-                                                    <MessageCircle size={18} />
-                                                </Button>
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-500 hover:bg-blue-500/10" onClick={() => handleCopyPhone("999999999")}>
-                                                    <Phone size={18} />
-                                                </Button>
-                                            </>
-                                        )}
+                                        <div className="flex flex-wrap items-center gap-2 justify-end">
+                                            {/* CONTATOS */}
+                                            {(booking.status === "CONFIRMED" || booking.status === "WAITING_CANCELLATION") && (
+                                                <div className="flex items-center gap-1 bg-black/30 p-1 rounded-xl border border-white/5 mr-2">
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className={`h-9 w-9 ${hasPhone ? 'text-green-500 hover:bg-green-500/10' : 'text-gray-700 opacity-20'}`}
+                                                        onClick={() => handleContactWhatsApp(userPhones, booking.user.name)}
+                                                        disabled={!hasPhone}
+                                                    >
+                                                        <MessageCircle size={18} />
+                                                    </Button>
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className={`h-9 w-9 ${hasPhone ? 'text-blue-400 hover:bg-blue-400/10' : 'text-gray-700 opacity-20'}`}
+                                                        onClick={() => handleCopyPhone(userPhones)}
+                                                        disabled={!hasPhone}
+                                                    >
+                                                        <Phone size={18} />
+                                                    </Button>
+                                                </div>
+                                            )}
 
-                                        {booking.status === "WAITING_CANCELLATION" && (
-                                            <div className="flex gap-2 ml-2 border-l border-white/10 pl-2">
+                                            {/* DECISÕES */}
+                                            {booking.status === "WAITING_CANCELLATION" && (
+                                                <div className="flex gap-2 ml-2 border-l border-white/10 pl-4">
+                                                    <Button
+                                                        disabled={isProcessing === booking.id}
+                                                        size="sm"
+                                                        className="bg-green-600 hover:bg-green-700 text-white h-9 px-4 text-[10px] font-black uppercase rounded-xl"
+                                                        onClick={() => {
+                                                            setSelectedBookingId(booking.id);
+                                                            onDecision();
+                                                        }}
+                                                    >
+                                                        {isProcessing === booking.id ? <Loader2 className="animate-spin" size={14} /> : <Check size={16} className="mr-1" />} Aceitar
+                                                    </Button>
+                                                    <Button
+                                                        disabled={isProcessing === booking.id}
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="text-red-500 hover:bg-red-500/10 h-9 px-4 text-[10px] font-black uppercase rounded-xl"
+                                                        onClick={() => handleOpenConfirm(booking.id)}
+                                                    >
+                                                        <X size={16} className="mr-1" /> Recusar
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                            {booking.status === "CONFIRMED" && (
                                                 <Button
-                                                    disabled={isProcessing === booking.id}
-                                                    size="sm"
-                                                    className="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-black uppercase"
-                                                    onClick={() => handleOpenConfirm(booking.id)}
-                                                >
-                                                    {isProcessing === booking.id ? <Loader2 className="animate-spin" size={12} /> : <Check size={14} />} Aceitar
-                                                </Button>
-                                                <Button
-                                                    disabled={isProcessing === booking.id}
-                                                    size="sm"
                                                     variant="ghost"
-                                                    className="text-red-500 hover:bg-red-500/10 h-8 text-[10px] font-black uppercase"
+                                                    size="sm"
+                                                    className="text-red-500 hover:bg-red-500/10 h-9 px-4 text-[10px] font-black uppercase ml-2 rounded-xl"
                                                     onClick={() => handleOpenConfirm(booking.id)}
                                                 >
-                                                    <X size={14} /> Recusar
+                                                    <Trash2 size={16} className="mr-1" /> Cancelar
                                                 </Button>
-                                            </div>
-                                        )}
+                                            )}
 
-                                        {booking.status === "CONFIRMED" && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-500 hover:bg-red-500/10 h-8 text-[10px] font-black uppercase ml-2"
-                                                onClick={() => handleOpenConfirm(booking.id)}
-                                            >
-                                                <Trash2 size={14} className="mr-1" /> Cancelar
-                                            </Button>
-                                        )}
-
-                                        <Badge variant="secondary" className={`text-[10px] uppercase font-black ml-2 border-none ${booking.status === 'WAITING_CANCELLATION' ? 'text-amber-500 bg-amber-500/10' : 'text-gray-400 bg-white/5'
-                                            }`}>
-                                            {booking.status === "WAITING_CANCELLATION" ? "Solicitado" :
-                                                booking.status === "CONFIRMED" ? "Agendado" :
-                                                    booking.status === "FINISHED" ? "Finalizado" : "Cancelado"}
-                                        </Badge>
+                                            <Badge variant="secondary" className={`text-[10px] uppercase font-black ml-2 border-none ${booking.status === 'WAITING_CANCELLATION' ? 'text-amber-500 bg-amber-500/10' : 'text-gray-400 bg-white/5'
+                                                }`}>
+                                                {booking.status === "WAITING_CANCELLATION" ? "Solicitado" :
+                                                    booking.status === "CONFIRMED" ? "Agendado" :
+                                                        booking.status === "FINISHED" ? "Finalizado" : "Cancelado"}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )) : (
-                        <div className="text-center py-20 text-gray-600 border-2 border-dashed border-white/5 rounded-3xl">
-                            <CalendarCheck2 size={48} className="mx-auto mb-4 opacity-10" />
-                            <p>Nenhum agendamento encontrado.</p>
+                                </CardContent>
+                            </Card>
+                        )
+                    }) : (
+                        <div className="text-center py-24 text-gray-600 border-2 border-dashed border-white/5 rounded-[32px]">
+                            <CalendarCheck2 size={64} className="mx-auto mb-4 opacity-5" />
+                            <p className="font-medium">Nenhum registro para exibir.</p>
                         </div>
                     )}
                 </div>
@@ -256,8 +295,8 @@ export default function MySchedulePage() {
             <ConfirmDialog
                 isOpen={isConfirmOpen}
                 onOpenChange={setIsConfirmOpen}
-                title="Deseja prosseguir com o cancelamento?"
-                description="Esta ação é irreversível. O horário será liberado imediatamente para novos clientes."
+                title="Deseja cancelar o agendamento?"
+                description="Esta ação liberará o horário imediatamente para outros clientes."
                 onConfirm={onDecision}
                 variant="destructive"
             />
@@ -273,7 +312,7 @@ function FilterButton({ label, icon: Icon, active, onClick, variant = "default" 
         <Button
             variant={active ? "default" : "secondary"}
             onClick={onClick}
-            className={`rounded-full gap-2 transition-all h-9 text-xs font-bold border whitespace-nowrap ${active ? activeClass : `bg-[#1A1B1F] ${inactiveText}`}`}
+            className={`rounded-xl gap-2 transition-all h-10 text-xs font-bold border whitespace-nowrap px-5 ${active ? activeClass : `bg-[#1A1B1F] ${inactiveText}`}`}
         >
             <Icon size={14} /> {label}
         </Button>

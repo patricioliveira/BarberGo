@@ -29,6 +29,7 @@ model User {
   name          String?
   email         String    @unique
   emailVerified DateTime?
+  UserPhone     Json?
   image         String?
   password      String?
   role          UserRole  @default(USER)

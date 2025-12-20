@@ -53,21 +53,35 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
+    async jwt({ token, user, trigger, session }) {
+      // Login inicial: Adiciona dados ao Token
+      if (user) {
+        token.id = user.id;
+        token.role = (user as any).role;
+        token.UserPhone = (user as any).UserPhone;
+      }
+
+      // IMPORTANTE: Trata a atualização (update) vinda do cliente
+      if (trigger === "update" && session) {
+        // Atualiza apenas os campos que vieram no objeto de update
+        if (session.name) token.name = session.name;
+        if (session.UserPhone) token.UserPhone = session.UserPhone;
+        if (session.image) token.picture = session.image; // Mapeia 'image' para 'picture' no JWT
+      }
+
+      return token;
+    },
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.sub as string
+        session.user.id = token.sub as string;
         // @ts-ignore
-        session.user.role = token.role as string
+        session.user.role = token.role as string;
+        session.user.name = token.name;
+        session.user.image = token.picture as string; // Garante que a imagem volte para a sessão
+        (session.user as any).UserPhone = token.UserPhone;
       }
-      return session
+      return session;
     },
-    async jwt({ token, user }) {
-      if (user) {
-        // @ts-ignore
-        token.role = user.role
-      }
-      return token
-    }
   },
   secret: process.env.NEXTAUTH_SECRET,
 }
