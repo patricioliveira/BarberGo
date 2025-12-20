@@ -37,16 +37,12 @@ import {
     Edit2
 } from "lucide-react"
 
-// Importação das Actions
 import { updateBarbershopSettings } from "../../_actions/update-barbershop-settings"
 import { ConfirmDialog } from "../../_components/confirm-dialog"
 import { getBarbershopSettings } from "@/_actions/get-barbershop-settings"
 import { addOrUpdateStaff, toggleStaffStatus, deleteStaff } from "@/_actions/manage-staff"
 import { toast } from "sonner"
 
-// REMOVIDO: imports de server-side (getServerSession, authOptions, redirect)
-
-// --- COMPONENTE SWITCH ESTILIZADO ---
 const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (c: boolean) => void }) => (
     <button
         type="button"
@@ -71,7 +67,7 @@ const DEFAULT_HOURS: WorkingHour[] = [
     { day: "Domingo", open: "00:00", close: "00:00", isOpen: false },
 ]
 
-export default function SettingsPage() { // REMOVIDO: async
+export default function SettingsPage() {
     const router = useRouter()
     const { data: session, status } = useSession()
 
@@ -79,13 +75,11 @@ export default function SettingsPage() { // REMOVIDO: async
     const [activeTab, setActiveTab] = useState("general")
     const [isLoading, setIsLoading] = useState(true)
 
-    // Estados de Modais
     const [isNewStaffModalOpen, setIsNewStaffModalOpen] = useState(false)
     const [dialogConfig, setDialogConfig] = useState<{
         isOpen: boolean; title: string; description: string; onConfirm: () => void; variant?: "default" | "destructive";
     }>({ isOpen: false, title: "", description: "", onConfirm: () => { } })
 
-    // Estado para novo funcionário e pagamentos
     const [newStaff, setNewStaff] = useState({ name: "", email: "", jobTitle: "" })
     const [customPayment, setCustomPayment] = useState("")
     const [isSubmittingStaff, setIsSubmittingStaff] = useState(false)
@@ -95,7 +89,6 @@ export default function SettingsPage() { // REMOVIDO: async
     const [staff, setStaff] = useState<StaffMember[]>([])
     const [services, setServices] = useState<Service[]>([])
 
-    // Verifica se o Admin já está na lista de staff usando a sessão do cliente
     const isAdminAlreadyStaff = staff.some((m) => m.email === session?.user?.email)
 
     const formatPhone = (value: string) => {
@@ -104,7 +97,6 @@ export default function SettingsPage() { // REMOVIDO: async
         return n.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
     }
 
-    // 1. Controle de Autenticação e Carga de Dados
     useEffect(() => {
         if (status === "unauthenticated") {
             router.push("/")
@@ -303,12 +295,26 @@ export default function SettingsPage() { // REMOVIDO: async
 
                 <TabsContent value="hours">
                     <Card className="bg-[#1A1B1F] border-none text-white">
-                        <CardHeader><CardTitle className="text-primary flex items-center gap-2"><Clock size={20} /> Horários</CardTitle></CardHeader>
-                        <CardContent className="space-y-2">
+                        <CardHeader><CardTitle className="text-primary flex items-center gap-2"><Clock size={20} /> Horários de Funcionamento</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
                             {hours.map((h, i) => (
-                                <div key={h.day} className="flex justify-between items-center p-3 border-b border-secondary/40 last:border-0 gap-3">
-                                    <div className="flex items-center gap-4 min-w-[150px]"><Switch checked={h.isOpen} onCheckedChange={(v) => { const n = [...hours]; n[i].isOpen = v; setHours(n); setIsDirty(true) }} /><span>{h.day}</span></div>
-                                    {h.isOpen ? <div className="flex items-center gap-2"><Input type="time" value={h.open} onChange={e => { const n = [...hours]; n[i].open = e.target.value; setHours(n); setIsDirty(true) }} className="w-24 bg-secondary border-none h-8 p-1" /><span>às</span><Input type="time" value={h.close} onChange={e => { const n = [...hours]; n[i].close = e.target.value; setHours(n); setIsDirty(true) }} className="w-24 bg-secondary border-none h-8 p-1" /></div> : <span className="text-xs text-gray-600">Fechado</span>}
+                                <div key={h.day} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border-b border-secondary/40 last:border-0 gap-4">
+                                    <div className="flex items-center gap-4 min-w-[160px]">
+                                        <Switch checked={h.isOpen} onCheckedChange={(v) => { const n = [...hours]; n[i].isOpen = v; setHours(n); setIsDirty(true) }} />
+                                        <span className={`text-sm font-medium ${!h.isOpen && 'text-gray-500'}`}>{h.day}</span>
+                                    </div>
+
+                                    {h.isOpen ? (
+                                        <div className="flex items-center gap-2 justify-end">
+                                            <Input type="time" value={h.open} onChange={e => { const n = [...hours]; n[i].open = e.target.value; setHours(n); setIsDirty(true) }} className="w-24 bg-secondary border-none h-9 text-center" />
+                                            <span className="text-xs text-gray-500 font-bold uppercase tracking-tighter">às</span>
+                                            <Input type="time" value={h.close} onChange={e => { const n = [...hours]; n[i].close = e.target.value; setHours(n); setIsDirty(true) }} className="w-24 bg-secondary border-none h-9 text-center" />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center h-9">
+                                            <span className="text-xs text-gray-600 font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-md border border-white/5">Fechado</span>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </CardContent>

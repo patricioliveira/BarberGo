@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation" // Correção: Importar de next/navigation
+import { useRouter } from "next/navigation"
 import Header from "../../_components/header"
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@barbergo/ui"
 import { ChevronLeft, Clock, Save, AlertCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { getStaffHoursData, updateStaffHours } from "../../_actions/manage-staff-hours"
 import { toast } from "sonner"
-import { useSession } from "next-auth/react" // Hook correto para Client Components
+import { useSession } from "next-auth/react"
 import Footer from "@/_components/footer"
 
 type WorkingHour = { day: string; open: string; close: string; isOpen: boolean }
@@ -23,15 +23,14 @@ const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChang
     </button>
 )
 
-export default function MyHoursPage() { // REMOVIDO: async
+export default function MyHoursPage() {
     const router = useRouter()
-    const { status } = useSession() // Hook para pegar a sessão no cliente
+    const { status } = useSession()
 
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [data, setData] = useState<{ staffHours: WorkingHour[], shopHours: WorkingHour[], staffId: string, shopName: string } | null>(null)
 
-    // 1. Proteção de Rota e Carga de Dados
     useEffect(() => {
         if (status === "unauthenticated") {
             router.push("/")
@@ -73,7 +72,6 @@ export default function MyHoursPage() { // REMOVIDO: async
         if (!data) return
         setIsSaving(true)
 
-        // Validação: Não pode atender fora do horário da loja
         for (const staffH of data.staffHours) {
             const shopH = data.shopHours.find(h => h.day === staffH.day)
             if (staffH.isOpen && shopH) {
@@ -100,7 +98,6 @@ export default function MyHoursPage() { // REMOVIDO: async
         }
     }
 
-    // Loader enquanto carrega autenticação ou dados
     if (isLoading || status === "loading") {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background">
@@ -113,69 +110,73 @@ export default function MyHoursPage() { // REMOVIDO: async
         <div className="min-h-screen bg-background text-white pb-10">
             <Header />
             <div className="container mx-auto p-4 md:p-8 space-y-6 max-w-3xl">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
+                        <Button variant="ghost" size="icon" asChild className="hover:bg-secondary shrink-0">
                             <Link href="/admin"><ChevronLeft /></Link>
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold">Meus Horários</h1>
-                            <p className="text-muted-foreground text-sm">Escala Individual em: {data?.shopName}</p>
+                            <h1 className="text-xl md:text-2xl font-bold">Meus Horários</h1>
+                            <p className="text-muted-foreground text-xs md:text-sm">Escala Individual em: {data?.shopName}</p>
                         </div>
                     </div>
-                    <Button onClick={handleSave} disabled={isSaving} className="font-bold">
+                    <Button onClick={handleSave} disabled={isSaving} className="font-bold w-full sm:w-auto h-11">
                         {isSaving ? <Loader2 className="mr-2 animate-spin" size={16} /> : <Save className="mr-2" size={16} />}
                         Salvar Escala
                     </Button>
                 </div>
 
                 <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex gap-3">
-                    <AlertCircle className="text-blue-500 shrink-0" size={20} />
-                    <p className="text-xs text-blue-200">
-                        Os horários que você definir aqui serão usados para os clientes realizarem agendamentos diretamente com você.
+                    <AlertCircle className="text-blue-500 shrink-0" size={18} />
+                    <p className="text-[11px] md:text-xs text-blue-200 leading-relaxed">
+                        Defina sua disponibilidade pessoal. Seus horários devem estar dentro do limite de funcionamento da barbearia.
                     </p>
                 </div>
 
-                <Card className="bg-[#1A1B1F] border-none text-white shadow-xl">
-                    <CardHeader>
-                        <CardTitle className="text-primary flex items-center gap-2">
-                            <Clock size={20} /> Escala Semanal
+                <Card className="bg-[#1A1B1F] border-none text-white shadow-xl ring-1 ring-white/5">
+                    <CardHeader className="border-b border-white/5">
+                        <CardTitle className="text-primary flex items-center gap-2 text-base">
+                            <Clock size={18} /> Escala Semanal
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className="space-y-1 pt-4">
                         {data?.staffHours && data.staffHours.map((h, i) => {
                             const shopDay = data.shopHours.find(sh => sh.day === h.day)
                             return (
-                                <div key={h.day} className="flex justify-between items-center p-3 border-b border-secondary/40 last:border-0 gap-3">
-                                    <div className="flex items-center gap-4 min-w-[150px]">
+                                <div key={h.day} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border-b border-secondary/20 last:border-0 gap-4">
+                                    <div className="flex items-center gap-4 min-w-[160px]">
                                         <Switch checked={h.isOpen} onCheckedChange={() => handleToggleDay(i)} />
-                                        <span className={h.isOpen ? "text-white" : "text-gray-600"}>{h.day}</span>
+                                        <span className={`text-sm font-medium ${!h.isOpen ? "text-gray-600" : "text-white"}`}>{h.day}</span>
                                     </div>
 
                                     {h.isOpen ? (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-3 justify-end">
                                             <div className="flex flex-col items-center">
                                                 <Input
                                                     type="time"
                                                     value={h.open}
                                                     onChange={e => handleTimeChange(i, 'open', e.target.value)}
-                                                    className="w-24 bg-secondary border-none h-8 p-1 text-center"
+                                                    className="w-24 bg-secondary border-none h-9 text-center font-mono p-1"
                                                 />
-                                                <p className="text-[8px] text-gray-500 uppercase italic mt-1">Loja: {shopDay?.open}</p>
+                                                <p className="text-[9px] text-gray-500 uppercase mt-1">Abre: {shopDay?.open}</p>
                                             </div>
-                                            <span className="text-xs text-gray-500 mb-4">às</span>
+
+                                            <span className="text-[10px] text-gray-600 font-bold uppercase mb-4">às</span>
+
                                             <div className="flex flex-col items-center">
                                                 <Input
                                                     type="time"
                                                     value={h.close}
                                                     onChange={e => handleTimeChange(i, 'close', e.target.value)}
-                                                    className="w-24 bg-secondary border-none h-8 p-1 text-center"
+                                                    className="w-24 bg-secondary border-none h-9 text-center font-mono p-1"
                                                 />
-                                                <p className="text-[8px] text-gray-500 uppercase italic mt-1">Loja: {shopDay?.close}</p>
+                                                <p className="text-[9px] text-gray-500 uppercase mt-1">Fecha: {shopDay?.close}</p>
                                             </div>
                                         </div>
                                     ) : (
-                                        <span className="text-xs text-gray-600">Fechado</span>
+                                        <div className="flex items-center h-10">
+                                            <span className="text-xs text-gray-600 font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-md border border-white/5">Indisponível</span>
+                                        </div>
                                     )}
                                 </div>
                             )
