@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import AuthDialog from "../_components/auth-dialog"
 import { Loader2 } from "lucide-react"
 
-export default function LoginPage() {
+// Criamos um sub-componente para isolar o uso do useSearchParams
+function LoginContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { status } = useSession()
@@ -53,5 +54,18 @@ export default function LoginPage() {
                 <p className="text-muted-foreground opacity-20">Autenticação necessária...</p>
             </div>
         </div>
+    )
+}
+
+// O componente principal agora apenas envolve o conteúdo em um Suspense
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen w-full items-center justify-center bg-background">
+                <Loader2 className="animate-spin text-primary" size={40} />
+            </div>
+        }>
+            <LoginContent />
+        </Suspense>
     )
 }
