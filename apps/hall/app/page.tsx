@@ -8,7 +8,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "./_lib/auth"
 import Footer from "./_components/footer"
 import Search from "./_components/search"
-import HorizontalScroll from "./_components/horizontal-scroll" // Importe o componente
+import HorizontalScroll from "./_components/horizontal-scroll"
 
 interface HomeProps {
   searchParams: {
@@ -39,7 +39,8 @@ export default async function Home({ searchParams }: HomeProps) {
     <div className="h-full overflow-x-hidden">
       <Header />
 
-      <div className="px-5 md:px-10 pt-5">
+      {/* Container centralizado com largura máxima no desktop */}
+      <div className="max-w-[1400px] mx-auto px-5 md:px-10 pt-5">
         <h2 className="text-xl font-bold">
           {session?.user ? `Olá, ${userName}!` : "Olá, Faça seu login!"}
         </h2>
@@ -50,7 +51,7 @@ export default async function Home({ searchParams }: HomeProps) {
 
         <Search />
 
-        <div className="relative mt-6 h-[400px] w-full rounded-xl overflow-hidden hidden md:block">
+        <div className="relative mt-6 h-[400px] w-full rounded-xl overflow-hidden hidden md:block border border-secondary">
           <Image src="/banner-01.png" alt="Banner" fill className="object-cover" />
         </div>
 
@@ -60,7 +61,7 @@ export default async function Home({ searchParams }: HomeProps) {
             {searchParams.search ? `Resultados para "${searchParams.search}"` : "Recomendados"}
           </h2>
 
-          <HorizontalScroll>
+          <HorizontalScroll className="md:justify-center lg:justify-start">
             {barbershops.length > 0 ? (
               barbershops.map((shop) => (
                 <BarbershopItem key={shop.id} barbershop={shop} />
@@ -76,7 +77,7 @@ export default async function Home({ searchParams }: HomeProps) {
           <div className="mt-6 mb-[4.5rem]">
             <h2 className="text-xs mb-3 uppercase text-gray-400 font-bold">Populares</h2>
 
-            <HorizontalScroll>
+            <HorizontalScroll className="md:justify-center lg:justify-start">
               {barbershops.map((shop) => (
                 <BarbershopItem key={shop.id} barbershop={shop} />
               ))}

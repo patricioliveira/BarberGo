@@ -1,39 +1,25 @@
 "use client"
 
-import React, { useRef, useEffect } from "react"
+import { cn } from "@/_lib/utils"
+import React, { useRef } from "react"
 
 interface HorizontalScrollProps {
     children: React.ReactNode
+    className?: string
 }
 
-const HorizontalScroll = ({ children }: HorizontalScrollProps) => {
+const HorizontalScroll = ({ children, className }: HorizontalScrollProps) => {
     const scrollRef = useRef<HTMLDivElement>(null)
 
-    useEffect(() => {
-        const el = scrollRef.current
-        if (!el) return
-
-        const handleWheel = (e: WheelEvent) => {
-            // Se o movimento for maioritariamente vertical (roda do rato padrão),
-            // transformamos o deltaY em deslocamento horizontal (scrollLeft).
-            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-                e.preventDefault()
-                el.scrollLeft += e.deltaY
-            }
-        }
-
-        // Adicionamos o listener nativo com passive: false para permitir o preventDefault
-        el.addEventListener("wheel", handleWheel, { passive: false })
-
-        return () => {
-            el.removeEventListener("wheel", handleWheel)
-        }
-    }, [])
+    // Removido o useEffect com handleWheel para não travar a rolagem vertical da tela
 
     return (
         <div
             ref={scrollRef}
-            className="flex flex-row gap-4 overflow-x-auto flex-nowrap [&::-webkit-scrollbar]:hidden py-1 snap-x snap-proximity"
+            className={cn(
+                "flex flex-row gap-4 overflow-x-auto flex-nowrap [&::-webkit-scrollbar]:hidden py-1 snap-x snap-proximity",
+                className
+            )}
         >
             {children}
         </div>
