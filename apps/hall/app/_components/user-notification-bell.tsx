@@ -1,15 +1,16 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Bell, CalendarCheck, XCircle, Timer } from "lucide-react"
-import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, Badge } from "@barbergo/ui"
-import { format } from "date-fns"
+import { Bell, CalendarCheck, XCircle, Timer, Clock } from "lucide-react"
+import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@barbergo/ui"
+import { format, differenceInMinutes, isToday } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import Link from "next/link"
 import { getUserNotifications } from "@/_actions/get-user-notifications"
 
 export default function UserNotificationBell() {
     const [notifications, setNotifications] = useState<any[]>([])
+    const [now, setNow] = useState(new Date())
 
     useEffect(() => {
         const load = async () => {
@@ -17,12 +18,28 @@ export default function UserNotificationBell() {
             setNotifications(data)
         }
         load()
+        const timer = setInterval(() => setNow(new Date()), 60000)
+        return () => clearInterval(timer)
     }, [])
 
-    // Contador de notificações "críticas" (Cancelamentos aprovados ou solicitações)
-    const unreadCount = useMemo(() => {
-        return notifications.filter(n => n.status === "WAITING_CANCELLATION" || n.status === "CANCELED").length
-    }, [notifications])
+    const enrichedNotifications = useMemo(() => {
+        return notifications.map(n => {
+            const diff = differenceInMinutes(new Date(n.date), now)
+            const isReminder = n.status === "CONFIRMED" && isToday(new Date(n.date)) && diff > 0 && diff <= 15
+
+            return {
+                ...n,
+                isReminder,
+                displayText: isReminder
+                    ? `LEMBRETE: Seu corte em ${n.barbershop.name} começa em ${diff} min!`
+                    : n.status === 'CANCELED' ? `Agendamento cancelado em ${n.barbershop.name}` :
+                        n.status === 'WAITING_CANCELLATION' ? `Aguardando cancelamento em ${n.barbershop.name}` :
+                            `Confirmado: ${n.service.name}`
+            }
+        })
+    }, [notifications, now])
+
+    const unreadCount = enrichedNotifications.filter(n => n.isReminder || n.status === "CANCELED").length
 
     return (
         <Sheet>
@@ -47,26 +64,24 @@ export default function UserNotificationBell() {
                 </SheetHeader>
 
                 <div className="space-y-4">
-                    {notifications.length > 0 ? notifications.map((n) => (
+                    {enrichedNotifications.length > 0 ? enrichedNotifications.map((n) => (
                         <Link
                             key={n.id}
                             href="/appointments"
-                            className="block p-4 rounded-2xl bg-[#1A1B1F] border border-white/5 hover:border-primary/30 transition-all group"
+                            className={`block p-4 rounded-2xl border transition-all group ${n.isReminder ? 'bg-primary/10 border-primary/30 animate-pulse' : 'bg-[#1A1B1F] border-white/5'
+                                }`}
                         >
                             <div className="flex gap-4">
-                                <div className={`p-2 rounded-xl h-fit ${n.status === 'CANCELED' ? 'bg-red-500/10 text-red-500' :
-                                        n.status === 'WAITING_CANCELLATION' ? 'bg-amber-500/10 text-amber-500' :
+                                <div className={`p-2 rounded-xl h-fit ${n.isReminder ? 'bg-primary text-white' :
+                                        n.status === 'CANCELED' ? 'bg-red-500/10 text-red-500' :
                                             'bg-green-500/10 text-green-500'
                                     }`}>
-                                    {n.status === 'CANCELED' ? <XCircle size={18} /> :
-                                        n.status === 'WAITING_CANCELLATION' ? <Timer size={18} /> :
-                                            <CalendarCheck size={18} />}
+                                    {n.isReminder ? <Clock size={18} /> :
+                                        n.status === 'CANCELED' ? <XCircle size={18} /> : <CalendarCheck size={18} />}
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-sm font-medium leading-tight">
-                                        {n.status === 'CANCELED' ? `Agendamento cancelado em ${n.barbershop.name}` :
-                                            n.status === 'WAITING_CANCELLATION' ? `Aguardando cancelamento em ${n.barbershop.name}` :
-                                                `Agendamento confirmado: ${n.service.name}`}
+                                    <p className={`text-sm font-medium leading-tight ${n.isReminder ? 'text-primary' : ''}`}>
+                                        {n.displayText}
                                     </p>
                                     <p className="text-[10px] text-gray-500 uppercase font-bold">
                                         {format(new Date(n.date), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
