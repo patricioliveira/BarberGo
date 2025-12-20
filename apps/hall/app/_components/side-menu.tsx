@@ -67,6 +67,14 @@ const SideMenu = () => {
 
                 {session?.user && (
                     <>
+                        {(session.user.role === "ADMIN" || session.user.role === "STAFF") && (
+                            <Button variant="default" className="justify-start gap-2 bg-primary/10 text-primary hover:bg-primary hover:text-white border-none rounded-xl font-bold" asChild>
+                                <Link href="/admin">
+                                    <LayoutDashboardIcon size={18} />
+                                    Painel {session.user.role === 'ADMIN' ? 'Admin' : 'Staff'}
+                                </Link>
+                            </Button>
+                        )}
                         <Button variant="outline" className="justify-start gap-2 border-secondary rounded-xl" asChild>
                             <Link href="/appointments">
                                 <CalendarIcon size={18} />
@@ -80,15 +88,6 @@ const SideMenu = () => {
                                 Editar Perfil
                             </Link>
                         </Button>
-
-                        {(session.user.role === "ADMIN" || session.user.role === "STAFF") && (
-                            <Button variant="default" className="justify-start gap-2 bg-primary/10 text-primary hover:bg-primary hover:text-white border-none rounded-xl font-bold" asChild>
-                                <Link href="/admin">
-                                    <LayoutDashboardIcon size={18} />
-                                    Painel Administrativo
-                                </Link>
-                            </Button>
-                        )}
                     </>
                 )}
             </div>
