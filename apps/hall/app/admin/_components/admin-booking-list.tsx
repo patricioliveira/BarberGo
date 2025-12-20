@@ -2,13 +2,16 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@barbergo/ui"
 import { Badge } from "@barbergo/ui"
-import { Booking, BarbershopService, User } from "@prisma/client"
+import { Booking, BarbershopService, User, BarberStaff } from "@prisma/client"
 import { format, isToday } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { Scissors } from "lucide-react"
 
+// Tipo estendido para incluir relacionamentos, preço corrigido e o profissional (staff)
 type AdminBooking = Booking & {
     service: Omit<BarbershopService, "price"> & { price: number }
     user: User
+    staff?: BarberStaff // Adicionado para identificar o barbeiro
 }
 
 interface AdminBookingListProps {
@@ -41,10 +44,20 @@ const AdminBookingList = ({ bookings }: AdminBookingListProps) => {
                             <p className="text-sm font-medium leading-none text-white">
                                 {booking.user.name || "Cliente sem nome"}
                             </p>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">{booking.service.name}</span>
-                                {isToday(new Date(booking.date)) && (
-                                    <Badge variant="default" className="h-4 px-1 text-[10px] bg-green-500/20 text-green-500 hover:bg-green-500/20 border-none">Hoje</Badge>
+                            <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">{booking.service.name}</span>
+                                    {isToday(new Date(booking.date)) && (
+                                        <Badge variant="default" className="h-4 px-1 text-[10px] bg-green-500/20 text-green-500 hover:bg-green-500/20 border-none">Hoje</Badge>
+                                    )}
+                                </div>
+
+                                {/* EXIBIÇÃO DO BARBEIRO */}
+                                {booking.staff && (
+                                    <div className="flex items-center gap-1 text-[10px] text-primary/80 font-medium">
+                                        <Scissors size={10} />
+                                        <span>Profissional: {booking.staff.name.split(" ")[0]}</span>
+                                    </div>
                                 )}
                             </div>
                         </div>
