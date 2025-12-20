@@ -5,7 +5,8 @@ import Header from "../_components/header"
 import { Card, CardContent, CardHeader, CardTitle, Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, Badge } from "@barbergo/ui"
 import {
     CalendarIcon, DollarSign, Users, ShieldCheck, User,
-    CalendarCheck2, Settings2, Power, Loader2, Store, Bell, CalendarPlus, XCircle
+    CalendarCheck2, Settings2, Power, Loader2, Store, Bell,
+    ChevronLeft, ChevronRight, CalendarDays
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -15,9 +16,8 @@ import AdminBookingList from "./_components/admin-booking-list"
 import { getAdminDashboard } from "../_actions/get-admin-dashboard"
 import { ConfirmDialog } from "../_components/confirm-dialog"
 import { toggleStaffStatus } from "../_actions/manage-staff"
-import { toast } from "sonner"
 import Footer from "@/_components/footer"
-import { format, isToday } from "date-fns"
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
 export default function AdminPage() {
@@ -26,12 +26,14 @@ export default function AdminPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [stats, setStats] = useState<any>(null)
     const [viewMode, setViewMode] = useState<"shop" | "personal">("shop")
+    const [period, setPeriod] = useState<"day" | "week" | "month">("month")
+    const [viewDate, setViewDate] = useState(new Date())
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
 
-    const load = useCallback(async () => {
+    const load = useCallback(async (date: Date) => {
         try {
             setIsLoading(true)
-            const data = await getAdminDashboard()
+            const data = await getAdminDashboard(date)
             setStats(data)
             if (data.role === "STAFF") setViewMode("personal")
         } catch (error) {
@@ -43,16 +45,45 @@ export default function AdminPage() {
 
     useEffect(() => {
         if (status === "unauthenticated") router.push("/")
-        if (status === "authenticated") load()
-    }, [status, load, router])
+        if (status === "authenticated") load(viewDate)
+    }, [status, viewDate, load, router])
 
-    const notifications = useMemo(() => {
-        if (!stats?.personalBookings) return []
-        return stats.personalBookings.filter((b: any) =>
-            b.status === "WAITING_CANCELLATION" ||
-            (isToday(new Date(b.date)) && b.status === "CONFIRMED")
-        )
-    }, [stats])
+    const handleNavigate = (direction: 'prev' | 'next') => {
+        if (period === 'month') {
+            setViewDate(prev => direction === 'next' ? addMonths(prev, 1) : subMonths(prev, 1))
+        } else if (period === 'week') {
+            setViewDate(prev => direction === 'next' ? addWeeks(prev, 1) : subWeeks(prev, 1))
+        } else {
+            setViewDate(prev => direction === 'next' ? addDays(prev, 1) : subDays(prev, 1))
+        }
+    }
+
+    const chartDataToDisplay = useMemo(() => {
+        if (!stats) return []
+        const rawData = viewMode === "personal" ? stats.personalChartData : stats.chartData
+        const bookings = viewMode === "personal" ? stats.personalBookings : stats.bookings
+
+        if (period === "day") {
+            const hours = Array.from({ length: 13 }, (_, i) => i + 8)
+            return hours.map(h => ({
+                date: `${h}h`,
+                total: bookings
+                    .filter((b: any) => isSameDay(new Date(b.date), viewDate) && new Date(b.date).getHours() === h && b.status !== "CANCELED")
+                    .reduce((acc: number, b: any) => acc + Number(b.service.price), 0)
+            }))
+        }
+
+        if (period === "week") {
+            const start = startOfWeek(viewDate, { weekStartsOn: 1 })
+            const end = endOfWeek(viewDate, { weekStartsOn: 1 })
+            return rawData.filter((d: any) => {
+                const date = new Date(d.fullDate)
+                return date >= start && date <= end
+            })
+        }
+
+        return rawData
+    }, [stats, viewMode, period, viewDate])
 
     if (isLoading || !stats) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="animate-spin text-primary" size={40} /></div>
 
@@ -69,7 +100,6 @@ export default function AdminPage() {
                                 {viewMode === "personal" ? "Meu Perfil Profissional" : "Painel da Barbearia"}
                             </h2>
                             <Badge className={stats.role === "ADMIN" ? "bg-primary" : "bg-green-600"}>{stats.role}</Badge>
-                            <NotificationBell notifications={notifications} />
                         </div>
                     </div>
 
@@ -96,54 +126,55 @@ export default function AdminPage() {
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <KpiCard title={viewMode === "personal" ? "Meus Resultados" : "Faturamento da Barbearia"} icon={DollarSign} value={viewMode === "personal" ? stats.personalKpi.revenue : stats.kpi.revenue} isMoney />
-
-                    {/* KPI CORRIGIDA: Exibe apenas agendamentos não cancelados para bater com a lista */}
                     <KpiCard title="Minha Agenda" icon={CalendarIcon} value={viewMode === "personal" ? stats.personalKpi.bookings : stats.kpi.bookings} />
-
                     <KpiCard title="Agenda Hoje" icon={Users} value={viewMode === "personal" ? stats.personalKpi.today : stats.kpi.today} sub="Clientes agendados" />
                     <KpiCard title="Status" icon={ShieldCheck} value={viewMode === "personal" ? (isStaffActive ? "Ativo" : "Inativo") : (stats.kpi.isClosed ? "Fechada" : "Aberta")} />
                 </div>
 
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-7">
-                    <Card className="col-span-1 md:col-span-4 bg-[#1A1B1F] border-none shadow-xl ring-1 ring-white/5"><CardHeader><CardTitle className="text-white text-sm uppercase tracking-widest font-bold">Produtividade (R$)</CardTitle></CardHeader><CardContent><AdminOverviewChart data={viewMode === "personal" ? stats.personalChartData : stats.chartData} /></CardContent></Card>
+                    <Card className="col-span-1 md:col-span-4 bg-[#1A1B1F] border-none shadow-xl ring-1 ring-white/5">
+                        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg text-primary"><CalendarDays size={20} /></div>
+                                <div>
+                                    <CardTitle className="text-white text-sm uppercase tracking-widest font-bold">Produtividade (R$)</CardTitle>
+                                    <p className="text-[10px] text-gray-500 font-medium mt-1 uppercase">
+                                        {period === 'month' ? format(viewDate, "MMMM 'de' yyyy", { locale: ptBR }) :
+                                            period === 'week' ? `Semana de ${format(viewDate, "dd MMM", { locale: ptBR })}` :
+                                                format(viewDate, "dd 'de' MMMM", { locale: ptBR })}
+                                    </p>
+                                </div>
+                            </div>
 
-                    <Card className="col-span-1 md:col-span-3 bg-[#1A1B1F] border-none shadow-xl ring-1 ring-white/5"><CardHeader><CardTitle className="text-white text-sm uppercase tracking-widest font-bold">Próximos Clientes</CardTitle></CardHeader><CardContent><AdminBookingList bookings={viewMode === "personal" ? stats.personalBookings : stats.bookings} /></CardContent></Card>
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                                <div className="flex bg-black/40 p-1 rounded-lg border border-white/5 gap-1">
+                                    <Button variant={period === "day" ? "default" : "ghost"} size="sm" className="h-7 px-3 text-[10px] uppercase font-bold" onClick={() => setPeriod("day")}>Dia</Button>
+                                    <Button variant={period === "week" ? "default" : "ghost"} size="sm" className="h-7 px-3 text-[10px] uppercase font-bold" onClick={() => setPeriod("week")}>Semana</Button>
+                                    <Button variant={period === "month" ? "default" : "ghost"} size="sm" className="h-7 px-3 text-[10px] uppercase font-bold" onClick={() => setPeriod("month")}>Mês</Button>
+                                </div>
+                                <div className="flex gap-1">
+                                    <Button variant="outline" size="icon" className="h-9 w-9 border-white/5 bg-black/20" onClick={() => handleNavigate('prev')}><ChevronLeft size={16} /></Button>
+                                    <Button variant="outline" size="icon" className="h-9 w-9 border-white/5 bg-black/20" onClick={() => handleNavigate('next')}><ChevronRight size={16} /></Button>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <AdminOverviewChart data={chartDataToDisplay} />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="col-span-1 md:col-span-3 bg-[#1A1B1F] border-none shadow-xl ring-1 ring-white/5">
+                        <CardHeader><CardTitle className="text-white text-sm uppercase tracking-widest font-bold">Próximos Clientes</CardTitle></CardHeader>
+                        <CardContent><AdminBookingList bookings={viewMode === "personal" ? stats.personalBookings : stats.bookings} /></CardContent>
+                    </Card>
                 </div>
             </div>
             <Footer />
-            <ConfirmDialog isOpen={isConfirmOpen} onOpenChange={setIsConfirmOpen} title={isStaffActive ? "Pausar atendimento?" : "Reativar?"} onConfirm={async () => { await toggleStaffStatus(stats.barberId, !isStaffActive); load(); setIsConfirmOpen(false); }} variant={isStaffActive ? "destructive" : "default"} description={isStaffActive
+            <ConfirmDialog isOpen={isConfirmOpen} onOpenChange={setIsConfirmOpen} title={isStaffActive ? "Pausar atendimento?" : "Reativar?"} onConfirm={async () => { await toggleStaffStatus(stats.barberId, !isStaffActive); load(viewDate); setIsConfirmOpen(false); }} variant={isStaffActive ? "destructive" : "default"} description={isStaffActive
                 ? "Ao inativar, seu perfil não aparecerá mais para novos agendamentos e sua agenda ficará bloqueada."
                 : "Ao reativar, os clientes poderão agendar horários com você novamente através do portal."
             } />
         </div>
-    )
-}
-
-function NotificationBell({ notifications }: { notifications: any[] }) {
-    const unread = notifications.filter(n => n.status === "WAITING_CANCELLATION").length
-    return (
-        <Sheet>
-            <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative hover:bg-secondary rounded-full">
-                    <Bell size={20} className="text-gray-400" />
-                    {unread > 0 && <span className="absolute top-1.5 right-1.5 flex h-4 w-4"><span className="animate-ping absolute h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative flex rounded-full h-4 w-4 bg-primary text-[10px] items-center justify-center font-bold text-white">{unread}</span></span>}
-                </Button>
-            </SheetTrigger>
-            <SheetContent className="bg-[#141518] border-l border-white/5 text-white w-full sm:max-w-md">
-                <SheetHeader className="mb-6 px-2"><SheetTitle className="text-white text-left">Notificações</SheetTitle></SheetHeader>
-                <div className="space-y-4 px-2">
-                    {notifications.map(n => (
-                        <Link key={n.id} href="/admin/my-schedule" className="block p-4 rounded-2xl bg-[#1A1B1F] border border-white/5 hover:border-primary/30 transition-all group">
-                            <div className="flex gap-4">
-                                <div className={`p-2 rounded-xl h-fit ${n.status === 'WAITING_CANCELLATION' ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'}`}>{n.status === 'WAITING_CANCELLATION' ? <XCircle size={18} /> : <CalendarPlus size={18} />}</div>
-                                <div><p className="text-sm font-medium leading-tight group-hover:text-primary transition-colors">{n.status === 'WAITING_CANCELLATION' ? `Solicitação de cancelamento: ${n.user.name}` : `Agendamento para hoje: ${n.user.name}`}</p><p className="text-[10px] text-gray-500 mt-1 uppercase font-bold">{format(new Date(n.date), "dd MMM 'às' HH:mm", { locale: ptBR })}</p></div>
-                            </div>
-                        </Link>
-                    ))}
-                    {notifications.length === 0 && <div className="text-center py-20 text-gray-600"><Bell size={40} className="mx-auto mb-2 opacity-10" /><p className="text-sm">Tudo em ordem!</p></div>}
-                </div>
-            </SheetContent>
-        </Sheet>
     )
 }
 
