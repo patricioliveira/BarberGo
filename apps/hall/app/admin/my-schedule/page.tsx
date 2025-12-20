@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Footer from "@/_components/footer"
 import HorizontalScroll from "../../_components/horizontal-scroll"
+import { ConfirmDialog } from "../../_components/confirm-dialog"
 
 export default function MySchedulePage() {
     const { status } = useSession()
@@ -29,6 +30,10 @@ export default function MySchedulePage() {
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
     const [isLoading, setIsLoading] = useState(true)
     const [isProcessing, setIsProcessing] = useState<string | null>(null)
+
+    // Estados para o Modal de Confirmação
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+    const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
 
     const loadData = useCallback(async () => {
         try {
@@ -47,17 +52,26 @@ export default function MySchedulePage() {
         if (status === "authenticated") loadData()
     }, [status, router, loadData])
 
-    const onDecision = async (id: string, accept: boolean) => {
+    const onDecision = async () => {
+        if (!selectedBookingId) return
+
         try {
-            setIsProcessing(id)
-            await handleCancellationDecision(id, accept)
-            toast.success(accept ? "Ação realizada com sucesso!" : "Solicitação recusada.")
+            setIsProcessing(selectedBookingId)
+            setIsConfirmOpen(false)
+            await handleCancellationDecision(selectedBookingId, true)
+            toast.success("Agendamento cancelado com sucesso!")
             await loadData()
         } catch (error) {
-            toast.error("Erro ao processar.")
+            toast.error("Erro ao cancelar agendamento.")
         } finally {
             setIsProcessing(null)
+            setSelectedBookingId(null)
         }
+    }
+
+    const handleOpenConfirm = (id: string) => {
+        setSelectedBookingId(id)
+        setIsConfirmOpen(true)
     }
 
     const handleContactWhatsApp = (phone: string, name: string) => {
@@ -68,10 +82,9 @@ export default function MySchedulePage() {
 
     const handleCopyPhone = (phone: string) => {
         navigator.clipboard.writeText(phone)
-        toast.success("Telefone copiado para discagem!")
+        toast.success("Telefone copiado!")
     }
 
-    // Lógica de Filtro, Busca e Ordenação
     const processedBookings = useMemo(() => {
         let result = bookings.filter(b => b.status === filter)
 
@@ -102,7 +115,6 @@ export default function MySchedulePage() {
         <div className="min-h-screen bg-background text-white flex flex-col">
             <Header />
             <div className="container mx-auto p-4 md:p-8 space-y-6 flex-1">
-                {/* Header e Título */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="icon" asChild className="hover:bg-secondary">
@@ -114,7 +126,6 @@ export default function MySchedulePage() {
                         </div>
                     </div>
 
-                    {/* Busca e Ordenação */}
                     <div className="flex items-center gap-2">
                         <div className="relative flex-1 md:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -128,7 +139,7 @@ export default function MySchedulePage() {
                         <Button
                             variant="outline"
                             size="icon"
-                            className="border-secondary"
+                            className="border-secondary text-white"
                             onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
                         >
                             <ArrowUpDown size={18} className={sortOrder === "desc" ? "rotate-180 transition-transform" : "transition-transform"} />
@@ -136,7 +147,6 @@ export default function MySchedulePage() {
                     </div>
                 </div>
 
-                {/* Filtros com Scroll Horizontal */}
                 <div className="py-2">
                     <HorizontalScroll>
                         <div className="flex gap-2 pr-4">
@@ -154,7 +164,6 @@ export default function MySchedulePage() {
                     </HorizontalScroll>
                 </div>
 
-                {/* Listagem */}
                 <div className="grid gap-4">
                     {processedBookings.length > 0 ? processedBookings.map((booking) => (
                         <Card key={booking.id} className="bg-[#1A1B1F] border-none ring-1 ring-white/5 overflow-hidden shadow-lg hover:ring-primary/30 transition-all">
@@ -179,9 +188,7 @@ export default function MySchedulePage() {
                                         </div>
                                     </div>
 
-                                    {/* Ações */}
                                     <div className="flex flex-wrap items-center gap-2 justify-end">
-                                        {/* Ações de Contato (Apenas para agendados ou solicitações) */}
                                         {(booking.status === "CONFIRMED" || booking.status === "WAITING_CANCELLATION") && (
                                             <>
                                                 <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500 hover:bg-green-500/10" onClick={() => handleContactWhatsApp("999999999", booking.user.name)}>
@@ -193,31 +200,40 @@ export default function MySchedulePage() {
                                             </>
                                         )}
 
-                                        {/* Decisão de Cancelamento solicitado */}
                                         {booking.status === "WAITING_CANCELLATION" && (
                                             <div className="flex gap-2 ml-2 border-l border-white/10 pl-2">
-                                                <Button disabled={isProcessing === booking.id} size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-black uppercase" onClick={() => onDecision(booking.id, true)}>
+                                                <Button
+                                                    disabled={isProcessing === booking.id}
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-700 text-white h-8 text-[10px] font-black uppercase"
+                                                    onClick={() => handleOpenConfirm(booking.id)}
+                                                >
                                                     {isProcessing === booking.id ? <Loader2 className="animate-spin" size={12} /> : <Check size={14} />} Aceitar
                                                 </Button>
-                                                <Button disabled={isProcessing === booking.id} size="sm" variant="ghost" className="text-red-500 hover:bg-red-500/10 h-8 text-[10px] font-black uppercase" onClick={() => onDecision(booking.id, false)}>
+                                                <Button
+                                                    disabled={isProcessing === booking.id}
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="text-red-500 hover:bg-red-500/10 h-8 text-[10px] font-black uppercase"
+                                                    onClick={() => handleOpenConfirm(booking.id)}
+                                                >
                                                     <X size={14} /> Recusar
                                                 </Button>
                                             </div>
                                         )}
 
-                                        {/* Cancelamento Direto (Para agendados) */}
                                         {booking.status === "CONFIRMED" && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-red-500 hover:bg-red-500/10 h-8 text-[10px] font-black uppercase ml-2"
-                                                onClick={() => onDecision(booking.id, true)}
+                                                onClick={() => handleOpenConfirm(booking.id)}
                                             >
                                                 <Trash2 size={14} className="mr-1" /> Cancelar
                                             </Button>
                                         )}
 
-                                        <Badge variant="secondary" className={`text-[10px] uppercase font-black ml-2 ${booking.status === 'WAITING_CANCELLATION' ? 'text-amber-500 bg-amber-500/10' : 'text-gray-400'
+                                        <Badge variant="secondary" className={`text-[10px] uppercase font-black ml-2 border-none ${booking.status === 'WAITING_CANCELLATION' ? 'text-amber-500 bg-amber-500/10' : 'text-gray-400 bg-white/5'
                                             }`}>
                                             {booking.status === "WAITING_CANCELLATION" ? "Solicitado" :
                                                 booking.status === "CONFIRMED" ? "Agendado" :
@@ -236,6 +252,15 @@ export default function MySchedulePage() {
                 </div>
             </div>
             <Footer />
+
+            <ConfirmDialog
+                isOpen={isConfirmOpen}
+                onOpenChange={setIsConfirmOpen}
+                title="Deseja prosseguir com o cancelamento?"
+                description="Esta ação é irreversível. O horário será liberado imediatamente para novos clientes."
+                onConfirm={onDecision}
+                variant="destructive"
+            />
         </div>
     )
 }
