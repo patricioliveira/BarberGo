@@ -5,12 +5,15 @@ import { Button, SheetHeader, SheetTitle, Avatar, AvatarImage, AvatarFallback } 
 import { CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, UserIcon, LayoutDashboardIcon, UserRoundPen } from "lucide-react"
 import Link from "next/link"
 import PWAInstallButton from "./pwa-install-button" // Import do novo botão
+import AuthDialog from "./auth-dialog"
+import { useState } from "react"
 
 const SideMenu = () => {
     const { data: session } = useSession()
+    const [isAuthOpen, setIsAuthOpen] = useState(false)
 
     const handleLogoutClick = () => signOut()
-    const handleLoginClick = () => signIn("google")
+    const handleLoginClick = () => setIsAuthOpen(true)
 
     return (
         <>
@@ -94,6 +97,7 @@ const SideMenu = () => {
             <div className="mt-4 border-t border-white/5 pt-4">
                 <PWAInstallButton />
             </div>
+            <AuthDialog isOpen={isAuthOpen} onOpenChange={setIsAuthOpen} />
         </>
     )
 }
