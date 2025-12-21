@@ -1,21 +1,50 @@
 {
-    "name": "BarberGo - Seu Agendamento",
+    "id": "com.barbergo.app",
+    "name": "BarberGo - Agendamento de Barbearia",
     "short_name": "BarberGo",
-    "description": "Agende seu corte na palma da mão",
+    "description": "Agende seu corte de cabelo e barba com rapidez e facilidade.",
     "start_url": "/",
     "display": "standalone",
+    "orientation": "portrait",
     "background_color": "#141518",
     "theme_color": "#815b40",
+    "categories": [
+        "lifestyle",
+        "productivity"
+    ],
     "icons": [
         {
-            "src": "/icon-192x192.png",
+            "src": "/manifest-icon-192.maskable.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
-            "src": "/icon-512x512.png",
+            "src": "/manifest-icon-192.maskable.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/manifest-icon-512.maskable.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/manifest-icon-512.maskable.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/screenshot-mobile.png",
+            "sizes": "750x1334",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Tela Inicial do BarberGo"
         }
     ]
 }
