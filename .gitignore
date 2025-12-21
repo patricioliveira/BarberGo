@@ -9,6 +9,7 @@
 /hall/node_modules
 apps/exclusive/node_modules
 apps/hall/node_modules
+apps/crm/node_modules
 
 # packages
 /packages
@@ -24,6 +25,7 @@ apps/hall/node_modules
 /out/
 apps/exclusive/.next
 apps/hall/.next
+apps/crm/.next
 
 # production
 /build

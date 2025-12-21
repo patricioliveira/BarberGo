@@ -2,12 +2,8 @@
   "name": "barbergo-monorepo",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "postinstall": "npm run db:generate -w @barbergo/database",
+    "postinstall": "pnpm --filter @barbergo/database db:generate",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "start": "turbo run start",
@@ -27,6 +23,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.2.6",
     "bcryptjs": "^3.0.3"
   }
 }

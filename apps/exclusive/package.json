@@ -11,9 +11,9 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
-    "@barbergo/database": "*",
-    "@barbergo/shared": "*",
-    "@barbergo/ui": "*",
+    "@barbergo/database": "workspace:*",
+    "@barbergo/shared": "workspace:*",
+    "@barbergo/ui": "workspace:*",
     "@auth/prisma-adapter": "^2.4.2",
     "@hookform/resolvers": "^3.9.0",
     "@prisma/client": "^5.17.0",
