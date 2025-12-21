@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Sheet, SheetContent, 
 import {
     CalendarIcon, DollarSign, Users, ShieldCheck, User,
     CalendarCheck2, Settings2, Power, Loader2, Store, Bell,
-    ChevronLeft, ChevronRight, CalendarDays
+    ChevronLeft, ChevronRight, CalendarDays, CreditCard
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -20,7 +20,7 @@ import Footer from "@/_components/footer"
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
-// Importação do componente de notificação
+// IMPORTAÇÃO DO SININHO
 import NotificationBell from "../_components/notification-bell"
 
 export default function AdminPage() {
@@ -104,7 +104,7 @@ export default function AdminPage() {
                             </h2>
                             <Badge className={stats.role === "ADMIN" ? "bg-primary" : "bg-green-600"}>{stats.role}</Badge>
 
-                            {/* Adição do componente de sininho passando os agendamentos correspondentes à visão */}
+                            {/* SININHO ADICIONADO */}
                             <NotificationBell bookings={viewMode === "personal" ? stats.personalBookings : stats.bookings} />
                         </div>
                     </div>
@@ -124,22 +124,21 @@ export default function AdminPage() {
                                     <Button variant={isStaffActive ? "destructive" : "default"} size="sm" onClick={() => setIsConfirmOpen(true)} className={`h-11 col-span-2 sm:col-auto text-xs font-semibold ${!isStaffActive && 'bg-green-600 text-white'}`}><Power size={16} className="mr-2" /> {isStaffActive ? "Inativar" : "Ativar"}</Button>
                                 </>
                             ) : (
-                                <Button variant="outline" asChild className="h-11 w-full sm:w-auto text-xs border-secondary text-white"><Link href="/admin/settings">Configurações</Link></Button>
+                                <>
+                                    {/* BOTÃO FINANCEIRO ADICIONADO */}
+                                    <Button variant="outline" asChild className="h-11 text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10"><Link href="/admin/billing"><CreditCard size={16} className="mr-2" /> Assinatura</Link></Button>
+                                    <Button variant="outline" asChild className="h-11 text-xs border-secondary text-white"><Link href="/admin/settings">Configurações</Link></Button>
+                                </>
                             )}
                         </div>
                     </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-
-                    <KpiCard title={viewMode === "personal" ? "Meu Faturamento" : "Faturamento Total"} icon={DollarSign} value={viewMode === "personal" ? stats.personalKpi.revenue : stats.kpi.revenue} isMoney />
-
-                    <KpiCard title="Total Agendamentos" icon={CalendarIcon} value={viewMode === "personal" ? stats.personalKpi.bookings : stats.kpi.bookings} />
-
-                    <KpiCard title="Agenda de Hoje" icon={Users} value={viewMode === "personal" ? stats.personalKpi.today : stats.kpi.today} sub="Clientes para hoje" />
-
-                    <KpiCard title="Status Atual" icon={ShieldCheck} value={viewMode === "personal" ? (isStaffActive ? "Disponível" : "Pausado") : (stats.kpi.isClosed ? "Fechada" : "Aberta")} />
-
+                    <KpiCard title={viewMode === "personal" ? "Meus Resultados" : "Faturamento da Barbearia"} icon={DollarSign} value={viewMode === "personal" ? stats.personalKpi.revenue : stats.kpi.revenue} isMoney />
+                    <KpiCard title="Minha Agenda" icon={CalendarIcon} value={viewMode === "personal" ? stats.personalKpi.bookings : stats.kpi.bookings} />
+                    <KpiCard title="Agenda Hoje" icon={Users} value={viewMode === "personal" ? stats.personalKpi.today : stats.kpi.today} sub="Clientes agendados" />
+                    <KpiCard title="Status" icon={ShieldCheck} value={viewMode === "personal" ? (isStaffActive ? "Ativo" : "Inativo") : (stats.kpi.isClosed ? "Fechada" : "Aberta")} />
                 </div>
 
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-7">
