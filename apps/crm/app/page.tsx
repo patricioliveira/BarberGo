@@ -1,24 +1,37 @@
+// apps/crm/app/page.tsx
 import { getServerSession } from "next-auth"
-import { redirect } from "next/navigation"
 import { db } from "@barbergo/database"
 import { authOptions } from "./_lib/auth"
 import PartnerDashboard from "./_components/partner-dashboard"
 import OwnerDashboard from "./_components/owner-dashboard"
+import { LogoutButton } from "./_components/logout-button"
+import { LoginForm } from "./_components/login-form"
 
 export default async function CRMRootPage() {
     const session = await getServerSession(authOptions)
 
+    // 1. Se NÃO logado: Renderiza a tela de login (sem dialog)
     if (!session?.user) {
-        return <div>Acesso negado.</div>
+        return (
+            <div className="flex min-h-screen flex-col items-center justify-center bg-background text-center p-6">
+                <div className="mb-8">
+                    <h1 className="text-4xl font-bold mb-2">BarberGo <span className="text-primary">CRM</span></h1>
+                    <p className="text-muted-foreground max-w-md">
+                        Gestão centralizada para administradores e parceiros.
+                    </p>
+                </div>
+                <LoginForm />
+            </div>
+        )
     }
 
+    // 2. Se logado: Busca o Role do usuário no banco
     const user = await db.user.findUnique({
-        // O TS agora reconhecerá session.user.id sem erro
         where: { id: session.user.id },
         include: { referredBarbershops: { include: { subscription: true } } }
     })
 
-    // 3. Renderização Condicional com Fallback
+    // 3. Renderização Condicional baseada no Role
     if (user?.role === "SUPER_ADMIN") {
         return <OwnerDashboard />
     }
@@ -27,14 +40,15 @@ export default async function CRMRootPage() {
         return <PartnerDashboard partner={user} />
     }
 
-    // 4. Tela de erro amigável (ou redirecionamento para o app principal)
+    // 4. Fallback: Usuário logado mas sem permissão de CRM
     return (
-        <div className="flex h-screen flex-col items-center justify-center p-10 text-center">
-            <h1 className="text-2xl font-bold text-red-500">Acesso Restrito</h1>
-            <p className="mt-2 text-gray-400">
-                Esta área é exclusiva para administradores e parceiros do BarberGo.
+        <div className="flex h-screen flex-col items-center justify-center text-center p-10">
+            <h1 className="text-xl font-bold text-red-500 font-mono">ACESSO RESTRITO</h1>
+            <p className="text-gray-400 mt-2 max-w-sm">
+                Esta conta não possui permissões administrativas.
+                Por favor, utilize uma conta de Administrador ou Parceiro.
             </p>
-            <a href="/" className="mt-6 text-primary underline">Voltar para a Home</a>
+            <LogoutButton />
         </div>
     )
 }

@@ -4,6 +4,8 @@ import { Store, DollarSign, TrendingUp, ArrowRight, User, Users, Percent, Trash2
 import Link from "next/link"
 import { AddBarbershopDialog } from "./add-barbershop-dialog";
 import { AddPartnerDialog } from "./add-partner-dialog";
+import { LogoutButton } from "./logout-button";
+import { PartnersTable } from "./partners-table";
 
 export default async function OwnerDashboard() {
     // Busca Clientes e Parceiros
@@ -31,14 +33,17 @@ export default async function OwnerDashboard() {
 
     return (
         <div className="p-8 space-y-8 max-w-7xl mx-auto text-white">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-start"> {/* Alterado para items-start */}
                 <div>
-                    <h1 className="text-4xl font-black tracking-tighter italic">BarberGo <span className="text-primary">CENTRAL</span></h1>
-                    <p className="text-gray-500 font-medium">Gestão Estratégica da SoftHouse</p>
+                    <h1 className="text-4xl font-black tracking-tighter italic">BarberGo <span className="text-primary">CRM</span></h1>
+                    <p className="text-gray-500 font-medium">Gestão Estratégica</p>
                 </div>
-                <div className="flex gap-3">
-                    <AddPartnerDialog />
-                    <AddBarbershopDialog />
+                <div className="flex flex-col items-end gap-4"> {/* Container para botões e logout */}
+                    <LogoutButton />
+                    <div className="flex gap-3">
+                        <AddPartnerDialog />
+                        <AddBarbershopDialog partners={partners} />
+                    </div>
                 </div>
             </div>
 
@@ -120,51 +125,9 @@ export default async function OwnerDashboard() {
                 <TabsContent value="partners">
                     <Card className="bg-secondary border-none shadow-2xl ring-1 ring-white/5 overflow-hidden rounded-[32px]">
                         <CardHeader className="p-8 border-b border-white/5 bg-black/20">
-                            <CardTitle className="text-xl font-bold">Gestão de Parceiros Indicadores</CardTitle>
+                            <CardTitle className="text-xl font-bold">Gestão de Parceiros/Indicadores</CardTitle>
                         </CardHeader>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-black/40 text-[10px] uppercase font-black text-gray-500">
-                                    <tr>
-                                        <th className="p-6">Parceiro</th>
-                                        <th className="p-6">Comissão (%)</th>
-                                        <th className="p-6">Indicações (Ativas/Total)</th>
-                                        <th className="p-6">Total a Pagar</th>
-                                        <th className="p-6 text-right">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-sm">
-                                    {partners.map(partner => {
-                                        const totalReferrals = partner.referredBarbershops.length
-                                        const activeReferrals = partner.referredBarbershops.filter(s => s.subscription?.status === 'ACTIVE').length
-                                        const revenue = partner.referredBarbershops
-                                            .filter(s => s.subscription?.status === 'ACTIVE')
-                                            .reduce((sum, s) => sum + Number(s.subscription?.price || 0), 0)
-                                        const commission = (revenue * Number(partner.commissionPercentage)) / 100
-
-                                        return (
-                                            <tr key={partner.id} className="border-t border-white/5 hover:bg-white/5 transition-all">
-                                                <td className="p-6">
-                                                    <p className="font-bold">{partner.name}</p>
-                                                    <p className="text-[10px] text-gray-500 uppercase">{partner.email}</p>
-                                                </td>
-                                                <td className="p-6 font-mono font-bold text-amber-500">{Number(partner.commissionPercentage)}%</td>
-                                                <td className="p-6 text-gray-400 font-bold">{activeReferrals} / {totalReferrals}</td>
-                                                <td className="p-6 font-mono font-bold text-green-500">R$ {commission.toFixed(2)}</td>
-                                                <td className="p-6 text-right space-x-2">
-                                                    <Button size="icon" variant="ghost" className={partner.isActive ? "text-green-500" : "text-red-500"} title="Ativar/Inativar">
-                                                        <Power size={18} />
-                                                    </Button>
-                                                    <Button size="icon" variant="ghost" className="text-red-500 hover:bg-red-500/10">
-                                                        <Trash2 size={18} />
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                        <PartnersTable partners={partners} /> {/* Novo Componente Cliente */}
                     </Card>
                 </TabsContent>
             </Tabs>

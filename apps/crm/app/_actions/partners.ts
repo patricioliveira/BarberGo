@@ -8,8 +8,16 @@ export const createPartner = async (data: { name: string, email: string, percent
     const tempPassword = Math.random().toString(36).slice(-8)
     const hashedPassword = await bcrypt.hash(tempPassword, 10)
 
-    await db.user.create({
-        data: {
+    // Usamos UPSERT para aproveitar o usuário existente ou criar um novo
+    await db.user.upsert({
+        where: { email: data.email },
+        update: {
+            role: "PARTNER",
+            commissionPercentage: data.percentage,
+            isActive: true
+            // Não alteramos a senha de um usuário que já existe para não bloqueá-lo
+        },
+        create: {
             name: data.name,
             email: data.email,
             password: hashedPassword,
@@ -18,6 +26,7 @@ export const createPartner = async (data: { name: string, email: string, percent
             isActive: true
         }
     })
+
     revalidatePath("/")
     return tempPassword
 }

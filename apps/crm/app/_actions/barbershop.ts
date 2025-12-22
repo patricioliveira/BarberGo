@@ -11,18 +11,33 @@ export const createBarbershopWithDetails = async (data: {
     ownerName: string,
     ownerEmail: string,
     plan: "PRO" | "PREMIUM",
-    price: number
+    price: number,
+    referredById?: string | null
 }) => {
-    // 1. Verificar se o slug já existe
+    // 1. Verificar se o parceiro está ativo (se houver um indicado)
+    if (data.referredById) {
+        const partner = await db.user.findUnique({
+            where: { id: data.referredById },
+            select: { isActive: true, name: true }
+        })
+
+        if (!partner) {
+            throw new Error("Parceiro não encontrado.")
+        }
+
+        if (!partner.isActive) {
+            throw new Error(`O parceiro ${partner.name} está inativo e não pode receber novas indicações.`)
+        }
+    }
+
+    // 2. Verificar se o slug já existe
     const slugExists = await db.barbershop.findUnique({ where: { slug: data.slug } })
     if (slugExists) throw new Error("Este slug já está em uso.")
 
-    // 2. Gerar senha aleatória de 8 caracteres
     const tempPassword = Math.random().toString(36).slice(-8)
     const hashedPassword = await bcrypt.hash(tempPassword, 10)
 
     // 3. Criar ou atualizar o Usuário (Dono)
-    // O NextAuth associa automaticamente se o e-mail for o mesmo no login do Google
     const user = await db.user.upsert({
         where: { email: data.ownerEmail },
         update: { role: "ADMIN" },
@@ -40,16 +55,17 @@ export const createBarbershopWithDetails = async (data: {
             name: data.name,
             slug: data.slug.toLowerCase().replace(/\s+/g, '-'),
             address: data.address,
-            imageUrl: "https://utfs.io/f/c97a2dc9-cf2a-468b-a351-bfad31dabc95-16p.png", // Placeholder
+            imageUrl: "https://utfs.io/f/c97a2dc9-cf2a-468b-a351-bfad31dabc95-16p.png",
             description: "Unidade cadastrada via CRM Central",
             ownerId: user.id,
+            referredById: data.referredById,
             isExclusive: data.plan === 'PREMIUM',
             subscription: {
                 create: {
                     plan: data.plan,
                     price: data.price,
                     status: "TRIAL",
-                    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 dias de trial
+                    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
                 }
             }
         }

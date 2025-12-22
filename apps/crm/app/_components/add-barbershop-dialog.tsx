@@ -1,3 +1,4 @@
+// apps/crm/app/_components/add-barbershop-dialog.tsx
 "use client"
 
 import { useState } from "react"
@@ -6,7 +7,7 @@ import { UserPlus, Copy, CheckCircle2, Loader2 } from "lucide-react"
 import { createBarbershopWithDetails } from "../_actions/barbershop"
 import { toast } from "sonner"
 
-export function AddBarbershopDialog() {
+export function AddBarbershopDialog({ partners }: { partners: any[] }) {
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState<any>(null)
@@ -20,11 +21,12 @@ export function AddBarbershopDialog() {
             const res = await createBarbershopWithDetails({
                 name: fd.get("name") as string,
                 slug: fd.get("slug") as string,
-                address: fd.get("address") as string, // Corrigido: Agora enviando address
+                address: fd.get("address") as string,
                 ownerEmail: fd.get("email") as string,
                 ownerName: fd.get("ownerName") as string,
                 plan: fd.get("plan") as any,
                 price: Number(fd.get("price")),
+                referredById: fd.get("referredById") === "direct" ? null : fd.get("referredById") as string,
             })
             setResult({ ...res, email: fd.get("email") })
             toast.success("Unidade e Dono registrados!")
@@ -62,22 +64,71 @@ export function AddBarbershopDialog() {
                     <UserPlus size={20} /> Nova Barbearia
                 </Button>
             </DialogTrigger>
-            <DialogContent className="bg-secondary border-none text-white max-w-lg">
-                <DialogHeader><DialogTitle className="text-xl font-black italic">NOVO PARCEIRO SAAS</DialogTitle></DialogHeader>
-                <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 py-4">
-                    <div className="col-span-2 space-y-1"><Label>Nome da Barbearia</Label><Input name="name" required className="bg-black/20 border-white/10" /></div>
-                    <div className="space-y-1"><Label>Slug URL</Label><Input name="slug" placeholder="ex: barba-nobre" required className="bg-black/20 border-white/10" /></div>
-                    <div className="space-y-1"><Label>Plano</Label>
-                        <Select name="plan" defaultValue="PRO">
-                            <SelectTrigger className="bg-black/20 border-white/10"><SelectValue /></SelectTrigger>
-                            <SelectContent className="bg-secondary text-white border-white/10"><SelectItem value="PRO">PRO</SelectItem><SelectItem value="PREMIUM">PREMIUM</SelectItem></SelectContent>
-                        </Select>
+            <DialogContent className="bg-[#1A1B1F] border-secondary text-white max-w-md p-0 overflow-hidden rounded-[32px]">
+                <DialogHeader className="p-6 pb-2">
+                    <DialogTitle className="text-xl font-black italic uppercase">Novo Cliente SaaS</DialogTitle>
+                </DialogHeader>
+
+                {/* ScrollArea customizada */}
+                <form onSubmit={handleSubmit} className="flex flex-col max-h-[80vh]">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+                        <div className="space-y-1">
+                            <Label className="text-gray-400 text-xs font-bold uppercase">Nome da Barbearia</Label>
+                            <Input name="name" required className="bg-black/20 border-white/10 h-11" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <Label className="text-gray-400 text-xs font-bold uppercase">Slug URL</Label>
+                                <Input name="slug" placeholder="ex: barba-nobre" required className="bg-black/20 border-white/10 h-11" />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-gray-400 text-xs font-bold uppercase">Plano</Label>
+                                <Select name="plan" defaultValue="PRO">
+                                    <SelectTrigger className="bg-black/20 border-white/10 h-11"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="bg-secondary text-white border-white/10">
+                                        <SelectItem value="PRO">PRO</SelectItem>
+                                        <SelectItem value="PREMIUM">PREMIUM</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-gray-400 text-xs font-bold uppercase">Endereço Completo</Label>
+                            <Input name="address" required className="bg-black/20 border-white/10 h-11" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-gray-400 text-xs font-bold uppercase">Nome do Gestor</Label>
+                            <Input name="ownerName" required className="bg-black/20 border-white/10 h-11" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-gray-400 text-xs font-bold uppercase">E-mail do Gestor</Label>
+                            <Input name="email" type="email" required className="bg-black/20 border-white/10 h-11" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-gray-400 text-xs font-bold uppercase">Mensalidade (R$)</Label>
+                            <Input name="price" type="number" step="0.01" defaultValue="89.90" className="bg-black/20 border-white/10 text-primary font-bold h-11" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-gray-400 text-xs font-bold uppercase">Indicado por (Parceiro)</Label>
+                            <Select name="referredById" defaultValue="direct">
+                                <SelectTrigger className="bg-black/20 border-white/10 h-11 text-white">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-secondary text-white border-white/10">
+                                    <SelectItem value="direct">Cliente Direto (Sem Parceiro)</SelectItem>
+                                    {partners.map(p => (
+                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
-                    <div className="col-span-2 space-y-1"><Label>Endereço Completo</Label><Input name="address" required className="bg-black/20 border-white/10" /></div>
-                    <div className="space-y-1"><Label>Nome do Gestor</Label><Input name="ownerName" required className="bg-black/20 border-white/10" /></div>
-                    <div className="space-y-1"><Label>E-mail do Gestor</Label><Input name="email" type="email" required className="bg-black/20 border-white/10" /></div>
-                    <div className="col-span-2 space-y-1"><Label>Mensalidade (R$)</Label><Input name="price" type="number" step="0.01" defaultValue="89.90" className="bg-black/20 border-white/10 text-primary font-bold" /></div>
-                    <Button type="submit" disabled={loading} className="col-span-2 mt-4 bg-primary font-bold h-12 uppercase">{loading ? <Loader2 className="animate-spin" /> : "Gerar Acesso e Unidade"}</Button>
+
+                    <div className="p-6 bg-black/20 border-t border-white/5">
+                        <Button type="submit" disabled={loading} className="w-full bg-primary font-bold h-12 uppercase rounded-xl">
+                            {loading ? <Loader2 className="animate-spin" /> : "Gerar Acesso e Unidade"}
+                        </Button>
+                    </div>
                 </form>
             </DialogContent>
         </Dialog>
