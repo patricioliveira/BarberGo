@@ -13,6 +13,8 @@ enum UserRole {
   USER
   ADMIN
   STAFF
+  PARTNER
+  SUPER_ADMIN
 }
 
 enum BookingStatus {
@@ -52,9 +54,13 @@ model User {
   accounts      Account[]
   sessions      Session[]
   bookings      Booking[]
+
+  commissionPercentage  Decimal        @default(0) @db.Decimal(5, 2)
+  isActive              Boolean        @default(true)
   
   // Relação: Barbearias que este usuário é DONO
   managedBarbershops Barbershop[] @relation("BarbershopOwner")
+  referredBarbershops   Barbershop[]   @relation("PartnerReferral")
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -104,6 +110,9 @@ model Barbershop {
   
   bookings       Booking[]           @relation("BarbershopBookings")
   staff          BarberStaff[]
+
+  referredById          String?
+  referredBy            User?          @relation("PartnerReferral", fields: [referredById], references: [id])
 }
 
 model BarberStaff {

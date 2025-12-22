@@ -1,21 +1,30 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@barbergo/ui";
+import { AuthProvider } from "./_providers/auth";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "CRM | BarberGo Admin",
-    description: "Gestão Centralizada do SaaS BarberGo",
+    title: "BarberGo CRM",
+    description: "Gestão para Barbearias",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+    children,
+}: Readonly<{
+    children: React.ReactNode;
+}>) {
     return (
         <html lang="pt-BR" className="dark">
             <body className={`${inter.className} bg-background text-white antialiased`}>
-                {children}
-                <Toaster />
+                {/* O componente agora está definido e importado */}
+                <AuthProvider>
+                    <div className="flex-1">
+                        {children}
+                    </div>
+                </AuthProvider>
             </body>
         </html>
     );
