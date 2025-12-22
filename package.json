@@ -1,6 +1,7 @@
 {
   "name": "barbergo-monorepo",
   "version": "0.1.0",
+  "packageManager": "pnpm@10.0.0",
   "private": true,
   "scripts": {
     "postinstall": "pnpm --filter @barbergo/database db:generate",
