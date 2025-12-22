@@ -1,3 +1,5 @@
+// apps/crm/app/_components/owner-dashboard.tsx
+
 import { db } from "@barbergo/database"
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Tabs, TabsContent, TabsList, TabsTrigger } from "@barbergo/ui"
 import { Store, DollarSign, TrendingUp, ArrowRight, User, Users, Percent, Trash2, Power } from "lucide-react"
@@ -18,7 +20,7 @@ export default async function OwnerDashboard() {
         include: { referredBarbershops: { include: { subscription: true } } }
     })
 
-    // Cálculos de Clientes (Seu código base)
+    // Cálculos de Clientes
     const totalMRR = barbershops.reduce((acc, shop) => acc + Number(shop.subscription?.price || 0), 0)
     const annualProjetion = totalMRR * 12
     const trialCount = barbershops.filter(s => s.subscription?.status === 'TRIAL').length
@@ -32,85 +34,110 @@ export default async function OwnerDashboard() {
     }, 0)
 
     return (
-        <div className="p-8 space-y-8 max-w-7xl mx-auto text-white">
-            <div className="flex justify-between items-start"> {/* Alterado para items-start */}
-                <div>
-                    <h1 className="text-4xl font-black tracking-tighter italic">BarberGo <span className="text-primary">CRM</span></h1>
-                    <p className="text-gray-500 font-medium">Gestão Estratégica</p>
+        // Ajuste de padding: p-4 no mobile, p-8 no desktop
+        <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto text-white">
+
+            {/* HEADER RESPONSIVO OTIMIZADO */}
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                {/* Topo: Marca e Logout lado a lado no Mobile */}
+                <div className="flex items-start justify-between w-full sm:w-auto">
+                    <div className="space-y-1">
+                        <h1 className="text-3xl md:text-4xl font-black tracking-tighter italic uppercase leading-none">
+                            BarberGo <span className="text-primary">CRM</span>
+                        </h1>
+                        <p className="text-gray-500 text-[10px] md:text-sm font-bold uppercase tracking-widest">
+                            Gestão Estratégica
+                        </p>
+                    </div>
+
+                    {/* Logout visível no topo direito apenas no Mobile */}
+                    <div className="sm:hidden">
+                        <LogoutButton />
+                    </div>
                 </div>
-                <div className="flex flex-col items-end gap-4"> {/* Container para botões e logout */}
-                    <LogoutButton />
-                    <div className="flex gap-3">
+
+                {/* Ações: Botões de Adicionar */}
+                <div className="flex flex-col gap-3 w-full sm:w-auto sm:flex-row sm:items-center">
+                    {/* Logout no Desktop (escondido no mobile aqui para evitar duplicidade) */}
+                    <div className="hidden sm:block">
+                        <LogoutButton />
+                    </div>
+
+                    {/* Grade de botões: 2 colunas no mobile, flex no desktop */}
+                    <div className="grid grid-cols-2 sm:flex gap-2">
                         <AddPartnerDialog />
                         <AddBarbershopDialog partners={partners} />
                     </div>
                 </div>
             </div>
 
-            {/* KPIs FINANCEIROS (Seu código base + Comissão) */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <KpiCard title="Faturamento Mensal (MRR)" value={totalMRR} isMoney icon={DollarSign} color="text-green-500" />
-                <KpiCard title="Projeção Anual (ARR)" value={annualProjetion} isMoney icon={TrendingUp} color="text-primary" />
-                <KpiCard title="Total Comissões" value={totalCommission} isMoney icon={Percent} color="text-amber-500" />
-                <KpiCard title="Em Período Trial" value={trialCount} icon={ArrowRight} color="text-blue-500" />
+            {/* KPIs FINANCEIROS: 1 col no mobile, 2 em tablets, 4 no desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <KpiCard title="MRR Mensal" value={totalMRR} isMoney icon={DollarSign} color="text-green-500" />
+                <KpiCard title="Projeção ARR" value={annualProjetion} isMoney icon={TrendingUp} color="text-primary" />
+                <KpiCard title="Comissões" value={totalCommission} isMoney icon={Percent} color="text-amber-500" />
+                <KpiCard title="Trial Ativos" value={trialCount} icon={ArrowRight} color="text-blue-500" />
             </div>
 
             <Tabs defaultValue="clients" className="space-y-6">
-                <TabsList className="bg-secondary border border-white/5 p-1">
-                    <TabsTrigger value="clients" className="gap-2"><Store size={14} /> Clientes</TabsTrigger>
-                    <TabsTrigger value="partners" className="gap-2"><Users size={14} /> Parceiros (Afiliados)</TabsTrigger>
+                {/* Tabs que ocupam a largura total no mobile */}
+                <TabsList className="bg-secondary border border-white/5 p-1 w-full justify-start sm:w-auto">
+                    <TabsTrigger value="clients" className="flex-1 sm:flex-none gap-2">
+                        <Store size={14} /> Clientes
+                    </TabsTrigger>
+                    <TabsTrigger value="partners" className="flex-1 sm:flex-none gap-2">
+                        <Users size={14} /> Parceiros
+                    </TabsTrigger>
                 </TabsList>
 
-                {/* ABA DE CLIENTES (Seu código base integral) */}
+                {/* ABA DE CLIENTES */}
                 <TabsContent value="clients">
-                    <Card className="bg-secondary border-none shadow-2xl ring-1 ring-white/5 overflow-hidden rounded-[32px]">
-                        <CardHeader className="p-8 border-b border-white/5 flex flex-row items-center justify-between bg-black/20">
-                            <CardTitle className="text-xl font-bold">Carteira de Clientes</CardTitle>
-                            <div className="flex gap-2">
-                                <Badge className="bg-primary/10 text-primary border-none">PRO: {barbershops.filter(b => b.subscription?.plan === 'PRO').length}</Badge>
-                                <Badge className="bg-purple-500/10 text-purple-500 border-none">PREMIUM: {barbershops.filter(b => b.subscription?.plan === 'PREMIUM').length}</Badge>
+                    <Card className="bg-secondary border-none shadow-2xl ring-1 ring-white/5 overflow-hidden rounded-[24px] md:rounded-[32px]">
+                        <CardHeader className="p-5 md:p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-black/20">
+                            <CardTitle className="text-lg md:text-xl font-bold">Carteira de Clientes</CardTitle>
+                            <div className="flex flex-wrap gap-2">
+                                <Badge className="bg-primary/10 text-primary border-none text-[10px]">PRO: {barbershops.filter(b => b.subscription?.plan === 'PRO').length}</Badge>
+                                <Badge className="bg-purple-500/10 text-purple-500 border-none text-[10px]">PREMIUM: {barbershops.filter(b => b.subscription?.plan === 'PREMIUM').length}</Badge>
                             </div>
                         </CardHeader>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
+
+                        {/* Scroll horizontal apenas na tabela para não quebrar o layout */}
+                        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">
+                            <table className="w-full text-left min-w-[700px]">
                                 <thead className="bg-black/40 text-[10px] uppercase font-black text-gray-500">
                                     <tr>
-                                        <th className="p-6">Unidade / Responsável</th>
-                                        <th className="p-6">Indicado por</th>
-                                        <th className="p-6">Plano</th>
-                                        <th className="p-6">Status Financeiro</th>
-                                        <th className="p-6">Ticket</th>
-                                        <th className="p-6 text-right">Controle</th>
+                                        <th className="px-4 py-4 md:px-6 md:py-6">Unidade / Dono</th>
+                                        <th className="px-4 py-4 md:px-6 md:py-6">Indicado</th>
+                                        <th className="px-4 py-4 md:px-6 md:py-6 text-center">Status</th>
+                                        <th className="px-4 py-4 md:px-6 md:py-6">Ticket</th>
+                                        <th className="px-4 py-4 md:px-6 md:py-6 text-right">Ação</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-sm">
                                     {barbershops.map(shop => (
                                         <tr key={shop.id} className="border-t border-white/5 hover:bg-white/5 transition-colors group">
-                                            <td className="p-6">
-                                                <p className="font-bold text-white group-hover:text-primary transition-colors uppercase">{shop.name}</p>
-                                                <p className="text-xs text-gray-500 flex items-center gap-1 font-medium"><User size={10} /> {shop.owner?.name || 'Sem dono'}</p>
+                                            <td className="px-4 py-4 md:px-6 md:py-6">
+                                                <p className="font-bold text-white group-hover:text-primary transition-colors uppercase truncate max-w-[150px]">{shop.name}</p>
+                                                <p className="text-[10px] text-gray-500 flex items-center gap-1 font-medium italic"><User size={10} /> {shop.owner?.name || 'Sem dono'}</p>
                                             </td>
-                                            <td className="p-6 text-xs italic text-gray-400">
+                                            <td className="px-4 py-4 md:px-6 md:py-6 text-xs text-gray-400">
                                                 {shop.referredBy?.name || "Direto"}
                                             </td>
-                                            <td className="p-6">
-                                                <Badge variant="outline" className={`text-[9px] font-bold ${shop.subscription?.plan === 'PREMIUM' ? 'border-purple-500 text-purple-500' : 'border-gray-600'}`}>
-                                                    {shop.subscription?.plan || 'PRO'}
-                                                </Badge>
-                                            </td>
-                                            <td className="p-6">
-                                                <Badge className={`font-black border-none text-[10px] ${shop.subscription?.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500' :
-                                                    shop.subscription?.status === 'PAST_DUE' ? 'bg-red-500/10 text-red-500' :
-                                                        shop.subscription?.status === 'SUSPENDED' ? 'bg-red-600 text-white' :
-                                                            'bg-amber-500/10 text-amber-500'
+                                            <td className="px-4 py-4 md:px-6 md:py-6 text-center">
+                                                <Badge className={`font-black border-none text-[9px] px-2 py-0.5 ${shop.subscription?.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500' :
+                                                        shop.subscription?.status === 'PAST_DUE' ? 'bg-red-500/10 text-red-500' :
+                                                            shop.subscription?.status === 'SUSPENDED' ? 'bg-red-600 text-white' :
+                                                                'bg-amber-500/10 text-amber-500'
                                                     }`}>
                                                     {shop.subscription?.status || 'TRIAL'}
                                                 </Badge>
                                             </td>
-                                            <td className="p-6 font-mono font-bold text-primary">R$ {Number(shop.subscription?.price || 0).toFixed(2)}</td>
-                                            <td className="p-6 text-right">
-                                                <Button size="sm" variant="secondary" className="rounded-xl font-bold group-hover:bg-primary group-hover:text-white transition-all" asChild>
-                                                    <Link href={`/barbershop/${shop.id}`}>GERENCIAR</Link>
+                                            <td className="px-4 py-4 md:px-6 md:py-6 font-mono font-bold text-primary text-xs md:text-sm">
+                                                R$ {Number(shop.subscription?.price || 0).toFixed(2)}
+                                            </td>
+                                            <td className="px-4 py-4 md:px-6 md:py-6 text-right">
+                                                <Button size="sm" variant="secondary" className="h-8 rounded-lg font-bold text-[10px] md:text-xs" asChild>
+                                                    <Link href={`/barbershop/${shop.id}`}>ABRIR</Link>
                                                 </Button>
                                             </td>
                                         </tr>
@@ -121,13 +148,12 @@ export default async function OwnerDashboard() {
                     </Card>
                 </TabsContent>
 
-                {/* ABA DE PARCEIROS (Novo) */}
                 <TabsContent value="partners">
-                    <Card className="bg-secondary border-none shadow-2xl ring-1 ring-white/5 overflow-hidden rounded-[32px]">
-                        <CardHeader className="p-8 border-b border-white/5 bg-black/20">
-                            <CardTitle className="text-xl font-bold">Gestão de Parceiros/Indicadores</CardTitle>
+                    <Card className="bg-secondary border-none shadow-2xl ring-1 ring-white/5 overflow-hidden rounded-[24px] md:rounded-[32px]">
+                        <CardHeader className="p-5 md:p-8 border-b border-white/5 bg-black/20">
+                            <CardTitle className="text-lg md:text-xl font-bold">Gestão de Parceiros</CardTitle>
                         </CardHeader>
-                        <PartnersTable partners={partners} /> {/* Novo Componente Cliente */}
+                        <PartnersTable partners={partners} />
                     </Card>
                 </TabsContent>
             </Tabs>
@@ -135,16 +161,15 @@ export default async function OwnerDashboard() {
     )
 }
 
-// Seu componente KpiCard original (Mantido)
 function KpiCard({ title, value, isMoney, icon: Icon, color }: any) {
     return (
-        <Card className="bg-secondary border-none ring-1 ring-white/5 shadow-xl">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{title}</CardTitle>
-                <Icon size={16} className={color || "text-gray-400"} />
+        <Card className="bg-secondary border-none ring-1 ring-white/5 shadow-xl transition-transform active:scale-95">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest">{title}</CardTitle>
+                <Icon size={14} className={color || "text-gray-400"} />
             </CardHeader>
-            <CardContent>
-                <div className={`text-2xl font-bold ${color || "text-white"}`}>
+            <CardContent className="p-4 pt-0">
+                <div className={`text-xl md:text-2xl font-bold ${color || "text-white"}`}>
                     {isMoney ? Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value) : value}
                 </div>
             </CardContent>
