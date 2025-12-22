@@ -27,6 +27,8 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                 plan: fd.get("plan") as any,
                 price: Number(fd.get("price")),
                 referredById: fd.get("referredById") === "direct" ? null : fd.get("referredById") as string,
+                trialDays: Number(fd.get("trialDays")),
+                billingType: fd.get("billingType") as "PREPAID" | "POSTPAID"
             })
             setResult({ ...res, email: fd.get("email") })
             toast.success("Unidade e Dono registrados!")
@@ -69,13 +71,15 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                     <DialogTitle className="text-xl font-black italic uppercase">Novo Cliente SaaS</DialogTitle>
                 </DialogHeader>
 
-                {/* ScrollArea customizada */}
                 <form onSubmit={handleSubmit} className="flex flex-col max-h-[80vh]">
                     <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+
+                        {/* Dados Básicos */}
                         <div className="space-y-1">
                             <Label className="text-gray-400 text-xs font-bold uppercase">Nome da Barbearia</Label>
                             <Input name="name" required className="bg-black/20 border-white/10 h-11" />
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <Label className="text-gray-400 text-xs font-bold uppercase">Slug URL</Label>
@@ -92,35 +96,64 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                                 </Select>
                             </div>
                         </div>
+
                         <div className="space-y-1">
                             <Label className="text-gray-400 text-xs font-bold uppercase">Endereço Completo</Label>
                             <Input name="address" required className="bg-black/20 border-white/10 h-11" />
                         </div>
-                        <div className="space-y-1">
-                            <Label className="text-gray-400 text-xs font-bold uppercase">Nome do Gestor</Label>
-                            <Input name="ownerName" required className="bg-black/20 border-white/10 h-11" />
+
+                        {/* Dados do Gestor */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <Label className="text-gray-400 text-xs font-bold uppercase">Nome do Gestor</Label>
+                                <Input name="ownerName" required className="bg-black/20 border-white/10 h-11" />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-gray-400 text-xs font-bold uppercase">E-mail do Gestor</Label>
+                                <Input name="email" type="email" required className="bg-black/20 border-white/10 h-11" />
+                            </div>
                         </div>
-                        <div className="space-y-1">
-                            <Label className="text-gray-400 text-xs font-bold uppercase">E-mail do Gestor</Label>
-                            <Input name="email" type="email" required className="bg-black/20 border-white/10 h-11" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-gray-400 text-xs font-bold uppercase">Mensalidade (R$)</Label>
-                            <Input name="price" type="number" step="0.01" defaultValue="89.90" className="bg-black/20 border-white/10 text-primary font-bold h-11" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-gray-400 text-xs font-bold uppercase">Indicado por (Parceiro)</Label>
-                            <Select name="referredById" defaultValue="direct">
-                                <SelectTrigger className="bg-black/20 border-white/10 h-11 text-white">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-secondary text-white border-white/10">
-                                    <SelectItem value="direct">Cliente Direto (Sem Parceiro)</SelectItem>
-                                    {partners.map(p => (
-                                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+
+                        {/* Configurações de Cobrança e Trial */}
+                        <div className="pt-4 border-t border-white/5 space-y-5">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <Label className="text-gray-400 text-xs font-bold uppercase">Mensalidade (R$)</Label>
+                                    <Input name="price" type="number" step="0.01" defaultValue="89.90" className="bg-black/20 border-white/10 text-primary font-bold h-11" />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-gray-400 text-xs font-bold uppercase">Dias de Trial</Label>
+                                    <Input name="trialDays" type="number" defaultValue="7" className="bg-black/20 border-white/10 h-11" />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <Label className="text-gray-400 text-xs font-bold uppercase">Modelo de Faturamento</Label>
+                                <Select name="billingType" defaultValue="POSTPAID">
+                                    <SelectTrigger className="bg-black/20 border-white/10 h-11">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-secondary text-white border-white/10">
+                                        <SelectItem value="POSTPAID">Pós-pago (Sempre 30 dias após uso)</SelectItem>
+                                        <SelectItem value="PREPAID">Antecipado (Paga para começar o mês)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <Label className="text-gray-400 text-xs font-bold uppercase">Indicado por (Parceiro)</Label>
+                                <Select name="referredById" defaultValue="direct">
+                                    <SelectTrigger className="bg-black/20 border-white/10 h-11 text-white">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-secondary text-white border-white/10">
+                                        <SelectItem value="direct">Cliente Direto (Sem Parceiro)</SelectItem>
+                                        {partners.map(p => (
+                                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
 

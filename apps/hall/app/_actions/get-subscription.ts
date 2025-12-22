@@ -21,3 +21,14 @@ export const getBarbershopSubscription = async () => {
 
     return user?.managedBarbershops[0]?.subscription || null
 }
+
+export const getSubscriptionWithHistory = async (barbershopId: string) => {
+    return await db.subscription.findUnique({
+        where: { barbershopId },
+        include: {
+            invoices: {
+                orderBy: { createdAt: 'desc' }
+            }
+        }
+    })
+}

@@ -37,6 +37,11 @@ enum PlanType {
   PREMIUM
 }
 
+enum BillingType {
+  PREPAID
+  POSTPAID
+}
+
 // --- MODELS ---
 
 model User {
@@ -77,9 +82,26 @@ model Subscription {
   
   startDate      DateTime           @default(now())
   endDate        DateTime?          // Data do fim do período atual (Trial ou Pago)
+
+  trialDays       Int                @default(7)
+  billingType     BillingType        @default(POSTPAID)
+  invoices        Invoice[]
   
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+}
+
+model Invoice {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  amount         Decimal
+  dueDate        DateTime
+  paidAt         DateTime?
+  method         String?      // PIX, CARD, LINK
+  reference      String?      // Mês/Ano ou ID de transação externa
+  status         String       @default("PENDING") // PENDING, PAID, CANCELED
+  createdAt      DateTime     @default(now())
 }
 
 model Barbershop {

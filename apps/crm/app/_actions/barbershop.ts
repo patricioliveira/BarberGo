@@ -12,7 +12,9 @@ export const createBarbershopWithDetails = async (data: {
     ownerEmail: string,
     plan: "PRO" | "PREMIUM",
     price: number,
-    referredById?: string | null
+    referredById?: string | null,
+    trialDays: number,
+    billingType: "PREPAID" | "POSTPAID"
 }) => {
     // 1. Verificar se o parceiro está ativo (se houver um indicado)
     if (data.referredById) {
@@ -49,6 +51,9 @@ export const createBarbershopWithDetails = async (data: {
         }
     })
 
+    const endDate = new Date()
+    endDate.setDate(endDate.getDate() + data.trialDays)
+    
     // 4. Criar a Barbearia e a Assinatura
     const barbershop = await db.barbershop.create({
         data: {
@@ -65,7 +70,9 @@ export const createBarbershopWithDetails = async (data: {
                     plan: data.plan,
                     price: data.price,
                     status: "TRIAL",
-                    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                    trialDays: data.trialDays,
+                    billingType: data.billingType,
+                    endDate: endDate
                 }
             }
         }
