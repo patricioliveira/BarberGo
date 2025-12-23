@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import Image from "next/image"
 import {
     Button,
     Input,
@@ -34,13 +35,16 @@ import {
     X,
     Loader2,
     CreditCard,
-    Edit2
+    Edit2,
+    Camera,
+    ImagePlus
 } from "lucide-react"
 
 import { updateBarbershopSettings } from "../../_actions/update-barbershop-settings"
 import { ConfirmDialog } from "../../_components/confirm-dialog"
 import { getBarbershopSettings } from "@/_actions/get-barbershop-settings"
 import { addOrUpdateStaff, toggleStaffStatus, deleteStaff } from "@/_actions/manage-staff"
+import { uploadImageAction } from "../../_actions/upload-image"
 import { toast } from "sonner"
 
 const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (c: boolean) => void }) => (
@@ -54,7 +58,7 @@ const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChang
 )
 
 type StaffMember = { id: string; name: string; email: string; jobTitle: string; isActive: boolean }
-type Service = { id: string; name: string; description: string; price: string; duration: number }
+type Service = { id: string; name: string; description: string; price: string; duration: number; imageUrl?: string }
 type WorkingHour = { day: string; open: string; close: string; isOpen: boolean }
 
 const DEFAULT_HOURS: WorkingHour[] = [
@@ -74,6 +78,8 @@ export default function SettingsPage() {
     const [isDirty, setIsDirty] = useState(false)
     const [activeTab, setActiveTab] = useState("general")
     const [isLoading, setIsLoading] = useState(true)
+    const [isUploading, setIsUploading] = useState(false)
+    const [uploadingServiceId, setUploadingServiceId] = useState<string | null>(null)
 
     const [isNewStaffModalOpen, setIsNewStaffModalOpen] = useState(false)
     const [dialogConfig, setDialogConfig] = useState<{
@@ -84,7 +90,7 @@ export default function SettingsPage() {
     const [customPayment, setCustomPayment] = useState("")
     const [isSubmittingStaff, setIsSubmittingStaff] = useState(false)
 
-    const [storeData, setStoreData] = useState({ id: "", name: "", address: "", phones: [] as string[], paymentMethods: [] as string[], isClosed: false })
+    const [storeData, setStoreData] = useState({ id: "", name: "", address: "", imageUrl: "", phones: [] as string[], paymentMethods: [] as string[], isClosed: false })
     const [hours, setHours] = useState<WorkingHour[]>(DEFAULT_HOURS)
     const [staff, setStaff] = useState<StaffMember[]>([])
     const [services, setServices] = useState<Service[]>([])
@@ -112,13 +118,14 @@ export default function SettingsPage() {
                             id: data.id,
                             name: data.name || "",
                             address: data.address || "",
+                            imageUrl: data.imageUrl || "",
                             phones: data.phones || [],
                             paymentMethods: data.paymentMethods || [],
                             isClosed: data.isClosed || false
                         })
                         if (data.openingHours) setHours(data.openingHours as unknown as WorkingHour[])
                         setStaff(data.staff.map((s: any) => ({ id: s.id, name: s.name, email: s.email || "", jobTitle: s.jobTitle, isActive: s.isActive })))
-                        setServices(data.services.map((s: any) => ({ id: s.id, name: s.name, description: s.description || "", price: s.price, duration: s.duration })))
+                        setServices(data.services.map((s: any) => ({ id: s.id, name: s.name, description: s.description || "", price: s.price, duration: s.duration, imageUrl: s.imageUrl })))
                     }
                 } catch (error) {
                     toast.error("Erro ao carregar configurações.")
@@ -143,6 +150,49 @@ export default function SettingsPage() {
         const res = await updateBarbershopSettings({ barbershopId: storeData.id, storeData, hours, services, staff })
         if (res.success) { setIsDirty(false); toast.success("Configurações salvas!") }
         else toast.error(res.error)
+    }
+
+    const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsUploading(true)
+        const formData = new FormData()
+        formData.append("file", file)
+
+        try {
+            const res = await uploadImageAction(formData)
+            setStoreData(prev => ({ ...prev, imageUrl: res.url }))
+            setIsDirty(true)
+            toast.success("Foto carregada! Clique em 'Salvar Tudo' para confirmar.")
+        } catch (error: any) {
+            toast.error(error.message || "Erro no upload")
+        } finally {
+            setIsUploading(false)
+        }
+    }
+
+    const handleServiceImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const serviceId = services[index].id
+        setUploadingServiceId(serviceId)
+        const formData = new FormData()
+        formData.append("file", file)
+
+        try {
+            const res = await uploadImageAction(formData)
+            const newServices = [...services]
+            newServices[index].imageUrl = res.url
+            setServices(newServices)
+            setIsDirty(true)
+            toast.success("Imagem do serviço carregada!")
+        } catch (error: any) {
+            toast.error("Erro no upload do serviço")
+        } finally {
+            setUploadingServiceId(null)
+        }
     }
 
     const handleAddAdminAsStaff = async () => {
@@ -236,9 +286,42 @@ export default function SettingsPage() {
                 </TabsList>
 
                 <TabsContent value="general" className="space-y-6">
-                    <Card className="bg-[#1A1B1F] border-none text-white">
+                    <Card className="bg-[#1A1B1F] border-none text-white overflow-hidden">
                         <CardHeader><CardTitle className="text-primary flex items-center gap-2"><Store size={20} /> Unidade</CardTitle></CardHeader>
                         <CardContent className="space-y-6">
+
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Banner de Identidade (16:9 recomendado)</Label>
+                                <div className="relative group h-[200px] w-full rounded-2xl overflow-hidden border-2 border-dashed border-secondary/50 hover:border-primary/50 transition-all bg-black/40">
+                                    {storeData.imageUrl ? (
+                                        <>
+                                            <Image src={storeData.imageUrl} alt="Barbershop" fill className="object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Label htmlFor="banner-upload" className="cursor-pointer bg-primary p-3 rounded-full shadow-2xl active:scale-90 transition-transform">
+                                                    <Camera size={24} />
+                                                </Label>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-500">
+                                            <div className="p-4 bg-secondary/30 rounded-full"><ImagePlus size={32} /></div>
+                                            <p className="text-xs font-bold uppercase tracking-tight">Enviar imagem da fachada ou logo</p>
+                                            <Input id="banner-upload" type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleBannerUpload} disabled={isUploading} />
+                                        </div>
+                                    )}
+
+                                    {isUploading && (
+                                        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-2 z-10">
+                                            <Loader2 size={24} className="animate-spin text-primary" />
+                                            <p className="text-[10px] font-black text-primary animate-pulse tracking-widest uppercase">Enviando para o Storage...</p>
+                                        </div>
+                                    )}
+                                    {storeData.imageUrl && !isUploading && (
+                                        <input id="banner-upload" type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
+                                    )}
+                                </div>
+                            </div>
+
                             <div className="flex items-center justify-between p-4 border border-secondary rounded-lg bg-black/20">
                                 <Label>Status da Loja</Label>
                                 <div className="flex items-center gap-3">
@@ -267,22 +350,11 @@ export default function SettingsPage() {
                                     {["Pix", "Dinheiro", "Visa", "Mastercard", "Elo"].map(method => {
                                         const active = storeData.paymentMethods.includes(method)
                                         return (
-                                            <Button
-                                                key={method}
-                                                variant={active ? "default" : "outline"}
-                                                size="sm"
-                                                className="rounded-full h-8 text-xs"
-                                                onClick={() => togglePayment(method)}
-                                            >
+                                            <Button key={method} variant={active ? "default" : "outline"} size="sm" className="rounded-full h-8 text-xs" onClick={() => togglePayment(method)}>
                                                 {active && <Check size={14} className="mr-1" />} {method}
                                             </Button>
                                         )
                                     })}
-                                    {storeData.paymentMethods.filter(m => !["Pix", "Dinheiro", "Visa", "Mastercard", "Elo"].includes(m)).map(m => (
-                                        <Button key={m} variant="default" size="sm" className="rounded-full h-8 text-xs bg-indigo-600" onClick={() => togglePayment(m)}>
-                                            <X size={14} className="mr-1" /> {m}
-                                        </Button>
-                                    ))}
                                 </div>
                                 <div className="flex gap-2 max-w-sm">
                                     <Input placeholder="Outro (ex: PicPay)..." value={customPayment} onChange={e => setCustomPayment(e.target.value)} className="bg-secondary border-none h-9 text-xs" />
@@ -303,7 +375,6 @@ export default function SettingsPage() {
                                         <Switch checked={h.isOpen} onCheckedChange={(v) => { const n = [...hours]; n[i].isOpen = v; setHours(n); setIsDirty(true) }} />
                                         <span className={`text-sm font-medium ${!h.isOpen && 'text-gray-500'}`}>{h.day}</span>
                                     </div>
-
                                     {h.isOpen ? (
                                         <div className="flex items-center gap-2 justify-end">
                                             <Input type="time" value={h.open} onChange={e => { const n = [...hours]; n[i].open = e.target.value; setHours(n); setIsDirty(true) }} className="w-24 bg-secondary border-none h-9 text-center" />
@@ -322,72 +393,74 @@ export default function SettingsPage() {
                 </TabsContent>
 
                 <TabsContent value="services" className="space-y-4">
-                    <div className="flex justify-end"><Button size="sm" onClick={() => { setServices([...services, { id: Date.now().toString(), name: "", description: "", price: "0.00", duration: 30 }]); setIsDirty(true) }}><Plus size={16} className="mr-2" /> Novo Serviço</Button></div>
+                    <div className="flex justify-end">
+                        <Button size="sm" onClick={() => { setServices([...services, { id: Date.now().toString(), name: "", description: "", price: "0.00", duration: 30, imageUrl: "" }]); setIsDirty(true) }}>
+                            <Plus size={16} className="mr-2" /> Novo Serviço
+                        </Button>
+                    </div>
                     {services.map((s, i) => (
                         <Card key={s.id} className="bg-[#1A1B1F] border border-secondary/40 p-4 text-white">
-                            <div className="grid md:grid-cols-3 gap-4 mb-4">
-                                <div><Label className="text-xs">Nome</Label><Input value={s.name} onChange={e => { const n = [...services]; n[i].name = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
-                                <div><Label className="text-xs">Preço</Label><Input type="number" value={s.price} onChange={e => { const n = [...services]; n[i].price = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
-                                <div><Label className="text-xs">Minutos</Label><Input type="number" value={s.duration} onChange={e => { const n = [...services]; n[i].duration = parseInt(e.target.value); setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
+                            <div className="flex flex-col md:flex-row gap-6">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="relative h-24 w-24 rounded-lg overflow-hidden border border-secondary bg-black/20 group">
+                                        {s.imageUrl ? (
+                                            <>
+                                                <Image src={s.imageUrl} alt={s.name} fill className="object-cover" />
+                                                <Label htmlFor={`service-img-${i}`} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                                                    <Camera size={16} />
+                                                </Label>
+                                            </>
+                                        ) : (
+                                            <Label htmlFor={`service-img-${i}`} className="absolute inset-0 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-white/5 transition-colors">
+                                                <ImagePlus size={20} className="text-gray-600" />
+                                                <span className="text-[8px] text-gray-500 font-bold uppercase">Foto</span>
+                                            </Label>
+                                        )}
+                                        {uploadingServiceId === s.id && (
+                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                <Loader2 size={16} className="animate-spin text-primary" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <input id={`service-img-${i}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleServiceImageUpload(i, e)} disabled={uploadingServiceId === s.id} />
+                                    {s.imageUrl && (
+                                        <button onClick={() => { const n = [...services]; n[i].imageUrl = ""; setServices(n); setIsDirty(true) }} className="text-[9px] text-red-500 font-bold uppercase hover:underline">Remover</button>
+                                    )}
+                                </div>
+                                <div className="flex-1 space-y-4">
+                                    <div className="grid md:grid-cols-3 gap-4">
+                                        <div><Label className="text-xs">Nome</Label><Input value={s.name} onChange={e => { const n = [...services]; n[i].name = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
+                                        <div><Label className="text-xs">Preço</Label><Input type="number" value={s.price} onChange={e => { const n = [...services]; n[i].price = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
+                                        <div><Label className="text-xs">Minutos</Label><Input type="number" value={s.duration} onChange={e => { const n = [...services]; n[i].duration = parseInt(e.target.value); setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Input placeholder="Descrição..." value={s.description} onChange={e => { const n = [...services]; n[i].description = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none flex-1 h-8 text-xs" />
+                                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => { setServices(services.filter(x => x.id !== s.id)); setIsDirty(true) }}><Trash2 size={14} /></Button>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex gap-2"><Input placeholder="Descrição..." value={s.description} onChange={e => { const n = [...services]; n[i].description = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none flex-1 h-8" /><Button variant="destructive" size="icon" onClick={() => { setServices(services.filter(x => x.id !== s.id)); setIsDirty(true) }}><Trash2 size={14} /></Button></div>
                         </Card>
                     ))}
                 </TabsContent>
 
                 <TabsContent value="staff" className="space-y-4">
                     <div className="flex flex-col sm:flex-row justify-between gap-3 mb-6">
-                        <Button
-                            variant="outline"
-                            className="border-green-600 text-green-500 bg-transparent hover:bg-green-600/10 disabled:opacity-30 disabled:border-gray-700 disabled:text-gray-700"
-                            onClick={handleAddAdminAsStaff}
-                            disabled={isAdminAlreadyStaff}
-                        >
+                        <Button variant="outline" className="border-green-600 text-green-500 bg-transparent hover:bg-green-600/10 disabled:opacity-30 disabled:border-gray-700 disabled:text-gray-700" onClick={handleAddAdminAsStaff} disabled={isAdminAlreadyStaff}>
                             {isAdminAlreadyStaff ? "Você já é Barbeiro" : "Me adicionar como Barbeiro"}
                         </Button>
                         <Button onClick={() => setIsNewStaffModalOpen(true)}><UserPlus className="mr-2 h-4 w-4" /> Novo Funcionário</Button>
                     </div>
-
                     <div className="grid gap-4">
                         {staff.map((m, i) => (
                             <div key={m.id} className={`p-4 border rounded-xl flex flex-col md:flex-row items-center justify-between transition-all group ${!m.isActive ? 'opacity-50 grayscale bg-transparent' : 'bg-black/20 border-secondary'}`}>
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 w-full mb-4 md:mb-0 mr-0 md:mr-6">
-                                    <div className="relative">
-                                        <Label className="text-[10px] text-gray-500 mb-1 block">NOME PROFISSIONAL</Label>
-                                        <div className="relative">
-                                            <Input value={m.name} onChange={e => { const n = [...staff]; n[i].name = e.target.value; setStaff(n); setIsDirty(true) }} className="bg-[#141518] border-secondary/50 h-10 pr-8 focus:border-primary transition-colors" />
-                                            <Edit2 size={12} className="absolute right-3 top-3 text-gray-600 group-hover:text-primary" />
-                                        </div>
-                                    </div>
-                                    <div className="opacity-70">
-                                        <Label className="text-[10px] text-gray-500 mb-1 block">E-MAIL (LOGIN)</Label>
-                                        <p className="text-sm truncate bg-[#141518]/50 p-2.5 rounded-lg border border-secondary/20 text-gray-400">{m.email}</p>
-                                    </div>
-                                    <div className="relative">
-                                        <Label className="text-[10px] text-gray-500 mb-1 block">CARGO / TÍTULO</Label>
-                                        <div className="relative">
-                                            <Input value={m.jobTitle} onChange={e => { const n = [...staff]; n[i].jobTitle = e.target.value; setStaff(n); setIsDirty(true) }} className="bg-[#141518] border-secondary/50 h-10 pr-8 focus:border-primary transition-colors" />
-                                            <Edit2 size={12} className="absolute right-3 top-3 text-gray-600 group-hover:text-primary" />
-                                        </div>
-                                    </div>
+                                    <div className="relative"><Label className="text-[10px] text-gray-500 mb-1 block">NOME PROFISSIONAL</Label><div className="relative"><Input value={m.name} onChange={e => { const n = [...staff]; n[i].name = e.target.value; setStaff(n); setIsDirty(true) }} className="bg-[#141518] border-secondary/50 h-10 pr-8" /><Edit2 size={12} className="absolute right-3 top-3 text-gray-600 group-hover:text-primary" /></div></div>
+                                    <div className="opacity-70"><Label className="text-[10px] text-gray-500 mb-1 block">E-MAIL (LOGIN)</Label><p className="text-sm truncate bg-[#141518]/50 p-2.5 rounded-lg border border-secondary/20 text-gray-400">{m.email}</p></div>
+                                    <div className="relative"><Label className="text-[10px] text-gray-500 mb-1 block">CARGO / TÍTULO</Label><div className="relative"><Input value={m.jobTitle} onChange={e => { const n = [...staff]; n[i].jobTitle = e.target.value; setStaff(n); setIsDirty(true) }} className="bg-[#141518] border-secondary/50 h-10 pr-8" /><Edit2 size={12} className="absolute right-3 top-3 text-gray-600 group-hover:text-primary" /></div></div>
                                 </div>
                                 <div className="flex items-center gap-6 w-full md:w-auto justify-end border-t md:border-none pt-4 md:pt-0 border-secondary/30">
-                                    <div className="flex flex-col items-center gap-1">
-                                        <span className="text-[9px] uppercase font-bold text-gray-500">{m.isActive ? 'Ativo' : 'Inativo'}</span>
-                                        <Switch checked={m.isActive} onCheckedChange={async (val) => {
-                                            await toggleStaffStatus(m.id, val)
-                                            const n = [...staff]; n[i].isActive = val; setStaff(n);
-                                        }} />
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        className="text-red-500 hover:bg-red-500/10 h-10 w-10 p-0"
-                                        onClick={() => openConfirm("Remover Profissional?", `Remover ${m.name} permanentemente da equipe?`, async () => {
-                                            await handleDeleteStaff(m.id)
-                                        }, "destructive")}
-                                    >
-                                        <Trash2 size={20} />
-                                    </Button>
+                                    <div className="flex flex-col items-center gap-1"><span className="text-[9px] uppercase font-bold text-gray-500">{m.isActive ? 'Ativo' : 'Inativo'}</span><Switch checked={m.isActive} onCheckedChange={async (val) => { await toggleStaffStatus(m.id, val); const n = [...staff]; n[i].isActive = val; setStaff(n); }} /></div>
+                                    <Button variant="ghost" className="text-red-500 hover:bg-red-500/10 h-10 w-10 p-0" onClick={() => openConfirm("Remover Profissional?", `Remover ${m.name} permanentemente da equipe?`, async () => { await handleDeleteStaff(m.id) }, "destructive")}><Trash2 size={20} /></Button>
                                 </div>
                             </div>
                         ))}

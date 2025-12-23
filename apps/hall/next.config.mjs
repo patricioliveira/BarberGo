@@ -5,6 +5,18 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
+        protocol: 'https',
+        hostname: 'file.pulefila.com.br',
+        port: '',
+        pathname: '/barbergo/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '217.216.64.94',
+        port: '9000',
+        pathname: '/barbergo/**',
+      },
+      {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },

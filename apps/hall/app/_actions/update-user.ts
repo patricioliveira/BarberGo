@@ -1,13 +1,12 @@
 "use server"
 
-import { db } from "@barbergo/database" // Certifique-se que o Prisma está exportado aqui
-import { Prisma } from "@prisma/client" // Importamos o namespace Prisma para tipagem
+import { db } from "@barbergo/database"
+import { Prisma } from "@prisma/client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/_lib/auth"
 import { revalidatePath } from "next/cache"
 import { compare, hash } from "bcryptjs"
 
-// 1. Definimos a interface para uso no Frontend
 interface UserPhone {
     number: string
     isWhatsApp: boolean
@@ -16,6 +15,7 @@ interface UserPhone {
 export const updateProfile = async (params: {
     name: string;
     email: string;
+    image?: string; // Adicionado campo de imagem
     phones: UserPhone[]
 }) => {
     const session = await getServerSession(authOptions)
@@ -29,12 +29,13 @@ export const updateProfile = async (params: {
             data: {
                 name: params.name,
                 email: params.email,
-                // CORREÇÃO: Usamos 'as Prisma.InputJsonValue' para satisfazer o TypeScript do Prisma
+                image: params.image, // Persiste a URL da imagem no banco
                 UserPhone: params.phones as unknown as Prisma.InputJsonValue,
             },
         })
 
-        // Revalida as páginas para limpar o cache
+        // Revalida as páginas para que as alterações reflitam imediatamente
+        revalidatePath("/")
         revalidatePath("/profile")
         revalidatePath("/admin")
 
@@ -81,7 +82,8 @@ export const getUserProfile = async () => {
         select: {
             name: true,
             email: true,
-            UserPhone: true, // O campo do seu schema
+            image: true, // Adicionado para retornar a URL da imagem atual
+            UserPhone: true,
         }
     })
 }

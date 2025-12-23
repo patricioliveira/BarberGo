@@ -28,6 +28,7 @@ interface UpdateSettingsParams {
         phones: string[]
         paymentMethods: string[]
         isClosed: boolean
+        imageUrl: string,
     }
     hours: any
     services: ServiceInput[]
@@ -40,7 +41,7 @@ export const updateBarbershopSettings = async (params: UpdateSettingsParams) => 
     if (!session?.user) return { error: "Não autorizado" }
 
     try {
-        await db.$transaction(async (tx: { barbershop: { update: (arg0: { where: { id: string }; data: { name: string; address: string; phones: string[]; paymentMethods: string[]; isClosed: boolean; openingHours: any } }) => any }; barbershopService: { deleteMany: (arg0: { where: { barbershopId: string; id: { notIn: string[] } } }) => any; create: (arg0: { data: { id: undefined; price: string; barbershopId: string; imageUrl: string; name: string; description: string; duration: number } }) => any; update: (arg0: { where: { id: string | undefined }; data: { name: string; description: string; price: string; duration: number } }) => any }; barberStaff: { deleteMany: (arg0: { where: { barbershopId: string; id: { notIn: string[] } } }) => any; create: (arg0: { data: { id: undefined; barbershopId: string; name: string; email: string; jobTitle: string } }) => any; update: (arg0: { where: { id: string | undefined }; data: { name: string; email: string; jobTitle: string } }) => any } }) => {
+        await db.$transaction(async (tx: { barbershop: { update: (arg0: { where: { id: string }; data: { name: string; address: string; phones: string[]; paymentMethods: string[]; isClosed: boolean; imageUrl: string; openingHours: any } }) => any }; barbershopService: { deleteMany: (arg0: { where: { barbershopId: string; id: { notIn: string[] } } }) => any; create: (arg0: { data: { id: undefined; price: string; barbershopId: string; imageUrl: string; name: string; description: string; duration: number } }) => any; update: (arg0: { where: { id: string | undefined }; data: { name: string; description: string; price: string; duration: number } }) => any }; barberStaff: { deleteMany: (arg0: { where: { barbershopId: string; id: { notIn: string[] } } }) => any; create: (arg0: { data: { id: undefined; barbershopId: string; name: string; email: string; jobTitle: string } }) => any; update: (arg0: { where: { id: string | undefined }; data: { name: string; email: string; jobTitle: string } }) => any } }) => {
             // 1. Dados Básicos e Horários
             await tx.barbershop.update({
                 where: { id: params.barbershopId },
@@ -49,6 +50,7 @@ export const updateBarbershopSettings = async (params: UpdateSettingsParams) => 
                     address: params.storeData.address,
                     phones: params.storeData.phones,
                     paymentMethods: params.storeData.paymentMethods,
+                    imageUrl: params.storeData.imageUrl,
                     isClosed: params.storeData.isClosed,
                     openingHours: params.hours,
                 },
