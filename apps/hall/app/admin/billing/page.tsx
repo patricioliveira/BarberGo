@@ -24,6 +24,14 @@ export default function BillingPage() {
     const [subscription, setSubscription] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
 
+    //todo - adicionar nome da barbearia na mensagem para o suporte
+    // const shop = await db.barbershop.findUnique({
+    //     where: { id: subscription.barbershop.id },
+    //     include: {
+    //         owner: true
+    //     }
+    // })
+
     useEffect(() => {
         const load = async () => {
             try {
@@ -39,8 +47,9 @@ export default function BillingPage() {
     }, [])
 
     const handleContactSupport = () => {
-        const message = encodeURIComponent("Olá, sou administrador na BarberGo e preciso de suporte com meu faturamento.")
-        window.open(`https://wa.me/5599999999999?text=${message}`, "_blank")
+        //const message = encodeURIComponent(`Olá, sou administrador da ${shop?.name} na BarberGo e preciso de suporte com meu faturamento.`)
+        const message = encodeURIComponent(`Olá, sou administrador de barbearia na BarberGo e preciso de suporte com meu faturamento.`)
+        window.open(`https://wa.me/558421335813?text=${message}`, "_blank")
     }
 
     if (isLoading) {
@@ -56,10 +65,30 @@ export default function BillingPage() {
     }
 
     const statusMap = {
-        TRIAL: { label: "Período de Teste", color: "bg-amber-500/10 text-amber-500", icon: Clock },
-        ACTIVE: { label: "Assinatura Ativa", color: "bg-green-500/10 text-green-500", icon: CheckCircle2 },
-        PAST_DUE: { label: "Pagamento Pendente", color: "bg-red-500/10 text-red-500", icon: AlertCircle },
-        SUSPENDED: { label: "Acesso Suspenso", color: "bg-red-600 text-white", icon: ShieldCheck },
+        TRIAL: {
+            label: "Período de Teste",
+            badge: "bg-blue-500/10 text-blue-500",
+            accent: "bg-blue-500",
+            icon: Clock
+        },
+        ACTIVE: {
+            label: "Assinatura Ativa",
+            badge: "bg-green-500/10 text-green-500",
+            accent: "bg-green-500",
+            icon: CheckCircle2
+        },
+        PAST_DUE: {
+            label: "Pagamento Pendente",
+            badge: "bg-amber-500/10 text-amber-500",
+            accent: "bg-amber-500",
+            icon: AlertCircle
+        },
+        SUSPENDED: {
+            label: "Acesso Suspenso",
+            badge: "bg-red-600 text-white",
+            accent: "bg-red-600",
+            icon: ShieldCheck
+        },
     }
 
     const currentStatus = statusMap[subscription?.status as keyof typeof statusMap] || statusMap.TRIAL
@@ -89,13 +118,13 @@ export default function BillingPage() {
 
                 <div className="grid gap-6 md:grid-cols-3">
                     <Card className="md:col-span-2 bg-[#1A1B1F] border-none shadow-2xl ring-1 ring-white/5 overflow-hidden">
-                        <div className={`h-1.5 w-full ${currentStatus.color.split(' ')[1].replace('text-', 'bg-')}`} />
+                        <div className={`h-1.5 w-full ${currentStatus.accent}`} />
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="text-white text-lg flex items-center gap-2">
                                 <CreditCard size={20} className="text-primary" />
                                 Detalhes do Plano
                             </CardTitle>
-                            <Badge className={`${currentStatus.color} border-none font-bold px-3 py-1`}>
+                            <Badge className={`${currentStatus.badge} border-none font-bold px-3 py-1`}>
                                 <currentStatus.icon size={12} className="mr-1.5" />
                                 {currentStatus.label}
                             </Badge>

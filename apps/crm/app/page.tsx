@@ -53,6 +53,7 @@ export default async function CRMRootPage() {
             <h1 className="text-xl font-bold text-red-500 font-mono">ACESSO RESTRITO</h1>
             <p className="text-gray-400 mt-2 max-w-sm">
                 Esta conta não possui permissões administrativas.
+                Por favor, utilize uma conta de Administrador ou Parceiro.
             </p>
             <LogoutButton />
         </div>

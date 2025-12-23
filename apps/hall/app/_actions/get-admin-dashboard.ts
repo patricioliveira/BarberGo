@@ -73,6 +73,7 @@ export const getAdminDashboard = async (targetDate: Date = new Date()) => {
     return {
         role: user.role,
         isBarber,
+        subscription: barbershop?.subscription || null,
         barberId: staffProfile?.id,
         kpi: { ...calculateKpis(shopBookings), views: barbershop?.views || 0, isClosed: barbershop?.isClosed || false },
         chartData: calculateChart(shopBookings),
