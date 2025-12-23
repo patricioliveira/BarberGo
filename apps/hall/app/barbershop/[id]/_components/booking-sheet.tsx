@@ -10,7 +10,7 @@ import { ptBR } from "date-fns/locale"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 
-import { Loader2, User as UserIcon, CalendarIcon, ClockIcon, MapPinIcon, ScissorsIcon } from "lucide-react"
+import { Loader2, User as UserIcon, CalendarIcon, ClockIcon, MapPinIcon, ScissorsIcon, Ban } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { getDayBookings } from "@/_actions/get-day-bookings"
 import { saveBooking } from "@/_actions/save-booking"
@@ -128,6 +128,13 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
                 </SheetHeader>
 
                 <div className="py-6 px-5 space-y-8">
+                    {activeStaff.length === 0 && (
+                        <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl text-center space-y-2">
+                            <Ban size={32} className="text-red-500 mx-auto" />
+                            <p className="text-sm font-bold text-white">Indisponível para agendamento</p>
+                            <p className="text-xs text-gray-400">Esta barbearia não possui profissionais ativos no momento.</p>
+                        </div>
+                    )}
                     {/* 1. DATA - Ajustado classNames para ocupar 100% */}
                     <div className="space-y-3">
                         <h2 className="text-xs uppercase text-gray-400 font-bold flex items-center gap-2">
@@ -283,7 +290,7 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
 
                     <Button
                         onClick={handleBookingSubmit}
-                        disabled={!date || !hour || !selectedBarber || isLoading}
+                        disabled={!date || !hour || !selectedBarber || isLoading || activeStaff.length === 0}
                         className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 font-bold text-md transition-all active:scale-95 shadow-lg shadow-primary/10"
                     >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

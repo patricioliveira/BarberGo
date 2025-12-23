@@ -36,7 +36,7 @@ export const getAdminDashboard = async (targetDate: Date = new Date()) => {
 
     const barbershop = await db.barbershop.findUnique({
         where: { id: barbershopId },
-        select: { views: true, isClosed: true }
+        select: { views: true, isClosed: true, subscription: true },
     })
 
     let personalBookings: any[] = []

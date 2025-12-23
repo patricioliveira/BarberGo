@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Sheet, SheetContent, 
 import {
     CalendarIcon, DollarSign, Users, ShieldCheck, User,
     CalendarCheck2, Settings2, Power, Loader2, Store, Bell,
-    ChevronLeft, ChevronRight, CalendarDays, CreditCard
+    ChevronLeft, ChevronRight, CalendarDays, CreditCard,
+    ShieldAlert
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -32,6 +33,8 @@ export default function AdminPage() {
     const [period, setPeriod] = useState<"day" | "week" | "month">("month")
     const [viewDate, setViewDate] = useState(new Date())
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+
+    const subStatus = stats?.subscription?.status // Ex: ACTIVE, PAST_DUE, SUSPENDED
 
     const load = useCallback(async (date: Date) => {
         try {
@@ -95,7 +98,49 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
             <Header />
+            {subStatus === 'SUSPENDED' && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
+                    <Card className="max-w-md w-full bg-[#1A1B1F] border-red-500/50 shadow-2xl shadow-red-500/10">
+                        <CardHeader className="text-center">
+                            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <ShieldAlert size={32} className="text-red-500" />
+                            </div>
+                            <CardTitle className="text-xl font-bold text-white">Acesso Bloqueado</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center space-y-6 pb-8">
+                            <p className="text-sm text-gray-400">
+                                Sua assinatura foi suspensa por falta de pagamento ou pendência administrativa. Regularize agora para voltar a gerenciar sua unidade.
+                            </p>
+                            <div className="flex flex-col gap-3">
+                                <Button asChild className="bg-red-600 hover:bg-red-700 font-bold h-12">
+                                    <Link href="/admin/billing">Ver Assinatura e Pagar</Link>
+                                </Button>
+                                <Button variant="outline" className="border-secondary text-white">
+                                    Falar com Suporte
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
             <div className="container mx-auto p-4 md:p-6 space-y-8 flex-1">
+                {/* AVISO DE INADIMPLÊNCIA: STATUS PAST_DUE */}
+                {subStatus === 'PAST_DUE' && (
+                    <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-500/20 rounded-lg text-amber-500">
+                                <CreditCard size={20} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-white">Assinatura Pendente</p>
+                                <p className="text-xs text-gray-400">Identificamos um atraso. Regularize para evitar o bloqueio da sua agenda.</p>
+                            </div>
+                        </div>
+                        <Button size="sm" variant="outline" className="border-amber-500 text-amber-500" asChild>
+                            <Link href="/admin/billing">Regularizar</Link>
+                        </Button>
+                    </div>
+                )}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="space-y-1">
                         <div className="flex items-center gap-3">
