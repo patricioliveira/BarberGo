@@ -8,4 +8,4 @@ cmds = ["pnpm install --frozen-lockfile"]
 cmds = ["pnpm turbo run build --filter=@barbergo/hall"]
 
 [start]
-cmd = "pnpm --filter @barbergo/hall start"
+cmd = "pnpm --filter @barbergo/hall start -- --port 3006 --hostname 0.0.0.0"
