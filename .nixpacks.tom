@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs_22", "pnpm"]
+
+[phases.build]
+cmds = ["pnpm turbo run build --filter=@barbergo/hall"]
+
+[start]
+cmd = "pnpm --filter @barbergo/hall start"
