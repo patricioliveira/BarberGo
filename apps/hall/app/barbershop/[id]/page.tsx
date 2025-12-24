@@ -22,6 +22,7 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
                     user: true
                 }
             },
+            ratings: true,
         },
     })
 

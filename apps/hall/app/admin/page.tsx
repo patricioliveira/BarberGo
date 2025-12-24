@@ -7,7 +7,7 @@ import {
     CalendarIcon, DollarSign, Users, ShieldCheck, User,
     CalendarCheck2, Settings2, Power, Loader2, Store,
     ChevronLeft, ChevronRight, CalendarDays, CreditCard,
-    ShieldAlert
+    ShieldAlert, Star
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -176,6 +176,14 @@ export default function AdminPage() {
                                 ) : (
                                     <>
                                         <Button variant="outline" asChild className="h-11 text-xs border-amber-500/50 text-amber-500 hover:bg-amber-500/10"><Link href="/admin/billing"><CreditCard size={16} className="mr-2" /> Assinatura</Link></Button>
+
+                                        {/* Botão de Avaliações */}
+                                        <Button variant="outline" asChild className="h-11 text-xs border-secondary text-white hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-colors">
+                                            <Link href="/admin/ratings">
+                                                <Star size={16} className="mr-2" /> Avaliações
+                                            </Link>
+                                        </Button>
+
                                         <Button variant="outline" asChild className="h-11 text-xs border-secondary text-white"><Link href="/admin/settings">Configurações</Link></Button>
                                     </>
                                 )}

@@ -54,41 +54,41 @@ model User {
   password      String?
   role          UserRole  @default(USER)
 
-  staffProfile  BarberStaff?
+  staffProfile BarberStaff?
 
-  accounts      Account[]
-  sessions      Session[]
-  bookings      Booking[]
+  accounts Account[]
+  sessions Session[]
+  bookings Booking[]
 
-  commissionPercentage  Decimal        @default(0) @db.Decimal(5, 2)
-  isActive              Boolean        @default(true)
-  
+  commissionPercentage Decimal @default(0) @db.Decimal(5, 2)
+  isActive             Boolean @default(true)
+
   // Relação: Barbearias que este usuário é DONO
   managedBarbershops Barbershop[] @relation("BarbershopOwner")
-  referredBarbershops   Barbershop[]   @relation("PartnerReferral")
+  referredBarbershops Barbershop[] @relation("PartnerReferral")
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  // NOVOS CAMPOS PARA RELAÇÃO
+  ratings   Rating[]
+  favorites Favorite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Subscription {
-  id             String             @id @default(cuid())
-  barbershopId   String             @unique
-  barbershop     Barbershop         @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
-  
-  status         SubscriptionStatus @default(TRIAL)
-  plan           PlanType           @default(PRO)
-  price          Decimal            @default(0) @db.Decimal(10, 2)
-  
-  startDate      DateTime           @default(now())
-  endDate        DateTime?          // Data do fim do período atual (Trial ou Pago)
-
-  trialDays       Int                @default(7)
-  billingType     BillingType        @default(POSTPAID)
-  invoices        Invoice[]
-  
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id           String             @id @default(cuid())
+  barbershopId String             @unique
+  barbershop   Barbershop         @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  status       SubscriptionStatus @default(TRIAL)
+  plan         PlanType           @default(PRO)
+  price        Decimal            @default(0) @db.Decimal(10, 2)
+  startDate    DateTime           @default(now())
+  endDate      DateTime?
+  trialDays    Int                @default(7)
+  billingType  BillingType        @default(POSTPAID)
+  invoices     Invoice[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
 model Invoice {
@@ -98,43 +98,43 @@ model Invoice {
   amount         Decimal
   dueDate        DateTime
   paidAt         DateTime?
-  method         String?      // PIX, CARD, LINK
-  reference      String?      // Mês/Ano ou ID de transação externa
+  method         String? // PIX, CARD, LINK
+  reference      String? // Mês/Ano ou ID de transação externa
   status         String       @default("PENDING") // PENDING, PAID, CANCELED
   createdAt      DateTime     @default(now())
 }
 
 model Barbershop {
-  id             String              @id @default(uuid())
+  id             String   @id @default(uuid())
   name           String
-  slug           String              @unique
+  slug           String   @unique
   address        String
   phones         String[]
   description    String
   imageUrl       String
-  isExclusive    Boolean             @default(false)
-  subscription   Subscription? 
-
+  isExclusive    Boolean  @default(false)
+  subscription   Subscription?
   cnpj           String?
   openingHours   Json?
-  isClosed       Boolean             @default(false)
+  isClosed       Boolean  @default(false)
   paymentMethods String[]
-  views          Int                 @default(0)
-  
-  // Relação com o Dono (Admin)
+  views          Int      @default(0)
   ownerId        String?
-  owner          User?               @relation("BarbershopOwner", fields: [ownerId], references: [id])
+  owner          User?    @relation("BarbershopOwner", fields: [ownerId], references: [id])
 
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  
-  services       BarbershopService[]
-  
-  bookings       Booking[]           @relation("BarbershopBookings")
-  staff          BarberStaff[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  referredById          String?
-  referredBy            User?          @relation("PartnerReferral", fields: [referredById], references: [id])
+  services BarbershopService[]
+  bookings Booking[]           @relation("BarbershopBookings")
+  staff    BarberStaff[]
+
+  // NOVOS CAMPOS PARA RELAÇÃO
+  ratings   Rating[]
+  favorites Favorite[]
+
+  referredById String?
+  referredBy   User?   @relation("PartnerReferral", fields: [referredById], references: [id])
 }
 
 model BarberStaff {
@@ -144,14 +144,11 @@ model BarberStaff {
   imageUrl     String?
   email        String?    @unique
   isActive     Boolean    @default(true)
-  openingHours Json? 
-
+  openingHours Json?
   barbershopId String
   barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
-  
   userId       String?    @unique
   user         User?      @relation(fields: [userId], references: [id])
-  
   bookings     Booking[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -176,17 +173,42 @@ model Booking {
   serviceId    String
   service      BarbershopService @relation(fields: [serviceId], references: [id])
   date         DateTime
-  
   status       BookingStatus     @default(CONFIRMED)
-
   barbershopId String
   barbershop   Barbershop        @relation("BarbershopBookings", fields: [barbershopId], references: [id])
-  
   staffId      String?
   staff        BarberStaff?      @relation(fields: [staffId], references: [id])
 
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  // NOVO CAMPO PARA RELAÇÃO
+  rating Rating?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Rating {
+  id           String     @id @default(cuid())
+  stars        Int
+  comment      String?
+  showOnPage   Boolean    @default(false)
+  bookingId    String     @unique
+  booking      Booking    @relation(fields: [bookingId], references: [id])
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  createdAt    DateTime   @default(now())
+}
+
+model Favorite {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, barbershopId])
 }
 
 model Account {
@@ -201,10 +223,8 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([provider, providerAccountId])
@@ -215,7 +235,6 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

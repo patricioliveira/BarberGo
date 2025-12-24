@@ -20,17 +20,22 @@ export default async function AppointmentsPage() {
             barbershop: true,
             staff: {
                 include: { user: true }
-            }
+            },
+            rating: true,
         },
         orderBy: { date: "desc" },
     })
 
-    const serializedBookings = bookings.map((booking) => ({
+    // Serializa os dados (converte Decimal para number/string se necessário, embora o componente aceite number)
+    // O Next.js reclama de objetos complexos passados para Client Components, 
+    // mas se seus tipos estiverem alinhados, passará direto.
+    // Caso tenha erro de serialização de Decimal, precisará de um map.
+    const serializedBookings = bookings.map(booking => ({
         ...booking,
         service: {
             ...booking.service,
-            price: Number(booking.service.price),
-        },
+            price: Number(booking.service.price)
+        }
     }))
 
     return (

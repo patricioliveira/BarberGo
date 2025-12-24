@@ -1,13 +1,15 @@
 "use client"
 
-import { Barbershop } from "@prisma/client"
+import { Barbershop, Rating } from "@prisma/client"
 import { Card, CardContent, Button } from "@barbergo/ui"
 import Image from "next/image"
 import { MapPinIcon, PhoneIcon, CreditCardIcon, StarIcon } from "lucide-react"
 import { toast } from "sonner"
 
 interface SidebarRightProps {
-    barbershop: Barbershop
+    barbershop: Barbershop & {
+        ratings?: Rating[] // Adicionado para receber as avaliações
+    }
 }
 
 interface WorkingHour {
@@ -35,6 +37,13 @@ const SidebarRight = ({ barbershop }: SidebarRightProps) => {
 
     // Usa os horários do banco ou um padrão caso seja null
     const openingHours = (barbershop.openingHours as unknown as WorkingHour[]) || []
+
+    // Cálculo da média de avaliação
+    const ratings = barbershop.ratings || []
+    const totalRatings = ratings.length
+    const averageRating = totalRatings > 0
+        ? ratings.reduce((acc, r) => acc + r.stars, 0) / totalRatings
+        : 5.0
 
     return (
         <div className="sticky top-4">
@@ -93,11 +102,11 @@ const SidebarRight = ({ barbershop }: SidebarRightProps) => {
                         ))}
                     </div>
 
-                    {/* Rating */}
+                    {/* Rating Dinâmico */}
                     <div className="flex items-center gap-2 border-y border-[#26272B] py-4">
                         <StarIcon className="fill-primary text-primary" size={20} />
-                        <span className="text-xl font-bold text-white">5.0</span>
-                        <span className="text-sm text-gray-500">(889 avaliações)</span>
+                        <span className="text-xl font-bold text-white">{averageRating.toFixed(1)}</span>
+                        <span className="text-sm text-gray-500">({totalRatings} avaliações)</span>
                     </div>
 
                     {/* Horários Corrigidos */}

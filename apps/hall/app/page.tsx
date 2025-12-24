@@ -19,6 +19,7 @@ interface HomeProps {
 export default async function Home({ searchParams }: HomeProps) {
   const session = await getServerSession(authOptions)
 
+  // 1. Busca Barbearias (sem filtro de favoritos por enquanto)
   const barbershops = await db.barbershop.findMany({
     where: searchParams.search ? {
       name: {
@@ -26,6 +27,28 @@ export default async function Home({ searchParams }: HomeProps) {
         mode: 'insensitive',
       }
     } : {},
+    include: {
+      ratings: true, // Importante para calcular a nota e passar para o item
+    }
+  })
+
+  // 2. Busca Favoritos (apenas se logado)
+  const favorites = session?.user ? await db.favorite.findMany({
+    where: { userId: (session.user as any).id },
+    include: {
+      barbershop: {
+        include: { ratings: true }
+      }
+    }
+  }) : []
+
+  const favoriteBarbershops = favorites.map(f => f.barbershop)
+
+  // 3. Ordenação por Melhor Avaliação (Cálculo em JS)
+  const bestRatedBarbershops = [...barbershops].sort((a, b) => {
+    const avgA = a.ratings.length > 0 ? a.ratings.reduce((sum, r) => sum + r.stars, 0) / a.ratings.length : 5.0
+    const avgB = b.ratings.length > 0 ? b.ratings.reduce((sum, r) => sum + r.stars, 0) / b.ratings.length : 5.0
+    return avgB - avgA // Decrescente
   })
 
   const currentDate = format(new Date(), "EEEE',' dd 'de' MMMM", {
@@ -36,12 +59,11 @@ export default async function Home({ searchParams }: HomeProps) {
   const userName = session?.user?.name?.split(" ")[0]
 
   return (
-    <div className="h-full overflow-x-hidden">
+    <div className="h-full overflow-x-hidden bg-background min-h-screen">
       <Header />
 
-      {/* Container centralizado com largura máxima no desktop */}
       <div className="max-w-[1400px] mx-auto px-5 md:px-10 pt-5">
-        <h2 className="text-xl font-bold">
+        <h2 className="text-xl font-bold text-white">
           {session?.user ? `Olá, ${userName}!` : "Olá, Faça seu login!"}
         </h2>
 
@@ -51,19 +73,31 @@ export default async function Home({ searchParams }: HomeProps) {
 
         <Search />
 
-        <div className="relative mt-6 h-[400px] w-full rounded-xl overflow-hidden hidden md:block border border-secondary">
+        <div className="relative mt-6 h-[150px] md:h-[400px] w-full rounded-xl overflow-hidden hidden sm:block border border-secondary shadow-lg">
           <Image src="/banner-01.png" alt="Banner" fill className="object-cover" />
         </div>
 
-        {/* Recomendados / Resultados */}
+        {/* SEÇÃO DE FAVORITOS (Só aparece se houver favoritos e usuário logado) */}
+        {favoriteBarbershops.length > 0 && !searchParams.search && (
+          <div className="mt-6">
+            <h2 className="text-xs mb-3 uppercase text-gray-400 font-bold">Meus Favoritos</h2>
+            <HorizontalScroll className="md:justify-center lg:justify-start">
+              {favoriteBarbershops.map((shop) => (
+                <BarbershopItem key={shop.id} barbershop={shop} />
+              ))}
+            </HorizontalScroll>
+          </div>
+        )}
+
+        {/* RECOMENDADOS (Agora são "Mais Bem Avaliados") */}
         <div className="mt-6 mb-10">
           <h2 className="text-xs mb-3 uppercase text-gray-400 font-bold">
-            {searchParams.search ? `Resultados para "${searchParams.search}"` : "Recomendados"}
+            {searchParams.search ? `Resultados para "${searchParams.search}"` : "Mais Bem Avaliados"}
           </h2>
 
           <HorizontalScroll className="md:justify-center lg:justify-start">
-            {barbershops.length > 0 ? (
-              barbershops.map((shop) => (
+            {bestRatedBarbershops.length > 0 ? (
+              bestRatedBarbershops.map((shop) => (
                 <BarbershopItem key={shop.id} barbershop={shop} />
               ))
             ) : (
@@ -72,7 +106,7 @@ export default async function Home({ searchParams }: HomeProps) {
           </HorizontalScroll>
         </div>
 
-        {/* Populares */}
+        {/* Populares (Mantendo a lista original sem ordenação específica ou usar views se tiver) */}
         {!searchParams.search && (
           <div className="mt-6 mb-[4.5rem]">
             <h2 className="text-xs mb-3 uppercase text-gray-400 font-bold">Populares</h2>
