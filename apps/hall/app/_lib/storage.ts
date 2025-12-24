@@ -7,11 +7,14 @@ import {
     ListObjectsV2Command
 } from "@aws-sdk/client-s3";
 
-const endpoint = process.env.MINIO_ENDPOINT!;
+// URL para o SERVIDOR falar com o MinIO (API - Porta 9000)
+const internalEndpoint = process.env.MINIO_ENDPOINT!;
+// URL para o NAVEGADOR carregar a imagem (CDN/Proxy - HTTPS)
+const publicUrlBase = process.env.NEXT_PUBLIC_MINIO_URL!;
 const bucketName = process.env.MINIO_BUCKET || "barbergo";
 
 const s3Client = new S3Client({
-    endpoint: endpoint,
+    endpoint: internalEndpoint,
     region: "us-east-1",
     credentials: {
         accessKeyId: process.env.MINIO_ACCESS_KEY!,
@@ -33,8 +36,9 @@ export const uploadFileAsync = async (buffer: Buffer, objectKey: string, content
 
     await s3Client.send(command);
 
-    // Retorna a URL baseada no endpoint do ambiente (HTTP local ou HTTPS prod)
-    return `${endpoint}/${bucketName}/${objectKey}`;
+    // IMPORTANTE: Retorna a URL pública (HTTPS) para salvar no banco de dados
+    // independentemente do endpoint interno usado para o upload
+    return `${publicUrlBase}/${objectKey}`;
 };
 
 /**
