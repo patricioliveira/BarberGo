@@ -3,12 +3,15 @@
 import { Barbershop, Rating } from "@prisma/client"
 import { Card, CardContent, Button } from "@barbergo/ui"
 import Image from "next/image"
-import { MapPinIcon, PhoneIcon, CreditCardIcon, StarIcon } from "lucide-react"
+import { MapPinIcon, PhoneIcon, CreditCardIcon, StarIcon, Wifi, Car, Baby, Accessibility, Instagram, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
+
+// Tipagem para os telefones salvos como JSON
+type PhoneObj = { number: string; isWhatsapp: boolean }
 
 interface SidebarRightProps {
     barbershop: Barbershop & {
-        ratings?: Rating[] // Adicionado para receber as avaliações
+        ratings?: Rating[]
     }
 }
 
@@ -19,12 +22,15 @@ interface WorkingHour {
     isOpen: boolean
 }
 
-const SidebarRight = ({ barbershop }: SidebarRightProps) => {
-    const handleCopyPhone = (phone: string) => {
-        navigator.clipboard.writeText(phone)
-        toast.success("Telefone copiado!")
-    }
+// Mapeamento de ícones
+const amenityIcons: any = {
+    "WIFI": { icon: Wifi, label: "Wi-Fi" },
+    "PARKING": { icon: Car, label: "Estacionamento" },
+    "KIDS": { icon: Baby, label: "Kids" },
+    "ACCESSIBILITY": { icon: Accessibility, label: "Acessibilidade" },
+}
 
+const SidebarRight = ({ barbershop }: SidebarRightProps) => {
     const handleCopyAddress = () => {
         navigator.clipboard.writeText(barbershop.address)
         toast.success("Endereço copiado!")
@@ -35,26 +41,30 @@ const SidebarRight = ({ barbershop }: SidebarRightProps) => {
         window.open(url, "_blank")
     }
 
-    // Usa os horários do banco ou um padrão caso seja null
     const openingHours = (barbershop.openingHours as unknown as WorkingHour[]) || []
 
-    // Cálculo da média de avaliação
+    // Tratamento dos telefones
+    let phones: PhoneObj[] = []
+    if (Array.isArray(barbershop.phones)) {
+        if (typeof barbershop.phones[0] === 'string') {
+            phones = (barbershop.phones as string[]).map(p => ({ number: p, isWhatsapp: false }))
+        } else {
+            phones = barbershop.phones as PhoneObj[]
+        }
+    }
+
+    // Rating (Resumo)
     const ratings = barbershop.ratings || []
     const totalRatings = ratings.length
-    const averageRating = totalRatings > 0
-        ? ratings.reduce((acc, r) => acc + r.stars, 0) / totalRatings
-        : 5.0
+    const averageRating = totalRatings > 0 ? ratings.reduce((acc, r) => acc + r.stars, 0) / totalRatings : 5.0
 
     return (
         <div className="sticky top-4">
-            <Card className="bg-[#1A1B1F] border-none rounded-2xl p-5">
+            <Card className="bg-[#1A1B1F] border-none rounded-2xl p-5 shadow-xl">
                 <CardContent className="p-0 space-y-6">
 
-                    {/* Mapa com o mesmo estilo do Mobile */}
-                    <div
-                        className="relative w-full h-[180px] rounded-xl overflow-hidden border border-secondary cursor-pointer group"
-                        onClick={handleOpenMap}
-                    >
+                    {/* Mapa */}
+                    <div className="relative w-full h-[180px] rounded-xl overflow-hidden border border-secondary cursor-pointer group" onClick={handleOpenMap}>
                         <Image src="/map.png" fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="Mapa" />
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="bg-primary p-2 rounded-full shadow-lg group-hover:scale-110 transition-transform">
@@ -63,17 +73,21 @@ const SidebarRight = ({ barbershop }: SidebarRightProps) => {
                         </div>
                     </div>
 
-                    {/* Info Básica com Clique no Endereço */}
+                    {/* Info Básica */}
                     <div>
                         <h3 className="text-xl font-bold text-white">{barbershop.name}</h3>
-                        <button
-                            onClick={handleCopyAddress}
-                            className="text-left text-sm text-gray-400 mt-1 hover:text-primary transition-colors flex items-start gap-1"
-                        >
+                        <button onClick={handleCopyAddress} className="text-left text-sm text-gray-400 mt-1 hover:text-primary transition-colors flex items-start gap-1">
                             <MapPinIcon size={14} className="mt-0.5 shrink-0" />
                             {barbershop.address}
                         </button>
                     </div>
+
+                    {/* Instagram */}
+                    {barbershop.instagram && (
+                        <Button variant="outline" className="w-full border-pink-500/30 text-pink-500 hover:bg-pink-500/10" onClick={() => window.open(`https://instagram.com/${barbershop.instagram?.replace('@', '')}`, '_blank')}>
+                            <Instagram size={16} className="mr-2" /> {barbershop.instagram}
+                        </Button>
+                    )}
 
                     {/* Sobre */}
                     <div>
@@ -83,34 +97,56 @@ const SidebarRight = ({ barbershop }: SidebarRightProps) => {
                         </p>
                     </div>
 
+                    {/* Comodidades */}
+                    {barbershop.amenities && barbershop.amenities.length > 0 && (
+                        <div className="border-y border-[#26272B] py-4">
+                            <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
+                                {barbershop.amenities.map(a => {
+                                    const Item = amenityIcons[a]
+                                    if (!Item) return null
+                                    return (
+                                        <div key={a} className="flex flex-col items-center gap-1 text-gray-400 min-w-[60px]">
+                                            <div className="p-2 bg-black/40 rounded-full border border-secondary/50">
+                                                <Item.icon size={16} />
+                                            </div>
+                                            <span className="text-[9px] font-bold">{Item.label}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Contatos */}
                     <div className="space-y-2">
-                        {barbershop.phones.map((phone, idx) => (
+                        {phones.map((phone, idx) => (
                             <div key={idx} className="flex items-center justify-between bg-[#141518] rounded-xl px-4 py-3 border border-secondary/50">
                                 <div className="flex items-center gap-2 text-white text-sm">
-                                    <PhoneIcon size={16} /> {phone}
+                                    <PhoneIcon size={16} /> {phone.number}
                                 </div>
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    className="h-7 text-xs"
-                                    onClick={() => handleCopyPhone(phone)}
-                                >
-                                    Copiar
-                                </Button>
+                                {phone.isWhatsapp ? (
+                                    <Button variant="secondary" size="sm" className="h-7 text-xs bg-green-600/20 text-green-500 hover:bg-green-600/30 hover:text-green-400" onClick={() => window.open(`https://wa.me/55${phone.number.replace(/\D/g, "")}`, '_blank')}>
+                                        <MessageCircle size={14} className="mr-1" /> Whats
+                                    </Button>
+                                ) : (
+                                    <Button variant="secondary" size="sm" className="h-7 text-xs" onClick={() => { navigator.clipboard.writeText(phone.number); toast.success("Copiado!") }}>
+                                        Copiar
+                                    </Button>
+                                )}
                             </div>
                         ))}
                     </div>
 
-                    {/* Rating Dinâmico */}
-                    <div className="flex items-center gap-2 border-y border-[#26272B] py-4">
+                    {/* Rating */}
+                    <div className="flex items-center gap-2 border-t border-[#26272B] pt-4">
                         <StarIcon className="fill-primary text-primary" size={20} />
                         <span className="text-xl font-bold text-white">{averageRating.toFixed(1)}</span>
                         <span className="text-sm text-gray-500">({totalRatings} avaliações)</span>
                     </div>
 
-                    {/* Horários Corrigidos */}
-                    <div className="space-y-2">
+                    {/* Horários */}
+                    <div className="space-y-2 pt-2">
+                        <h4 className="font-bold text-white text-xs mb-2 tracking-widest uppercase">HORÁRIOS</h4>
                         {openingHours.map((item, idx) => (
                             <div key={idx} className="flex justify-between text-sm">
                                 <span className="text-gray-400">{item.day}</span>
@@ -121,7 +157,7 @@ const SidebarRight = ({ barbershop }: SidebarRightProps) => {
                         ))}
                     </div>
 
-                    {/* Pagamentos Adicionados no Desktop */}
+                    {/* Pagamento */}
                     <div className="pt-2">
                         <h4 className="font-bold text-white text-xs mb-3 tracking-widest uppercase">PAGAMENTO</h4>
                         <div className="flex flex-wrap gap-2">

@@ -184,6 +184,13 @@ export default function AdminPage() {
                                             </Link>
                                         </Button>
 
+                                        {/* NOVO: Botão de Clientes */}
+                                        <Button variant="outline" asChild className="h-11 text-xs border-secondary text-white hover:bg-white/5">
+                                            <Link href="/admin/clients">
+                                                <Users size={16} className="mr-2" /> Clientes
+                                            </Link>
+                                        </Button>
+
                                         <Button variant="outline" asChild className="h-11 text-xs border-secondary text-white"><Link href="/admin/settings">Configurações</Link></Button>
                                     </>
                                 )}

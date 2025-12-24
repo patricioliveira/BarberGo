@@ -28,16 +28,21 @@ import {
     Plus,
     Trash2,
     Clock,
-    Phone,
     Store,
     UserPlus,
     Check,
-    X,
     Loader2,
     CreditCard,
     Edit2,
     Camera,
-    ImagePlus
+    ImagePlus,
+    Instagram,
+    MessageCircle,
+    Phone as PhoneIcon,
+    Wifi,
+    Accessibility,
+    Car,
+    Baby
 } from "lucide-react"
 
 import { updateBarbershopSettings } from "../../_actions/update-barbershop-settings"
@@ -58,8 +63,10 @@ const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChang
 )
 
 type StaffMember = { id: string; name: string; email: string; jobTitle: string; isActive: boolean }
-type Service = { id: string; name: string; description: string; price: string; duration: number; imageUrl?: string }
+// Correção: imageUrl agora é obrigatório (string), usamos string vazia quando não houver imagem
+type Service = { id: string; name: string; description: string; price: string; duration: number; imageUrl: string }
 type WorkingHour = { day: string; open: string; close: string; isOpen: boolean }
+type PhoneInput = { number: string; isWhatsapp: boolean }
 
 const DEFAULT_HOURS: WorkingHour[] = [
     { day: "Segunda-feira", open: "09:00", close: "19:00", isOpen: true },
@@ -90,7 +97,18 @@ export default function SettingsPage() {
     const [customPayment, setCustomPayment] = useState("")
     const [isSubmittingStaff, setIsSubmittingStaff] = useState(false)
 
-    const [storeData, setStoreData] = useState({ id: "", name: "", address: "", imageUrl: "", phones: [] as string[], paymentMethods: [] as string[], isClosed: false })
+    const [storeData, setStoreData] = useState({
+        id: "",
+        name: "",
+        address: "",
+        imageUrl: "",
+        phones: [] as PhoneInput[],
+        paymentMethods: [] as string[],
+        isClosed: false,
+        instagram: "",
+        amenities: [] as string[]
+    })
+
     const [hours, setHours] = useState<WorkingHour[]>(DEFAULT_HOURS)
     const [staff, setStaff] = useState<StaffMember[]>([])
     const [services, setServices] = useState<Service[]>([])
@@ -114,18 +132,45 @@ export default function SettingsPage() {
                 try {
                     const data = await getBarbershopSettings()
                     if (data) {
+                        let loadedPhones: PhoneInput[] = []
+                        if (Array.isArray(data.phones)) {
+                            if (data.phones.length > 0 && typeof data.phones[0] === 'string') {
+                                loadedPhones = (data.phones as string[]).map(p => ({ number: p, isWhatsapp: false }))
+                            } else {
+                                loadedPhones = data.phones as PhoneInput[]
+                            }
+                        }
+
                         setStoreData({
                             id: data.id,
                             name: data.name || "",
                             address: data.address || "",
                             imageUrl: data.imageUrl || "",
-                            phones: data.phones || [],
+                            phones: loadedPhones,
                             paymentMethods: data.paymentMethods || [],
-                            isClosed: data.isClosed || false
+                            isClosed: data.isClosed || false,
+                            instagram: data.instagram || "",
+                            amenities: data.amenities || []
                         })
                         if (data.openingHours) setHours(data.openingHours as unknown as WorkingHour[])
-                        setStaff(data.staff.map((s: any) => ({ id: s.id, name: s.name, email: s.email || "", jobTitle: s.jobTitle, isActive: s.isActive })))
-                        setServices(data.services.map((s: any) => ({ id: s.id, name: s.name, description: s.description || "", price: s.price, duration: s.duration, imageUrl: s.imageUrl })))
+
+                        setStaff(data.staff.map((s: any) => ({
+                            id: s.id,
+                            name: s.name,
+                            email: s.email || "",
+                            jobTitle: s.jobTitle,
+                            isActive: s.isActive
+                        })))
+
+                        // Correção na carga de serviços: Garante que imageUrl seja string
+                        setServices(data.services.map((s: any) => ({
+                            id: s.id,
+                            name: s.name,
+                            description: s.description || "",
+                            price: s.price ? String(s.price) : "",
+                            duration: Number(s.duration) || 30,
+                            imageUrl: s.imageUrl || ""
+                        })))
                     }
                 } catch (error) {
                     toast.error("Erro ao carregar configurações.")
@@ -161,7 +206,6 @@ export default function SettingsPage() {
         formData.append("file", file)
 
         try {
-            // PASSAMOS storeData.imageUrl como a imagem antiga
             const res = await uploadImageAction(formData, storeData.imageUrl)
             setStoreData(prev => ({ ...prev, imageUrl: res.url }))
             setIsDirty(true)
@@ -183,7 +227,6 @@ export default function SettingsPage() {
         formData.append("file", file)
 
         try {
-            // PASSAMOS o imageUrl atual do serviço
             const res = await uploadImageAction(formData, services[index].imageUrl)
             const newServices = [...services]
             newServices[index].imageUrl = res.url
@@ -240,6 +283,13 @@ export default function SettingsPage() {
             setCustomPayment("")
             setIsDirty(true)
         }
+    }
+
+    const toggleAmenity = (key: string) => {
+        const current = storeData.amenities || []
+        const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key]
+        setStoreData({ ...storeData, amenities: next })
+        setIsDirty(true)
     }
 
     if (isLoading || status === "loading") return <div className="min-h-screen flex flex-col items-center justify-center bg-background text-white gap-4"><Loader2 className="animate-spin text-primary" size={40} /><p>Carregando...</p></div>
@@ -331,19 +381,85 @@ export default function SettingsPage() {
                                     <Switch checked={!storeData.isClosed} onCheckedChange={(v) => { setStoreData({ ...storeData, isClosed: !v }); setIsDirty(true) }} />
                                 </div>
                             </div>
+
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="space-y-2"><Label>Nome</Label><Input value={storeData.name} onChange={e => { setStoreData({ ...storeData, name: e.target.value }); setIsDirty(true) }} className="bg-secondary border-none" /></div>
                                 <div className="space-y-2"><Label>Endereço</Label><Input value={storeData.address} onChange={e => { setStoreData({ ...storeData, address: e.target.value }); setIsDirty(true) }} className="bg-secondary border-none" /></div>
                             </div>
+
+                            {/* Contatos e Redes Sociais */}
                             <div className="space-y-4 pt-4 border-t border-secondary">
-                                <Label className="flex items-center gap-2"><Phone size={16} /> Contatos</Label>
+                                <Label className="flex items-center gap-2"><PhoneIcon size={16} /> Contatos & Redes</Label>
+
+                                <div className="relative">
+                                    <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                                    <Input
+                                        value={storeData.instagram}
+                                        onChange={e => { setStoreData({ ...storeData, instagram: e.target.value }); setIsDirty(true) }}
+                                        className="bg-secondary border-none pl-10"
+                                        placeholder="@seuinstagram"
+                                    />
+                                </div>
+
                                 {storeData.phones.map((p, i) => (
-                                    <div key={i} className="flex gap-2">
-                                        <Input value={formatPhone(p)} onChange={e => { const n = [...storeData.phones]; n[i] = e.target.value.replace(/\D/g, ""); setStoreData({ ...storeData, phones: n }); setIsDirty(true) }} className="bg-secondary border-none" />
-                                        <Button variant="destructive" size="icon" onClick={() => { setStoreData({ ...storeData, phones: storeData.phones.filter((_, idx) => idx !== i) }); setIsDirty(true) }}><Trash2 size={16} /></Button>
+                                    <div key={i} className="flex gap-2 items-center">
+                                        <Input
+                                            value={formatPhone(p.number)}
+                                            onChange={e => {
+                                                const n = [...storeData.phones];
+                                                n[i].number = e.target.value.replace(/\D/g, "");
+                                                setStoreData({ ...storeData, phones: n });
+                                                setIsDirty(true)
+                                            }}
+                                            className="bg-secondary border-none flex-1"
+                                            placeholder="(00) 00000-0000"
+                                        />
+                                        <Button
+                                            variant={p.isWhatsapp ? "default" : "outline"}
+                                            size="icon"
+                                            className={p.isWhatsapp ? "bg-green-600 hover:bg-green-700 border-none" : "border-secondary text-gray-500"}
+                                            onClick={() => {
+                                                const n = [...storeData.phones];
+                                                n[i].isWhatsapp = !n[i].isWhatsapp;
+                                                setStoreData({ ...storeData, phones: n });
+                                                setIsDirty(true)
+                                            }}
+                                            title="É WhatsApp?"
+                                        >
+                                            <MessageCircle size={16} />
+                                        </Button>
+                                        <Button variant="destructive" size="icon" onClick={() => {
+                                            setStoreData({ ...storeData, phones: storeData.phones.filter((_, idx) => idx !== i) });
+                                            setIsDirty(true)
+                                        }}><Trash2 size={16} /></Button>
                                     </div>
                                 ))}
-                                <Button variant="outline" className="w-full border-dashed" onClick={() => { setStoreData({ ...storeData, phones: [...storeData.phones, ""] }); setIsDirty(true) }}><Plus size={16} className="mr-2" /> Adicionar Telefone</Button>
+                                <Button variant="outline" className="w-full border-dashed" onClick={() => {
+                                    setStoreData({ ...storeData, phones: [...storeData.phones, { number: "", isWhatsapp: true }] });
+                                    setIsDirty(true)
+                                }}><Plus size={16} className="mr-2" /> Adicionar Telefone</Button>
+                            </div>
+
+                            {/* Comodidades */}
+                            <div className="space-y-4 pt-4 border-t border-secondary">
+                                <Label>Comodidades</Label>
+                                <div className="flex flex-wrap gap-3">
+                                    {[
+                                        { id: "WIFI", label: "Wi-Fi Grátis", icon: Wifi },
+                                        { id: "ACCESSIBILITY", label: "Acessibilidade", icon: Accessibility },
+                                        { id: "PARKING", label: "Estacionamento", icon: Car },
+                                        { id: "KIDS", label: "Atende Crianças", icon: Baby },
+                                    ].map((item) => (
+                                        <Button
+                                            key={item.id}
+                                            variant={storeData.amenities.includes(item.id) ? "default" : "outline"}
+                                            className={`h-9 gap-2 text-xs ${!storeData.amenities.includes(item.id) && "border-secondary text-gray-400 bg-transparent"}`}
+                                            onClick={() => toggleAmenity(item.id)}
+                                        >
+                                            <item.icon size={14} /> {item.label}
+                                        </Button>
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="space-y-4 pt-4 border-t border-secondary">
