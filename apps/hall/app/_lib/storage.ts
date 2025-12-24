@@ -1,19 +1,23 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 
+const endpoint = process.env.MINIO_ENDPOINT!;
+
 const s3Client = new S3Client({
-    endpoint: process.env.MINIO_ENDPOINT, // http://217.216.64.94:9000
+    endpoint: endpoint,
     region: "us-east-1",
     credentials: {
         accessKeyId: process.env.MINIO_ACCESS_KEY!,
         secretAccessKey: process.env.MINIO_SECRET_KEY!,
     },
     forcePathStyle: true, // Obrigatório para MinIO
-    tls: false, // Adicione isso para permitir conexões HTTP puras
+    // Se a URL começar com https, ele ativa o TLS automaticamente
 });
 
 export const uploadFileAsync = async (buffer: Buffer, objectKey: string, contentType: string) => {
+    const bucketName = process.env.MINIO_BUCKET || "barbergo";
+
     const command = new PutObjectCommand({
-        Bucket: process.env.MINIO_BUCKET || "barbergo",
+        Bucket: bucketName,
         Key: objectKey,
         Body: buffer,
         ContentType: contentType,
@@ -21,9 +25,9 @@ export const uploadFileAsync = async (buffer: Buffer, objectKey: string, content
 
     await s3Client.send(command);
 
-    // Retorna a URL para salvar no banco
-    // Idealmente, usamos o domínio público se ele estiver na porta 9000
-    return `${process.env.MINIO_ENDPOINT}/${process.env.MINIO_BUCKET}/${objectKey}`;
+    // Retorna a URL baseada no endpoint do ambiente
+    // Isso garante que em produção o link gerado seja https://...
+    return `${endpoint}/${bucketName}/${objectKey}`;
 };
 
 export const objectExistsAsync = async (objectKey: string) => {

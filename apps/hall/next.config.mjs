@@ -6,6 +6,12 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 's3.pulefila.com.br',
+        port: '',
+        pathname: '/barbergo/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'file.pulefila.com.br',
         port: '',
         pathname: '/barbergo/**',
