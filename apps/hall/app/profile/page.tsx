@@ -108,9 +108,10 @@ export default function ProfilePage() {
         formData.append("file", file)
 
         try {
-            const res = await uploadImageAction(formData)
+            // PASSAMOS o estado 'image' que contém a URL atual do perfil
+            const res = await uploadImageAction(formData, image)
             setImage(res.url)
-            toast.success("Foto carregada! Salve o perfil para confirmar.")
+            toast.success("Foto atualizada com sucesso!")
         } catch (error: any) {
             toast.error(error.message || "Erro no upload")
         } finally {

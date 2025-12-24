@@ -161,10 +161,11 @@ export default function SettingsPage() {
         formData.append("file", file)
 
         try {
-            const res = await uploadImageAction(formData)
+            // PASSAMOS storeData.imageUrl como a imagem antiga
+            const res = await uploadImageAction(formData, storeData.imageUrl)
             setStoreData(prev => ({ ...prev, imageUrl: res.url }))
             setIsDirty(true)
-            toast.success("Foto carregada! Clique em 'Salvar Tudo' para confirmar.")
+            toast.success("Foto carregada e antiga removida!")
         } catch (error: any) {
             toast.error(error.message || "Erro no upload")
         } finally {
@@ -182,12 +183,13 @@ export default function SettingsPage() {
         formData.append("file", file)
 
         try {
-            const res = await uploadImageAction(formData)
+            // PASSAMOS o imageUrl atual do serviço
+            const res = await uploadImageAction(formData, services[index].imageUrl)
             const newServices = [...services]
             newServices[index].imageUrl = res.url
             setServices(newServices)
             setIsDirty(true)
-            toast.success("Imagem do serviço carregada!")
+            toast.success("Imagem do serviço atualizada!")
         } catch (error: any) {
             toast.error("Erro no upload do serviço")
         } finally {
