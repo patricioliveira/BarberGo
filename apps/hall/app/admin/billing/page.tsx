@@ -10,7 +10,7 @@ import {
 import {
     ChevronLeft, CreditCard, Calendar,
     MessageCircle, ShieldCheck, AlertCircle,
-    Clock, CheckCircle2
+    Clock, CheckCircle2, ChevronRight, FileText
 } from "lucide-react"
 import Link from "next/link"
 import { getBarbershopSubscription } from "../../_actions/get-subscription"
@@ -18,19 +18,13 @@ import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import Footer from "@/_components/footer"
 import { toast } from "sonner"
+import { InvoiceDetails } from "../_components/invoice-details"
 
 export default function BillingPage() {
     const router = useRouter()
     const [subscription, setSubscription] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
-
-    //todo - adicionar nome da barbearia na mensagem para o suporte
-    // const shop = await db.barbershop.findUnique({
-    //     where: { id: subscription.barbershop.id },
-    //     include: {
-    //         owner: true
-    //     }
-    // })
+    const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
 
     useEffect(() => {
         const load = async () => {
@@ -47,7 +41,6 @@ export default function BillingPage() {
     }, [])
 
     const handleContactSupport = () => {
-        //const message = encodeURIComponent(`Olá, sou administrador da ${shop?.name} na BarberGo e preciso de suporte com meu faturamento.`)
         const message = encodeURIComponent(`Olá, sou administrador de barbearia na BarberGo e preciso de suporte com meu faturamento.`)
         window.open(`https://wa.me/558421335813?text=${message}`, "_blank")
     }
@@ -85,8 +78,8 @@ export default function BillingPage() {
         },
         SUSPENDED: {
             label: "Acesso Suspenso",
-            badge: "bg-red-600 text-white",
-            accent: "bg-red-600",
+            badge: "bg-red-500/10 text-red-500",
+            accent: "bg-red-500",
             icon: ShieldCheck
         },
     }
@@ -112,7 +105,7 @@ export default function BillingPage() {
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Assinatura</h1>
-                        <p className="text-muted-foreground text-sm">Gerencie seu plano SaaS e suporte</p>
+                        <p className="text-muted-foreground text-sm">Gerencie seu plano e suporte</p>
                     </div>
                 </div>
 
@@ -153,7 +146,13 @@ export default function BillingPage() {
                                         </p>
                                     </div>
                                 </div>
-                                <Button variant="outline" className="text-xs h-8 border-primary/20 text-primary hover:bg-primary/10">Ver Fatura</Button>
+                                <Button
+                                    variant="outline"
+                                    className="text-xs h-8 border-primary/20 text-primary hover:bg-primary/10"
+                                    disabled // Desabilitado pois "Ver Fatura" agora deve ser no histórico, ou lógica para ver "próxima"? Deixaremos disabled ou removido se não tiver invoice pendente.
+                                >
+                                    Ver Detalhes
+                                </Button>
                             </div>
 
                             {subscription?.status === 'PAST_DUE' && (
@@ -188,21 +187,57 @@ export default function BillingPage() {
                 </div>
 
                 <div className="space-y-4">
-                    <h2 className="text-sm uppercase font-black text-gray-500 tracking-widest">Histórico Recente</h2>
-                    <div className="flex items-center justify-between p-4 bg-[#1A1B1F] rounded-2xl border border-white/5 opacity-50">
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
-                                <CheckCircle2 size={20} />
+                    <h2 className="text-sm uppercase font-black text-gray-500 tracking-widest">Histórico de Pagamentos</h2>
+                    <div className="space-y-3">
+                        {subscription?.invoices?.length > 0 ? (
+                            subscription.invoices.map((invoice: any) => (
+                                <div
+                                    key={invoice.id}
+                                    onClick={() => setSelectedInvoice(invoice)}
+                                    className="flex items-center justify-between p-4 bg-[#1A1B1F] rounded-2xl border border-white/5 hover:border-primary/30 transition-all cursor-pointer group"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${invoice.status === 'PAID' ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-400'}`}>
+                                            {invoice.status === 'PAID' ? <CheckCircle2 size={20} /> : <FileText size={20} />}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold flex items-center gap-2">
+                                                Fatura #{invoice.reference || invoice.id.slice(0, 6)}
+                                                <span className="text-[10px] text-gray-500 font-normal uppercase hidden md:inline-block">
+                                                    {invoice.method}
+                                                </span>
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 uppercase">
+                                                {invoice.createdAt ? format(new Date(invoice.createdAt), "dd 'de' MMMM, yyyy", { locale: ptBR }) : "-"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-right">
+                                            <p className="font-bold text-sm">{formatCurrency(invoice.amount)}</p>
+                                            <Badge className={`text-[9px] px-1.5 h-4 border-none ${invoice.status === 'PAID' ? 'bg-green-500/10 text-green-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                                                {invoice.status === 'PAID' ? 'PAGO' : 'PENDENTE'}
+                                            </Badge>
+                                        </div>
+                                        <ChevronRight size={16} className="text-gray-600 group-hover:text-primary transition-colors" />
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center border border-dashed border-white/10 rounded-2xl text-gray-500">
+                                <p>Nenhuma fatura encontrada.</p>
                             </div>
-                            <div>
-                                <p className="text-sm font-bold">Pagamento Confirmado</p>
-                                <p className="text-[10px] text-gray-500 uppercase">Última mensalidade</p>
-                            </div>
-                        </div>
-                        <p className="font-bold text-sm">{formatCurrency(subscription?.price)}</p>
+                        )}
                     </div>
                 </div>
             </div>
+
+            <InvoiceDetails
+                isOpen={!!selectedInvoice}
+                onClose={() => setSelectedInvoice(null)}
+                invoice={selectedInvoice}
+                barbershopName="Minha Barbearia"
+            />
 
             <Footer />
         </div>

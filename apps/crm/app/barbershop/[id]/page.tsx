@@ -7,6 +7,7 @@ import Link from "next/link"
 import { SubscriptionSubmitButton } from "./_components/submit-button"
 import { confirmPaymentAndActivate, markAsPastDue, suspendAccess } from "@/app/_actions/subscriptions"
 import { ActivateSubscriptionDialog } from "./_components/activate-subscription-dialog"
+import { PaymentHistoryCard } from "./_components/payment-history-card"
 
 
 const statusMap = {
@@ -132,30 +133,12 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
                     </CardContent>
                 </Card>
 
-                {/* Histórico Recente */}
-                <Card className="bg-[#1A1B1F] border-none ring-1 ring-white/5 lg:col-span-1 overflow-hidden">
-                    <div className={`h-1 w-full ${currentStatus.accent}`} />
-                    <CardHeader><CardTitle className="text-xs uppercase font-black text-gray-500 flex items-center gap-2"><History size={14} /> Faturas Pagas</CardTitle></CardHeader>
-                    <CardContent className="p-0">
-                        <div className="max-h-[300px] overflow-y-auto px-6 pb-6 space-y-3">
-                            {subscription.invoices?.map((invoice) => (
-                                <div key={invoice.id} className="p-3 bg-black/20 rounded-xl border border-white/5 flex justify-between items-center group hover:border-green-500/30 transition-all">
-                                    <div>
-                                        <p className="text-xs font-bold text-gray-200">{invoice.reference}</p>
-                                        <p className="text-[10px] text-gray-500 uppercase">{invoice.paidAt?.toLocaleDateString('pt-BR')} • {invoice.method}</p>
-                                    </div>
-                                    <div className="flex flex-col items-end">
-                                        <Badge className="bg-green-500/10 text-green-500 text-[9px] border-none font-black">PAGO</Badge>
-                                        <p className="text-[10px] font-mono mt-1">R$ {Number(invoice.amount).toFixed(2)}</p>
-                                    </div>
-                                </div>
-                            ))}
-                            {subscription.invoices?.length === 0 && (
-                                <p className="text-center text-xs text-gray-600 py-10 italic">Nenhuma fatura encontrada.</p>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Histórico Recente (Agora Interativo) */}
+                <PaymentHistoryCard
+                    subscription={subscription}
+                    currentStatus={currentStatus}
+                    barbershopName={shop.name}
+                />
             </div>
         </div>
     )

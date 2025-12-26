@@ -13,7 +13,13 @@ export const getBarbershopSubscription = async () => {
         include: {
             managedBarbershops: {
                 include: {
-                    subscription: true
+                    subscription: {
+                        include: {
+                            invoices: {
+                                orderBy: { createdAt: 'desc' }
+                            }
+                        }
+                    }
                 }
             }
         }
