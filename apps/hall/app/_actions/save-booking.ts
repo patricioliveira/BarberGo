@@ -70,41 +70,54 @@ export const saveBooking = async ({
     const bookingStart = new Date(date)
     const bookingEnd = addMinutes(bookingStart, totalDuration)
 
-    // 7. Transação com Isolamento Serializável para Concorrência
-    // O nível Serializable garante que se duas transações tentarem ler e escrever
-    // intervalos conflitantes simultaneamente, uma delas falhará.
+    // 7. Transação com Isolamento Serializável e Locking Pessimista
+    // O nível Serializable garante isolamento, mas o update dummy garante locking de linha
+    // impedindo que duas transações leiam o estado "livre" ao mesmo tempo.
     try {
         await db.$transaction(
             async (tx) => {
-                const overlappingBooking = await tx.booking.findFirst({
+                // LOCK: Força bloqueio de linha no Staff para serializar agendamentos neste profissional
+                await tx.barberStaff.update({
+                    where: { id: staffId },
+                    data: { updatedAt: new Date() }, // Dummy update para travar a linha
+                })
+
+                // Define janela de busca (Dia inteiro do agendamento) para garantir cache/busca correta
+                const dayStart = new Date(bookingStart)
+                dayStart.setHours(0, 0, 0, 0)
+                const dayEnd = new Date(bookingStart)
+                dayEnd.setHours(23, 59, 59, 999)
+
+                // Busca TODOS os agendamentos do dia para verificar colisão em memória
+                const dayBookings = await tx.booking.findMany({
                     where: {
                         staffId,
                         status: { not: "CANCELED" },
                         date: {
-                            lt: bookingEnd,
+                            gte: dayStart,
+                            lte: dayEnd,
                         },
                     },
                     include: { service: true },
                 })
 
-                if (overlappingBooking) {
-                    const existingStart = new Date(overlappingBooking.date)
+                // Verificação de sobreposição precisa
+                for (const existingBooking of dayBookings) {
+                    const existingStart = new Date(existingBooking.date)
                     const existingEnd = addMinutes(
                         existingStart,
-                        overlappingBooking.service.duration
+                        existingBooking.service.duration
                     )
 
-                    if (
-                        bookingStart < existingEnd &&
-                        bookingEnd > existingStart
-                    ) {
+                    // Fórmula de colisão de intervalos: (StartA < EndB) && (EndA > StartB)
+                    if (bookingStart < existingEnd && bookingEnd > existingStart) {
                         throw new Error(
                             "Este horário acabou de ser ocupado por outro cliente. Por favor, escolha outro."
                         )
                     }
                 }
 
-                // Criação dos agendamentos
+                // Criação dos agendamentos (se passou pela validação)
                 await Promise.all(
                     serviceIds.map((serviceId) =>
                         tx.booking.create({
@@ -120,20 +133,19 @@ export const saveBooking = async ({
                 )
             },
             {
-                isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+                isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, // ReadCommitted é suficiente com o Row Lock explícito acima
+                timeout: 10000, // 10s timeout para evitar deadlocks longos
             }
         )
     } catch (error) {
-        // Captura erro de serialização do Prisma
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === "P2034"
-        ) {
-            throw new Error(
-                "Houve um conflito ao tentar agendar. Por favor, tente novamente."
-            )
+        // ... (erro handling permanece similar, mas agora pegamos erros de lock timeout também se ocorrerem)
+        if (error instanceof Error && error.message.includes("ocupado")) {
+            throw error
         }
-        throw error
+
+        throw new Error(
+            "Houve um erro ao processar o agendamento. Tente novamente."
+        )
     }
 
     revalidatePath("/")
