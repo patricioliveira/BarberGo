@@ -74,7 +74,7 @@ export default async function Home({ searchParams }: HomeProps) {
         <Search />
 
         <div className="relative mt-6 h-[150px] md:h-[400px] w-full rounded-xl overflow-hidden hidden sm:block border border-secondary shadow-lg">
-          <Image src="/banner-01.png" alt="Banner" fill className="object-cover" />
+          <Image src="/banner2.svg" alt="Banner" fill className="object-cover" />
         </div>
 
         {/* SEÇÃO DE FAVORITOS (Só aparece se houver favoritos e usuário logado) */}
