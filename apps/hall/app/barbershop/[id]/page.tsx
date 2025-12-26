@@ -1,6 +1,8 @@
 import { db } from "@barbergo/database"
 import BarbershopDetails from "./_components/barbershop-details"
 import { notFound } from "next/navigation"
+import { getServerSession } from "next-auth"
+import { AuthOptions } from "next-auth"
 
 interface BarbershopDetailsPageProps {
     params: {
@@ -37,7 +39,22 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
             price: Number(service.price),
         })),
     }
-    
+
+    let isFavorited = false
+    const session = await getServerSession(AuthOptions)
+
+    if (session?.user) {
+        const favorite = await db.favorite.findUnique({
+            where: {
+                userId_barbershopId: {
+                    userId: (session.user as any).id,
+                    barbershopId: params.id,
+                },
+            },
+        })
+        if (favorite) isFavorited = true
+    }
+
     // @ts-ignore - staff agora está incluso no objeto
-    return <BarbershopDetails barbershop={serializedBarbershop} />
+    return <BarbershopDetails barbershop={serializedBarbershop} initialIsFavorited={isFavorited} />
 }

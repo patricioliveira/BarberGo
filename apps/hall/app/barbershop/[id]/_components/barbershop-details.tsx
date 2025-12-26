@@ -4,21 +4,26 @@ import { Barbershop, BarbershopService, BarberStaff, Rating } from "@prisma/clie
 import Image from "next/image"
 import {
     MapPinIcon, PhoneIcon, CreditCardIcon, ChevronDownIcon, ChevronUpIcon,
-    StarIcon, Wifi, Car, Baby, Accessibility, Instagram, MessageCircle
+    StarIcon, Wifi, Car, Baby, Accessibility, Instagram, MessageCircle, Heart
 } from "lucide-react"
-import ServiceItem from "./service-item"
-import SidebarRight from "./sidebar-right"
+
 import { useState, useEffect } from "react"
 import { Button, Card, CardContent } from "@barbergo/ui"
-import BookingSheet from "./booking-sheet"
+
 import { useSession } from "next-auth/react"
-import Header from "@/_components/header"
-import Footer from "@/_components/footer"
-import AuthDialog from "@/_components/auth-dialog"
+
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import BookingSheet from "./booking-sheet"
+import Footer from "@/_components/footer"
+import AuthDialog from "@/_components/auth-dialog"
+import SidebarRight from "./sidebar-right"
+import ServiceItem from "./service-item"
+import Header from "@/_components/header"
+import { toggleFavorite } from "@/_actions/toggle-favorite"
+
 
 type ServiceWithNumberPrice = Omit<BarbershopService, "price"> & { price: number }
 type PhoneObj = { number: string; isWhatsapp: boolean }
@@ -30,6 +35,7 @@ interface BarbershopDetailsProps {
         // O user ainda vem na query, mas não vamos exibir
         ratings: (Rating & { user: { name: string | null, image: string | null } | null })[]
     }
+    initialIsFavorited: boolean
 }
 
 interface WorkingHour {
@@ -46,7 +52,8 @@ const amenityIcons: any = {
     "ACCESSIBILITY": { icon: Accessibility, label: "Acessibilidade" },
 }
 
-const BarbershopDetails = ({ barbershop }: BarbershopDetailsProps) => {
+const BarbershopDetails = (props: BarbershopDetailsProps) => {
+    const { barbershop } = props
     const { data: session } = useSession()
     const router = useRouter()
     const pathname = usePathname()
@@ -56,41 +63,61 @@ const BarbershopDetails = ({ barbershop }: BarbershopDetailsProps) => {
     const [isSheetOpen, setIsSheetOpen] = useState(false)
     const [isAuthOpen, setIsAuthOpen] = useState(false)
     const [showAllHours, setShowAllHours] = useState(false)
+    const [isFavorited, setIsFavorited] = useState(props.initialIsFavorited)
 
     // Cálculo da Média
-    const totalRatings = barbershop.ratings.length
-    const averageRating = totalRatings > 0 ? barbershop.ratings.reduce((acc, r) => acc + r.stars, 0) / totalRatings : 5.0
+    const totalRatings = props.barbershop.ratings.length
+    const averageRating = totalRatings > 0 ? props.barbershop.ratings.reduce((acc, r) => acc + r.stars, 0) / totalRatings : 5.0
 
     // Filtra apenas avaliações marcadas para exibir
-    const visibleRatings = barbershop.ratings.filter(r => r.showOnPage)
+    const visibleRatings = props.barbershop.ratings.filter(r => r.showOnPage)
 
-    const openingHours = (barbershop.openingHours as unknown as WorkingHour[]) || []
+    const openingHours = (props.barbershop.openingHours as unknown as WorkingHour[]) || []
 
     // Tratamento Telefones
     let phones: PhoneObj[] = []
-    if (Array.isArray(barbershop.phones)) {
-        if (barbershop.phones.length > 0 && typeof barbershop.phones[0] === 'string') {
-            phones = (barbershop.phones as string[]).map(p => ({ number: p, isWhatsapp: false }))
+    if (Array.isArray(props.barbershop.phones)) {
+        if (props.barbershop.phones.length > 0 && typeof props.barbershop.phones[0] === 'string') {
+            phones = (props.barbershop.phones as string[]).map(p => ({ number: p, isWhatsapp: false }))
         } else {
-            phones = barbershop.phones as PhoneObj[]
+            phones = props.barbershop.phones as PhoneObj[]
         }
     }
 
     const handleCopyAddress = () => {
-        navigator.clipboard.writeText(barbershop.address)
+        navigator.clipboard.writeText(props.barbershop.address)
         toast.success("Endereço copiado!")
     }
 
     const handleOpenMap = () => {
-        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(barbershop.address)}`
+        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(props.barbershop.address)}`
         window.open(url, "_blank")
+    }
+
+    const handleToggleFavorite = async () => {
+        if (!session?.user) {
+            setIsAuthOpen(true)
+            return
+        }
+
+        try {
+            setIsFavorited((prev) => !prev)
+            await toggleFavorite({
+                barbershopId: props.barbershop.id,
+                userId: (session.user as any).id,
+            })
+            toast.success(isFavorited ? "Removido dos favoritos." : "Adicionado aos favoritos!")
+        } catch (error) {
+            setIsFavorited((prev) => !prev) // Revert optimistic
+            toast.error("Erro ao favoritar.")
+        }
     }
 
     useEffect(() => {
         const servicesIds = searchParams.get("services")?.split(",")
         const shouldOpenBooking = searchParams.get("book") === "true"
         if (servicesIds) {
-            const restored = barbershop.services.filter(s => servicesIds.includes(s.id))
+            const restored = props.barbershop.services.filter(s => servicesIds.includes(s.id))
             setSelectedServices(restored)
             if (shouldOpenBooking && session?.user && restored.length > 0) {
                 setIsSheetOpen(true)
@@ -99,7 +126,7 @@ const BarbershopDetails = ({ barbershop }: BarbershopDetailsProps) => {
                 router.replace(`${pathname}?${params.toString()}`, { scroll: false })
             }
         }
-    }, [searchParams, barbershop.services, session, pathname, router])
+    }, [searchParams, props.barbershop.services, session, pathname, router])
 
     const updateUrl = (services: ServiceWithNumberPrice[], includeBookParam = false) => {
         const params = new URLSearchParams(searchParams.toString())
@@ -138,24 +165,33 @@ const BarbershopDetails = ({ barbershop }: BarbershopDetailsProps) => {
                 <div className="flex flex-col lg:flex-row gap-10">
                     <div className="flex-1">
                         <div className="relative h-[250px] md:h-[480px] w-full rounded-2xl overflow-hidden shadow-lg">
-                            <Image src={barbershop.imageUrl} fill alt={barbershop.name} className="object-cover" />
+                            <Image src={props.barbershop.imageUrl} fill alt={props.barbershop.name} className="object-cover" />
                         </div>
 
                         <div className="mt-6 mb-8">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h1 className="text-3xl font-bold text-white mb-2">{barbershop.name}</h1>
+                                    <h1 className="text-3xl font-bold text-white mb-2">{props.barbershop.name}</h1>
                                     <button onClick={handleCopyAddress} className="flex items-center gap-2 text-gray-400 hover:text-primary transition-colors text-left">
                                         <MapPinIcon className="text-primary shrink-0" size={18} />
-                                        <p className="text-sm">{barbershop.address}</p>
+                                        <p className="text-sm">{props.barbershop.address}</p>
                                     </button>
                                 </div>
-                                <div className="flex flex-col items-end bg-[#1A1B1F] p-2 rounded-lg border border-secondary min-w-[100px]">
-                                    <div className="flex items-center gap-1 text-primary">
-                                        <StarIcon size={18} className="fill-primary" />
-                                        <span className="text-lg font-bold">{averageRating.toFixed(1)}</span>
+                                <div className="flex flex-col gap-2 items-end">
+                                    <div className="flex flex-col items-end bg-[#1A1B1F] p-2 rounded-lg border border-secondary">
+                                        <div className="flex items-center gap-1 text-primary">
+                                            <StarIcon size={18} className="fill-primary" />
+                                            <span className="text-lg font-bold">{averageRating.toFixed(1)}</span>
+                                        </div>
+                                        <span className="text-[10px] text-gray-500">{totalRatings} avaliações</span>
                                     </div>
-                                    <span className="text-[10px] text-gray-500">{totalRatings} avaliações</span>
+                                    <button
+                                        onClick={handleToggleFavorite}
+                                        className={`flex items-center justify-center p-2 rounded-lg border transition-all ${isFavorited ? "bg-red-500/10 border-red-500 text-red-500" : "bg-[#1A1B1F] border-secondary text-gray-400 hover:bg-[#26272B]"}`}
+                                        title={isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                                    >
+                                        <Heart size={20} className={isFavorited ? "fill-current" : ""} />
+                                    </button>
                                 </div>
                             </div>
                         </div>
