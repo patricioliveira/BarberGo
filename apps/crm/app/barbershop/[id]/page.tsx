@@ -135,8 +135,15 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
 
                 {/* Histórico Recente (Agora Interativo) */}
                 <PaymentHistoryCard
-                    subscription={subscription}
-                    currentStatus={currentStatus}
+                    subscription={{
+                        ...subscription,
+                        price: Number(subscription.price),
+                        invoices: subscription.invoices.map((inv: any) => ({
+                            ...inv,
+                            amount: Number(inv.amount)
+                        }))
+                    }}
+                    accentColor={currentStatus.accent}
                     barbershopName={shop.name}
                 />
             </div>

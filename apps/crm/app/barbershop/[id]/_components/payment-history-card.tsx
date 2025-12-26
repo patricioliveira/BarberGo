@@ -7,17 +7,17 @@ import { InvoiceDetails } from "./invoice-details"
 
 interface PaymentHistoryCardProps {
     subscription: any
-    currentStatus: any
+    accentColor: string
     barbershopName: string
 }
 
-export function PaymentHistoryCard({ subscription, currentStatus, barbershopName }: PaymentHistoryCardProps) {
+export function PaymentHistoryCard({ subscription, accentColor, barbershopName }: PaymentHistoryCardProps) {
     const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
 
     return (
         <>
             <Card className="bg-[#1A1B1F] border-none ring-1 ring-white/5 lg:col-span-1 overflow-hidden">
-                <div className={`h-1 w-full ${currentStatus.accent}`} />
+                <div className={`h-1 w-full ${accentColor}`} />
                 <CardHeader>
                     <CardTitle className="text-xs uppercase font-black text-gray-500 flex items-center gap-2">
                         <History size={14} /> Histórico de Faturas
