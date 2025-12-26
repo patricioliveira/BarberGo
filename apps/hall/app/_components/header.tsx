@@ -26,7 +26,7 @@ const Header = () => {
     const isCommonUser = session?.user?.role === "USER"
 
     return (
-        <Card className="border-none rounded-none bg-[#141518]/80 backdrop-blur-md sticky top-0 z-50">
+        <Card className="border-none rounded-none bg-[#141518]/80 backdrop-blur-md sticky top-0 z-50 pt-safe transition-all duration-300">
             <CardContent className="p-5 justify-between items-center flex flex-row">
                 {/* Logo */}
                 <Link href="/" className="hover:opacity-80 transition-opacity">
