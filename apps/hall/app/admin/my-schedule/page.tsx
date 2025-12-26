@@ -29,7 +29,7 @@ export default function MySchedulePage() {
     const router = useRouter()
 
     const [bookings, setBookings] = useState<any[]>([])
-    const [filter, setFilter] = useState<"CONFIRMED" | "FINISHED" | "CANCELED" | "WAITING_CANCELLATION">("CONFIRMED")
+    const [filter, setFilter] = useState<"CONFIRMED" | "COMPLETED" | "CANCELED" | "WAITING_CANCELLATION">("CONFIRMED")
     const [period, setPeriod] = useState<"day" | "week" | "month">("day")
     const [viewDate, setViewDate] = useState(new Date())
     const [searchQuery, setSearchQuery] = useState("")
@@ -232,7 +232,7 @@ export default function MySchedulePage() {
                         <div className="flex gap-2 pr-4">
                             <FilterButton label="Agendados" icon={Clock} active={filter === "CONFIRMED"} onClick={() => setFilter("CONFIRMED")} variant="blue" />
                             <FilterButton label={`Solicitações ${pendingCount > 0 ? `(${pendingCount})` : ""}`} icon={AlertTriangle} active={filter === "WAITING_CANCELLATION"} onClick={() => setFilter("WAITING_CANCELLATION")} variant="warning" />
-                            <FilterButton label="Finalizados" icon={CheckCircle2} active={filter === "FINISHED"} onClick={() => setFilter("FINISHED")} variant="green" />
+                            <FilterButton label="Finalizados" icon={CheckCircle2} active={filter === "COMPLETED"} onClick={() => setFilter("COMPLETED")} variant="green" />
                             <FilterButton label="Cancelados" icon={XCircle} active={filter === "CANCELED"} onClick={() => setFilter("CANCELED")} variant="destructive" />
                         </div>
                     </HorizontalScroll>
@@ -255,7 +255,7 @@ export default function MySchedulePage() {
                                 <CardContent className="p-0 flex items-stretch">
                                     <div className={`w-1.5 ${booking.status === 'WAITING_CANCELLATION' ? 'bg-amber-500 animate-pulse' :
                                         booking.status === 'CANCELED' ? 'bg-red-500' :
-                                            booking.status === 'FINISHED' ? 'bg-green-600' : 'bg-blue-500'
+                                            booking.status === 'COMPLETED' ? 'bg-green-600' : 'bg-blue-500'
                                         }`} />
 
                                     <div className="p-4 flex flex-1 flex-col md:flex-row md:items-center justify-between gap-4">
@@ -294,13 +294,13 @@ export default function MySchedulePage() {
                                             )}
 
                                             <Badge variant="secondary" className={`text-[10px] uppercase font-black ml-2 border-none ${booking.status === 'WAITING_CANCELLATION' ? 'text-amber-500 bg-amber-500/10' :
-                                                booking.status === 'FINISHED' ? 'text-green-500 bg-green-500/10' :
+                                                booking.status === 'COMPLETED' ? 'text-green-500 bg-green-500/10' :
                                                     booking.status === 'CANCELED' ? 'text-red-500 bg-red-500/10' :
                                                         'text-blue-400 bg-blue-500/10'
                                                 }`}>
                                                 {booking.status === "WAITING_CANCELLATION" ? "Solicitado" :
                                                     booking.status === "CONFIRMED" ? "Agendado" :
-                                                        booking.status === "FINISHED" ? "Finalizado" : "Cancelado"}
+                                                        booking.status === "COMPLETED" ? "Finalizado" : "Cancelado"}
                                             </Badge>
                                         </div>
                                     </div>

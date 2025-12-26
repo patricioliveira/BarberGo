@@ -128,8 +128,8 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
         setIsRatingOpen(true)
     }
 
-    const upcoming = bookingList.filter(b => isFuture(new Date(b.date)) && b.status !== "CANCELED")
-    const past = bookingList.filter(b => !isFuture(new Date(b.date)) || b.status === "CANCELED")
+    const upcoming = bookingList.filter(b => isFuture(new Date(b.date)) && b.status !== "CANCELED" && b.status !== "COMPLETED")
+    const past = bookingList.filter(b => !isFuture(new Date(b.date)) || b.status === "CANCELED" || b.status === "COMPLETED")
 
     // Componente de detalhes reutilizável
     const DetailsContent = ({ booking }: { booking: BookingWithDetails }) => (
@@ -157,6 +157,10 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
                         ) : booking.status === "CANCELED" ? (
                             <Badge variant="destructive" className="flex items-center gap-1">
                                 <XCircleIcon size={12} /> Cancelado
+                            </Badge>
+                        ) : booking.status === "COMPLETED" ? (
+                            <Badge className="bg-primary/10 text-primary border-none flex items-center gap-1">
+                                <CheckCircle2 size={12} /> Finalizado
                             </Badge>
                         ) : (
                             <Badge className="bg-primary/10 text-primary border-none flex items-center gap-1">
@@ -265,6 +269,13 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
                 <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3">
                     <AlertCircle className="text-red-500" size={20} />
                     <p className="text-xs text-red-200">Este agendamento foi cancelado.</p>
+                </div>
+            )}
+
+            {booking.status === "COMPLETED" && (
+                <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex items-center gap-3">
+                    <CheckCircle2 className="text-primary" size={20} />
+                    <p className="text-xs text-primary">Este agendamento foi finalizado com sucesso.</p>
                 </div>
             )}
         </div>
