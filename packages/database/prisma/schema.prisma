@@ -120,6 +120,7 @@ model Barbershop {
   // NOVOS CAMPOS
   instagram      String?
   amenities      String[] // Ex: ["WIFI", "PARKING", "KIDS", "ACCESSIBILITY"]
+  allowOvertime  Boolean  @default(false)
 
   isClosed       Boolean  @default(false)
   paymentMethods String[]

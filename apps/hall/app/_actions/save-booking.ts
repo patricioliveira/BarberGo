@@ -76,6 +76,48 @@ export const saveBooking = async ({
         const bookingStart = new Date(date)
         const bookingEnd = addMinutes(bookingStart, totalDuration)
 
+        // 6.5 Validação de Horário Limite (Overtime)
+        // Se a barbearia NÃO permite overtime, verificamos se o agendamento excede o horário de fechamento
+        if (!(barbershop as any).allowOvertime) {
+            const weekDays = [
+                "Domingo",
+                "Segunda-feira",
+                "Terça-feira",
+                "Quarta-feira",
+                "Quinta-feira",
+                "Sexta-feira",
+                "Sábado",
+            ]
+            const dayName = weekDays[bookingStart.getDay()]
+            const bookingEndTimeString = bookingEnd.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
+
+            // Helper para converter "HH:MM" em minutos para comparação
+            const toMinutes = (time: string) => {
+                const [h, m] = time.split(":").map(Number)
+                return h * 60 + m
+            }
+
+            const bookingEndMinutes = toMinutes(bookingEndTimeString)
+
+            // Verifica horário da Barbearia
+            const shopHours = (barbershop.openingHours as any[] || []).find((h: any) => h.day === dayName)
+            if (shopHours && shopHours.isOpen) {
+                const shopCloseMinutes = toMinutes(shopHours.close)
+                if (bookingEndMinutes > shopCloseMinutes && shopCloseMinutes !== 0) { // 00:00 geralmente tratado como fechado ou virada, mas aqui assumo fechamento simples
+                    throw new Error("O serviço selecionado excede o horário de funcionamento da barbearia.")
+                }
+            }
+
+            // Verifica horário do Staff
+            const staffHours = (staff.openingHours as any[] || []).find((h: any) => h.day === dayName)
+            if (staffHours && staffHours.isOpen) {
+                const staffCloseMinutes = toMinutes(staffHours.close)
+                if (bookingEndMinutes > staffCloseMinutes && staffCloseMinutes !== 0) {
+                    throw new Error("O serviço selecionado excede o horário de trabalho do profissional.")
+                }
+            }
+        }
+
         // 7. Transação com Isolamento Serializável e Locking Pessimista
         // O nível Serializable garante isolamento, mas o update dummy garante locking de linha
         // impedindo que duas transações leiam o estado "livre" ao mesmo tempo.

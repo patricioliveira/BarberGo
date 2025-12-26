@@ -114,7 +114,8 @@ export default function SettingsPage() {
         paymentMethods: [] as string[],
         isClosed: false,
         instagram: "",
-        amenities: [] as string[]
+        amenities: [] as string[],
+        allowOvertime: false
     })
 
     const [hours, setHours] = useState<WorkingHour[]>(DEFAULT_HOURS)
@@ -158,7 +159,8 @@ export default function SettingsPage() {
                             paymentMethods: data.paymentMethods || [],
                             isClosed: data.isClosed || false,
                             instagram: data.instagram || "",
-                            amenities: data.amenities || []
+                            amenities: data.amenities || [],
+                            allowOvertime: (data as any).allowOvertime || false
                         })
                         if (data.openingHours) setHours(data.openingHours as unknown as WorkingHour[])
 
@@ -390,6 +392,14 @@ export default function SettingsPage() {
                                         <span className={`text-xs font-bold ${storeData.isClosed ? 'text-red-500' : 'text-green-500'}`}>{storeData.isClosed ? 'FECHADA' : 'ABERTA'}</span>
                                         <Switch checked={!storeData.isClosed} onCheckedChange={(v) => { setStoreData({ ...storeData, isClosed: !v }); setIsDirty(true) }} />
                                     </div>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 border border-secondary rounded-lg bg-black/20">
+                                    <div className="space-y-1">
+                                        <Label>Aceitar Agendamentos "Extra-Horário"</Label>
+                                        <p className="text-[10px] text-gray-400">Permitir que serviços terminem após o horário de fechamento.</p>
+                                    </div>
+                                    <Switch checked={storeData.allowOvertime} onCheckedChange={(v) => { setStoreData({ ...storeData, allowOvertime: v }); setIsDirty(true) }} />
                                 </div>
 
                                 <div className="grid md:grid-cols-2 gap-4">
