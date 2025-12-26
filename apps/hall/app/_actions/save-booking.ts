@@ -20,60 +20,65 @@ export const saveBooking = async ({
     date,
     staffId,
 }: SaveBookingParams) => {
-    // 1. Busca completa de integridade (Barbearia + Subscrição + Staff + Serviços + Bloqueio)
-    const barbershop = await db.barbershop.findUnique({
-        where: { id: barbershopId },
-        include: {
-            subscription: true,
-            staff: { where: { id: staffId } },
-            services: { where: { id: { in: serviceIds } } },
-            blockedUsers: {
-                where: { userId },
-            },
-        },
-    })
-
-    if (!barbershop) throw new Error("Barbearia não encontrada.")
-
-    // 2. Validação de Cliente Bloqueado
-    if (barbershop.blockedUsers.length > 0) {
-        throw new Error("Você está bloqueado nesta barbearia e não pode realizar agendamentos.")
-    }
-
-    // 3. Validação de Status da Barbearia
-    if (barbershop.isClosed) throw new Error("A barbearia está fechada no momento.")
-
-    // 4. Validação de Subscrição (CRM)
-    const subStatus = barbershop.subscription?.status
-    if (subStatus === "SUSPENDED" || subStatus === "CANCELED") {
-        throw new Error(
-            "Agendamentos indisponíveis para esta unidade."
-        )
-    }
-
-    // 5. Validação do Profissional
-    const staff = barbershop.staff[0]
-    if (!staff || !staff.isActive) {
-        throw new Error("O profissional selecionado não está mais disponível.")
-    }
-
-    // 6. Validação dos Serviços
-    if (barbershop.services.length !== serviceIds.length) {
-        throw new Error("Um ou mais serviços selecionados não estão mais ativos.")
-    }
-
-    // Calcular duração total
-    const totalDuration = barbershop.services.reduce(
-        (acc, s) => acc + s.duration,
-        0
-    )
-    const bookingStart = new Date(date)
-    const bookingEnd = addMinutes(bookingStart, totalDuration)
-
-    // 7. Transação com Isolamento Serializável e Locking Pessimista
-    // O nível Serializable garante isolamento, mas o update dummy garante locking de linha
-    // impedindo que duas transações leiam o estado "livre" ao mesmo tempo.
     try {
+        // 1. Busca completa de integridade (Barbearia + Subscrição + Staff + Serviços + Bloqueio)
+        const barbershop = await db.barbershop.findUnique({
+            where: { id: barbershopId },
+            include: {
+                subscription: true,
+                staff: { where: { id: staffId } },
+                services: { where: { id: { in: serviceIds } } },
+                blockedUsers: {
+                    where: { userId },
+                },
+            },
+        })
+
+        if (!barbershop) throw new Error("Barbearia não encontrada.")
+
+        // 2. Validação de Cliente Bloqueado
+        if (barbershop.blockedUsers.length > 0) {
+            throw new Error(
+                "Você está bloqueado nesta barbearia e não pode realizar agendamentos."
+            )
+        }
+
+        // 3. Validação de Status da Barbearia
+        if (barbershop.isClosed)
+            throw new Error("A barbearia está fechada no momento.")
+
+        // 4. Validação de Subscrição (CRM)
+        const subStatus = barbershop.subscription?.status
+        if (subStatus === "SUSPENDED" || subStatus === "CANCELED") {
+            throw new Error("Agendamentos indisponíveis para esta unidade.")
+        }
+
+        // 5. Validação do Profissional
+        const staff = barbershop.staff[0]
+        if (!staff || !staff.isActive) {
+            throw new Error(
+                "O profissional selecionado não está mais disponível."
+            )
+        }
+
+        // 6. Validação dos Serviços
+        if (barbershop.services.length !== serviceIds.length) {
+            throw new Error(
+                "Um ou mais serviços selecionados não estão mais ativos."
+            )
+        }
+
+        // Calcular duração total
+        const totalDuration = barbershop.services.reduce(
+            (acc, s) => acc + s.duration,
+            0
+        )
+        const bookingStart = new Date(date)
+        const bookingEnd = addMinutes(bookingStart, totalDuration)
+
+        // 7. Transação com Isolamento Serializável e Locking Pessimista
+        // O nível Serializable garante isolamento, mas o update dummy garante locking de linha
+        // impedindo que duas transações leiam o estado "livre" ao mesmo tempo.
         await db.$transaction(
             async (tx) => {
                 // LOCK: Força bloqueio de linha no Staff para serializar agendamentos neste profissional
@@ -110,7 +115,10 @@ export const saveBooking = async ({
                     )
 
                     // Fórmula de colisão de intervalos: (StartA < EndB) && (EndA > StartB)
-                    if (bookingStart < existingEnd && bookingEnd > existingStart) {
+                    if (
+                        bookingStart < existingEnd &&
+                        bookingEnd > existingStart
+                    ) {
                         throw new Error(
                             "Este horário acabou de ser ocupado por outro cliente. Por favor, escolha outro."
                         )
@@ -137,17 +145,19 @@ export const saveBooking = async ({
                 timeout: 10000, // 10s timeout para evitar deadlocks longos
             }
         )
+
+        revalidatePath("/")
+        revalidatePath("/appointments")
+
+        return { success: true }
     } catch (error) {
-        // ... (erro handling permanece similar, mas agora pegamos erros de lock timeout também se ocorrerem)
-        if (error instanceof Error && error.message.includes("ocupado")) {
-            throw error
+        console.error("Erro ao salvar agendamento:", error)
+        if (error instanceof Error) {
+            return { success: false, message: error.message }
         }
-
-        throw new Error(
-            "Houve um erro ao processar o agendamento. Tente novamente."
-        )
+        return {
+            success: false,
+            message: "Erro inesperado ao realizar o agendamento.",
+        }
     }
-
-    revalidatePath("/")
-    revalidatePath("/appointments")
 }

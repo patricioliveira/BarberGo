@@ -107,7 +107,7 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
             const [h, m] = hour.split(":").map(Number)
             const newDate = setMinutes(setHours(date, h), m)
 
-            await saveBooking({
+            const result = await saveBooking({
                 serviceIds: services.map(s => s.id),
                 barbershopId: barbershop.id,
                 staffId: selectedBarber.id,
@@ -115,11 +115,16 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
                 userId: session.user.id,
             })
 
+            if (!result.success) {
+                toast.error(result.message || "Erro ao realizar reserva.")
+                return
+            }
+
             onOpenChange(false)
             toast.success("Reserva realizada com sucesso!")
             router.push("/appointments")
         } catch (error: any) {
-            toast.error(error.message || "Erro ao realizar reserva.")
+            toast.error("Erro inesperado ao realizar reserva.")
         } finally {
             setIsLoading(false)
         }
