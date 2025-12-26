@@ -1,11 +1,11 @@
 "use server"
 
 import { db } from "@barbergo/database"
-import { startOfMonth, endOfMonth, eachDayOfInterval, format, isToday, startOfDay, endOfDay } from "date-fns"
+import { startOfMonth, endOfMonth, eachDayOfInterval, format, isToday, startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../_lib/auth"
 
-export const getAdminDashboard = async (targetDate: Date = new Date()) => {
+export const getAdminDashboard = async (targetDate: Date = new Date(), period: "day" | "week" | "month" = "month") => {
     const session = await getServerSession(authOptions)
     if (!session?.user) throw new Error("Unauthorized")
 
@@ -26,13 +26,73 @@ export const getAdminDashboard = async (targetDate: Date = new Date()) => {
 
     if (!barbershopId) throw new Error("Unidade não encontrada")
 
-    const startMonth = startOfMonth(targetDate)
-    const endMonth = endOfMonth(targetDate)
+    const start = period === 'day' ? startOfDay(targetDate) :
+        period === 'week' ? startOfWeek(targetDate, { weekStartsOn: 1 }) :
+            startOfMonth(targetDate)
 
+    const end = period === 'day' ? endOfDay(targetDate) :
+        period === 'week' ? endOfWeek(targetDate, { weekStartsOn: 1 }) :
+            endOfMonth(targetDate)
+
+    // Data for KPIs and Charts (Selected Period)
     const shopBookings = await db.booking.findMany({
-        where: { barbershopId, date: { gte: startMonth, lte: endMonth } },
-        include: { service: true, user: true, staff: true }
+        where: { barbershopId, date: { gte: start, lte: end } },
+        include: { service: true, user: true, staff: true },
+        orderBy: { date: 'asc' }
     })
+
+    // Data for "Próximos Clientes" (Always Next 5 from NOW, regardless of filter, IF viewing today/future context? 
+    // User requested: "Próximos Clientes... limit 5... passed passed => finishes... show those of the day".
+    // Let's implement independent queries for the "List" vs "Stats".
+    // Actually, user said: "nessa tela... queria os filtros... e filtrar corretamente os dados".
+    // But "Próximos Clientes" implies FUTURE. If I filter for last month, showing "Next Clients" is weird.
+    // However, usually Dashboard Lists show the DATA of the selected period.
+    // BUT the card is named "Próximos Clientes". 
+    // Let's return a dedicated "nextAppointments" list that obeys the user's "Next 5" rule starting from NOW (or Target Date if it's the anchor).
+    // If we strictly follow "Próximos Clientes", it should be from NOW.
+
+    // Let's fetch the "List View" data separately.
+    // Logic:
+    // 1. If period is TODAY (or contains NOW), we want "Next 5 from NOW".
+    // 2. If period is PAST, simply show bookings from that period (maybe all, or just limit 5 for UI consistency).
+    // 3. User specifically asked: "No card Próximos Clientes... esta mostrando agendamentos de dias anteriores... só os que estão agendados".
+
+    // We will return `bookings` specifically for the list view.
+    // We'll filter `bookings` to be: date >= NOW (if filter is today/future) AND status != COMPLETED/CANCELED.
+
+    const now = new Date()
+    const viewDateIsPast = end < now
+
+    let listBookingsQuery: any = {
+        where: {
+            barbershopId,
+            status: { notIn: ["CANCELED", "COMPLETED"] }, // User wants to hide finalized
+            date: { gte: viewDateIsPast ? start : now } // If viewing past, show range. If viewing present/future, show from NOW.
+        },
+        orderBy: { date: 'asc' },
+        take: 10, // Limit slightly more than 5 to be safe
+        include: { service: true, user: true, staff: true }
+    }
+
+    // If viewing a specific period (like a specific day in future), restrict to that period too?
+    // User said: "mostrar os do dia".
+    // So ensuring `lte: end` is important if narrowing down.
+    if (!viewDateIsPast) {
+        // If "Today", show from Now to End of Today (or unlimited future? User said "Próximos Clientes")
+        // Usually "Próximos" means next upcoming.
+        // But allow filtering by day.
+        // If I select "Tomorrow", I want to see Tomorrow's bookings.
+        // So: date >= Start AND date <= End.
+        listBookingsQuery.where.date = { gte: start, lte: end }
+
+        // Special case: If 'start' is in the past (e.g. Month view starting 1st, today is 15th), 
+        // we only want bookings from NOW onwards?  "no conta, só os que estão agendados"
+        if (start < now && end > now) {
+            listBookingsQuery.where.date.gte = now
+        }
+    }
+
+    const shopListBookings = await db.booking.findMany(listBookingsQuery)
 
     const barbershop = await db.barbershop.findUnique({
         where: { id: barbershopId },
@@ -40,11 +100,21 @@ export const getAdminDashboard = async (targetDate: Date = new Date()) => {
     })
 
     let personalBookings: any[] = []
+    let personalListBookings: any[] = []
+
     if (isBarber) {
+        // Staff Stats (Selected Period)
         personalBookings = await db.booking.findMany({
-            where: { staffId: staffProfile!.id, date: { gte: startMonth, lte: endMonth } },
+            where: { staffId: staffProfile!.id, date: { gte: start, lte: end } },
             include: { service: true, user: true }
         })
+
+        // Staff List (Filtered Logic)
+        const personalListQuery = { ...listBookingsQuery }
+        personalListQuery.where = { ...listBookingsQuery.where, staffId: staffProfile!.id }
+        delete personalListQuery.where.barbershopId // Remove shop filter replacement
+
+        personalListBookings = await db.booking.findMany(personalListQuery)
     }
 
     const filterActive = (list: any[]) => list.filter(b => b.status !== "CANCELED")
@@ -60,7 +130,14 @@ export const getAdminDashboard = async (targetDate: Date = new Date()) => {
 
     const calculateChart = (bookingsList: any[]) => {
         const activeBookings = filterActive(bookingsList)
-        const days = eachDayOfInterval({ start: startMonth, end: endMonth })
+        const days = eachDayOfInterval({ start: start, end: end })
+        // If period is month, returning 30 days is fine. 
+        // If period is year (not supported yet) fine.
+        // If period is day, returning 1 day (or hours?) 
+        // The frontend chart handles "Day" view by hours manually. We just need to ensure the raw data is passed or formatted.
+        // Current frontend logic for 'day' uses 'bookings' array and filters locally.
+        // We will pass `chartData` matching the interval.
+
         return days.map(day => ({
             date: format(day, "dd"),
             fullDate: day,
@@ -77,12 +154,13 @@ export const getAdminDashboard = async (targetDate: Date = new Date()) => {
         barberId: staffProfile?.id,
         kpi: { ...calculateKpis(shopBookings), views: barbershop?.views || 0, isClosed: barbershop?.isClosed || false },
         chartData: calculateChart(shopBookings),
-        bookings: shopBookings.filter(b => b.status === "CONFIRMED").slice(0, 10).map(b => ({
+        // Return refined list for the "Next Clients" card
+        bookings: shopListBookings.map((b: any) => ({
             ...b, service: { ...b.service, price: Number(b.service.price) }
         })),
         personalKpi: isBarber ? { ...calculateKpis(personalBookings), isActive: user.staffProfile?.isActive ?? false } : null,
         personalChartData: isBarber ? calculateChart(personalBookings) : null,
-        personalBookings: personalBookings.map(b => ({
+        personalBookings: personalListBookings.map((b: any) => ({
             ...b, service: { ...b.service, price: Number(b.service.price) }
         }))
     }
