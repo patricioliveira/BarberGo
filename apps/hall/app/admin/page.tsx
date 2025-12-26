@@ -152,46 +152,56 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    {/* FILTER BAR - NEW */}
-                    <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-[#1A1B1F] p-4 rounded-xl border border-white/5">
-                        <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-                            <div className="flex bg-black/40 p-1 rounded-lg border border-white/5 gap-1 shrink-0">
-                                <Button variant={period === "day" ? "default" : "ghost"} size="sm" className="h-8 text-xs font-bold" onClick={() => setPeriod("day")}>Dia</Button>
-                                <Button variant={period === "week" ? "default" : "ghost"} size="sm" className="h-8 text-xs font-bold" onClick={() => setPeriod("week")}>Semana</Button>
-                                <Button variant={period === "month" ? "default" : "ghost"} size="sm" className="h-8 text-xs font-bold" onClick={() => setPeriod("month")}>Mês</Button>
+                    {/* FILTER BAR - RESPONSIVE STACK */}
+                    <div className="flex flex-col xl:flex-row gap-4 items-center justify-between bg-[#1A1B1F] p-4 rounded-xl border border-white/5">
+                        <div className="flex flex-col md:flex-row items-center gap-4 w-full xl:w-auto">
+
+                            {/* Period Selector */}
+                            <div className="flex bg-black/40 p-1 rounded-lg border border-white/5 gap-1 shrink-0 w-full md:w-auto justify-center">
+                                <Button variant={period === "day" ? "default" : "ghost"} size="sm" className="flex-1 md:flex-none h-8 text-xs font-bold" onClick={() => setPeriod("day")}>Dia</Button>
+                                <Button variant={period === "week" ? "default" : "ghost"} size="sm" className="flex-1 md:flex-none h-8 text-xs font-bold" onClick={() => setPeriod("week")}>Semana</Button>
+                                <Button variant={period === "month" ? "default" : "ghost"} size="sm" className="flex-1 md:flex-none h-8 text-xs font-bold" onClick={() => setPeriod("month")}>Mês</Button>
                             </div>
 
-                            <div className="flex items-center gap-2 border-l border-white/10 pl-4 shrink-0">
-                                <Button variant="outline" size="icon" className="h-8 w-8 border-white/5 bg-black/20" onClick={() => handleNavigate('prev')}><ChevronLeft size={16} /></Button>
-                                <div className="text-sm font-medium text-white min-w-[140px] text-center capitalize">
-                                    {period === 'month' ? format(viewDate, "MMMM 'de' yyyy", { locale: ptBR }) :
-                                        period === 'week' ? `Sem. ${format(startOfWeek(viewDate), "dd")} - ${format(endOfWeek(viewDate), "dd MMM", { locale: ptBR })}` :
-                                            format(viewDate, "EEEE, dd MMM", { locale: ptBR })}
-                                </div>
-                                <Button variant="outline" size="icon" className="h-8 w-8 border-white/5 bg-black/20" onClick={() => handleNavigate('next')}><ChevronRight size={16} /></Button>
-                            </div>
+                            {/* Date Navigation & Picker Group */}
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto md:border-l md:border-white/10 md:pl-4">
 
-                            <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                                <DialogTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-8 border-white/5 bg-black/20 text-xs gap-2">
-                                        <CalendarDays size={14} /> Escolher Data
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="bg-[#1A1B1F] border-white/10 text-white">
-                                    <div className="p-4 flex justify-center">
-                                        <Calendar
-                                            mode="single"
-                                            selected={viewDate}
-                                            onSelect={(date) => { if (date) { setViewDate(date); setIsCalendarOpen(false) } }}
-                                            className="rounded-md border border-white/10"
-                                        />
+                                {/* Arrows + Label */}
+                                <div className="flex items-center justify-between sm:justify-center gap-2 w-full sm:w-auto bg-black/20 p-1 rounded-lg md:bg-transparent md:p-0">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => handleNavigate('prev')}><ChevronLeft size={16} /></Button>
+                                    <div className="text-sm font-medium text-white flex-1 sm:min-w-[140px] text-center capitalize truncate">
+                                        {period === 'month' ? format(viewDate, "MMMM 'de' yyyy", { locale: ptBR }) :
+                                            period === 'week' ? `Sem. ${format(startOfWeek(viewDate), "dd")} - ${format(endOfWeek(viewDate), "dd MMM", { locale: ptBR })}` :
+                                                format(viewDate, "EEEE, dd MMM", { locale: ptBR })}
                                     </div>
-                                </DialogContent>
-                            </Dialog>
-                            <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-white" onClick={() => setViewDate(new Date())}>Hoje</Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/10" onClick={() => handleNavigate('next')}><ChevronRight size={16} /></Button>
+                                </div>
+
+                                {/* Calendar & Today */}
+                                <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
+                                    <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" size="sm" className="h-8 flex-1 sm:flex-none border-white/5 bg-black/20 text-xs gap-2">
+                                                <CalendarDays size={14} /> <span className="hidden sm:inline">Escolher Data</span><span className="sm:hidden">Data</span>
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="bg-[#1A1B1F] border-white/10 text-white">
+                                            <div className="p-4 flex justify-center">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={viewDate}
+                                                    onSelect={(date) => { if (date) { setViewDate(date); setIsCalendarOpen(false) } }}
+                                                    className="rounded-md border border-white/10"
+                                                />
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                    <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-white" onClick={() => setViewDate(new Date())}>Hoje</Button>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                        <div className="flex items-center gap-2 w-full xl:w-auto justify-end">
                             {/* Actions or additional info can go here */}
                         </div>
                     </div>

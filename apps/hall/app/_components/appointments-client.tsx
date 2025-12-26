@@ -331,7 +331,7 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
                                             <div onClick={() => setSelectedBookingId(b.id)}><AppointmentCard booking={b} active={selectedBookingId === b.id} /></div>
                                         </SheetTrigger>
                                         <SheetContent side="bottom" className="bg-[#141518] border-none rounded-t-[32px] h-[85vh] text-white">
-                                            <SheetHeader className="mb-6 px-2"><SheetTitle className="text-white text-left">Detalhes da Reserva</SheetTitle></SheetHeader>
+                                            <SheetHeader className="mb-6 px-2"><SheetTitle className="text-white text-left">Detalhes do Agendamento</SheetTitle></SheetHeader>
                                             <div className="overflow-y-auto h-full pb-10 px-2"><DetailsContent booking={b} /></div>
                                         </SheetContent>
                                     </Sheet>

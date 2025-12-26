@@ -44,7 +44,7 @@ export default async function AppointmentsPage() {
             <div className="container mx-auto p-4 md:p-8 flex-1">
                 <header className="mb-8">
                     <h1 className="text-3xl font-bold text-white tracking-tight">Meus Agendamentos</h1>
-                    <p className="text-gray-400">Gerencie suas reservas e histórico de serviços.</p>
+                    <p className="text-gray-400">Gerencie seus agendamentos e histórico de serviços.</p>
                 </header>
 
                 <AppointmentsClient initialBookings={serializedBookings} />
