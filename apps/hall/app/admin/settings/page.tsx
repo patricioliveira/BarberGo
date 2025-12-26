@@ -42,7 +42,14 @@ import {
     Wifi,
     Accessibility,
     Car,
-    Baby
+    Baby,
+    Snowflake,
+    Tv,
+    Coffee,
+    Beer,
+    Gamepad2,
+    PawPrint,
+    Martini
 } from "lucide-react"
 import Header from "../../_components/header"
 
@@ -449,9 +456,16 @@ export default function SettingsPage() {
                                     <div className="flex flex-wrap gap-3">
                                         {[
                                             { id: "WIFI", label: "Wi-Fi Grátis", icon: Wifi },
-                                            { id: "ACCESSIBILITY", label: "Acessibilidade", icon: Accessibility },
+                                            { id: "AIR_CONDITIONING", label: "Ar Condicionado", icon: Snowflake },
                                             { id: "PARKING", label: "Estacionamento", icon: Car },
+                                            { id: "TV", label: "TV", icon: Tv },
+                                            { id: "COFFEE", label: "Café", icon: Coffee },
+                                            { id: "BEER", label: "Cerveja", icon: Beer },
+                                            { id: "BAR", label: "Bar", icon: Martini },
+                                            { id: "VIDEO_GAME", label: "Video Game", icon: Gamepad2 },
                                             { id: "KIDS", label: "Atende Crianças", icon: Baby },
+                                            { id: "PET_FRIENDLY", label: "Pet Friendly", icon: PawPrint },
+                                            { id: "ACCESSIBILITY", label: "Acessibilidade", icon: Accessibility },
                                         ].map((item) => (
                                             <Button
                                                 key={item.id}

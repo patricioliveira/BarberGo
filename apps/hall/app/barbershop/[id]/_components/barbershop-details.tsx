@@ -4,7 +4,8 @@ import { Barbershop, BarbershopService, BarberStaff, Rating } from "@prisma/clie
 import Image from "next/image"
 import {
     MapPinIcon, PhoneIcon, CreditCardIcon, ChevronDownIcon, ChevronUpIcon,
-    StarIcon, Wifi, Car, Baby, Accessibility, Instagram, MessageCircle, Heart
+    StarIcon, Wifi, Car, Baby, Accessibility, Instagram, MessageCircle, Heart,
+    Snowflake, Tv, Coffee, Beer, Gamepad2, PawPrint, Martini
 } from "lucide-react"
 
 import { useState, useEffect } from "react"
@@ -47,9 +48,16 @@ interface WorkingHour {
 
 const amenityIcons: any = {
     "WIFI": { icon: Wifi, label: "Wi-Fi" },
-    "PARKING": { icon: Car, label: "Estacionamento" },
-    "KIDS": { icon: Baby, label: "Kids" },
     "ACCESSIBILITY": { icon: Accessibility, label: "Acessibilidade" },
+    "PARKING": { icon: Car, label: "Estacionamento" },
+    "TV": { icon: Tv, label: "TV" },
+    "COFFEE": { icon: Coffee, label: "Café" },
+    "BEER": { icon: Beer, label: "Cerveja" },
+    "BAR": { icon: Martini, label: "Bar" },
+    "VIDEO_GAME": { icon: Gamepad2, label: "Video Game" },
+    "KIDS": { icon: Baby, label: "Kids" },
+    "PET_FRIENDLY": { icon: PawPrint, label: "Pet Friendly" },
+    "AIR_CONDITIONING": { icon: Snowflake, label: "Ar Condicionado" },
 }
 
 const BarbershopDetails = (props: BarbershopDetailsProps) => {

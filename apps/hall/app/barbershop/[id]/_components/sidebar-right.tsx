@@ -3,7 +3,7 @@
 import { Barbershop, Rating } from "@prisma/client"
 import { Card, CardContent, Button } from "@barbergo/ui"
 import Image from "next/image"
-import { MapPinIcon, PhoneIcon, CreditCardIcon, StarIcon, Wifi, Car, Baby, Accessibility, Instagram, MessageCircle } from "lucide-react"
+import { MapPinIcon, PhoneIcon, CreditCardIcon, StarIcon, Wifi, Car, Baby, Accessibility, Instagram, MessageCircle, Snowflake, Tv, Coffee, Beer, Gamepad2, PawPrint, Martini } from "lucide-react"
 import { toast } from "sonner"
 
 // Tipagem para os telefones salvos como JSON
@@ -25,9 +25,16 @@ interface WorkingHour {
 // Mapeamento de ícones
 const amenityIcons: any = {
     "WIFI": { icon: Wifi, label: "Wi-Fi" },
-    "PARKING": { icon: Car, label: "Estacionamento" },
-    "KIDS": { icon: Baby, label: "Kids" },
     "ACCESSIBILITY": { icon: Accessibility, label: "Acessibilidade" },
+    "PARKING": { icon: Car, label: "Estacionamento" },
+    "TV": { icon: Tv, label: "TV" },
+    "COFFEE": { icon: Coffee, label: "Café" },
+    "BEER": { icon: Beer, label: "Cerveja" },
+    "BAR": { icon: Martini, label: "Bar" },
+    "VIDEO_GAME": { icon: Gamepad2, label: "Video Game" },
+    "KIDS": { icon: Baby, label: "Kids" },
+    "PET_FRIENDLY": { icon: PawPrint, label: "Pet Friendly" },
+    "AIR_CONDITIONING": { icon: Snowflake, label: "Ar Condicionado" },
 }
 
 const SidebarRight = ({ barbershop }: SidebarRightProps) => {
