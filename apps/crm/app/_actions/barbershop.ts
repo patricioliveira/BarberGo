@@ -14,7 +14,8 @@ export const createBarbershopWithDetails = async (data: {
     price: number,
     referredById?: string | null,
     trialDays: number,
-    billingType: "PREPAID" | "POSTPAID"
+    billingType: "PREPAID" | "POSTPAID",
+    isClosed: boolean
 }) => {
     // 1. Verificar se o parceiro está ativo (se houver um indicado)
     if (data.referredById) {
@@ -53,15 +54,16 @@ export const createBarbershopWithDetails = async (data: {
 
     const endDate = new Date()
     endDate.setDate(endDate.getDate() + data.trialDays)
-    
+
     // 4. Criar a Barbearia e a Assinatura
     const barbershop = await db.barbershop.create({
         data: {
             name: data.name,
             slug: data.slug.toLowerCase().replace(/\s+/g, '-'),
             address: data.address,
-            imageUrl: "https://utfs.io/f/c97a2dc9-cf2a-468b-a351-bfad31dabc95-16p.png",
-            description: "Unidade cadastrada via CRM Central",
+            imageUrl: "",
+            description: "",
+            isClosed: true,
             ownerId: user.id,
             referredById: data.referredById,
             isExclusive: data.plan === 'PREMIUM',

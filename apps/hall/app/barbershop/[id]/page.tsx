@@ -2,7 +2,7 @@ import { db } from "@barbergo/database"
 import BarbershopDetails from "./_components/barbershop-details"
 import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
-import { AuthOptions } from "next-auth"
+import { authOptions } from "@/_lib/auth"
 
 interface BarbershopDetailsPageProps {
     params: {
@@ -41,7 +41,7 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
     }
 
     let isFavorited = false
-    const session = await getServerSession(AuthOptions)
+    const session = await getServerSession(authOptions)
 
     if (session?.user) {
         const favorite = await db.favorite.findUnique({

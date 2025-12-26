@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import Header from "../../_components/header"
-import { Card, CardContent, Button, Badge, Input } from "@barbergo/ui"
+import { Card, CardContent, Button, Badge, Input, Dialog, DialogContent, DialogHeader, DialogTitle, Calendar } from "@barbergo/ui"
 import {
     format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
     isSameDay, startOfWeek, endOfWeek, isWithinInterval, differenceInMinutes, isToday
@@ -42,6 +42,7 @@ export default function MySchedulePage() {
 
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
     const loadData = useCallback(async (fullLoader = false) => {
         try {
@@ -214,8 +215,13 @@ export default function MySchedulePage() {
 
                     <div className="flex items-center gap-3">
                         <Button variant="outline" size="icon" className="h-8 w-8 border-white/10" onClick={() => handleNavigate('prev')}><ChevronLeft size={14} /></Button>
-                        <Button variant="ghost" className={`h-8 text-[10px] font-black ${isToday(viewDate) ? 'text-primary' : 'text-gray-500'}`} onClick={() => setViewDate(new Date())}>
-                            <CalendarIcon size={14} className="mr-2" /> IR PARA HOJE
+                        <Button
+                            variant="ghost"
+                            className={`h-8 text-[10px] font-black ${isToday(viewDate) ? 'text-primary' : 'text-gray-500'}`}
+                            onClick={() => setIsCalendarOpen(true)}
+                        >
+                            <CalendarIcon size={14} className="mr-2" />
+                            {isToday(viewDate) ? "HOJE" : format(viewDate, "dd/MM/yyyy")}
                         </Button>
                         <Button variant="outline" size="icon" className="h-8 w-8 border-white/10" onClick={() => handleNavigate('next')}><ChevronRight size={14} /></Button>
                     </div>
@@ -224,10 +230,10 @@ export default function MySchedulePage() {
                 <div className="py-2">
                     <HorizontalScroll>
                         <div className="flex gap-2 pr-4">
-                            <FilterButton label="Agendados" icon={Clock} active={filter === "CONFIRMED"} onClick={() => setFilter("CONFIRMED")} />
+                            <FilterButton label="Agendados" icon={Clock} active={filter === "CONFIRMED"} onClick={() => setFilter("CONFIRMED")} variant="blue" />
                             <FilterButton label={`Solicitações ${pendingCount > 0 ? `(${pendingCount})` : ""}`} icon={AlertTriangle} active={filter === "WAITING_CANCELLATION"} onClick={() => setFilter("WAITING_CANCELLATION")} variant="warning" />
-                            <FilterButton label="Finalizados" icon={CheckCircle2} active={filter === "FINISHED"} onClick={() => setFilter("FINISHED")} />
-                            <FilterButton label="Cancelados" icon={XCircle} active={filter === "CANCELED"} onClick={() => setFilter("CANCELED")} />
+                            <FilterButton label="Finalizados" icon={CheckCircle2} active={filter === "FINISHED"} onClick={() => setFilter("FINISHED")} variant="green" />
+                            <FilterButton label="Cancelados" icon={XCircle} active={filter === "CANCELED"} onClick={() => setFilter("CANCELED")} variant="destructive" />
                         </div>
                     </HorizontalScroll>
                 </div>
@@ -248,8 +254,8 @@ export default function MySchedulePage() {
                             <Card key={booking.id} className="bg-[#1A1B1F] border-none ring-1 ring-white/5 overflow-hidden shadow-lg transition-all">
                                 <CardContent className="p-0 flex items-stretch">
                                     <div className={`w-1.5 ${booking.status === 'WAITING_CANCELLATION' ? 'bg-amber-500 animate-pulse' :
-                                            booking.status === 'CANCELED' ? 'bg-red-500' :
-                                                booking.status === 'FINISHED' ? 'bg-green-600' : 'bg-primary'
+                                        booking.status === 'CANCELED' ? 'bg-red-500' :
+                                            booking.status === 'FINISHED' ? 'bg-green-600' : 'bg-blue-500'
                                         }`} />
 
                                     <div className="p-4 flex flex-1 flex-col md:flex-row md:items-center justify-between gap-4">
@@ -288,7 +294,9 @@ export default function MySchedulePage() {
                                             )}
 
                                             <Badge variant="secondary" className={`text-[10px] uppercase font-black ml-2 border-none ${booking.status === 'WAITING_CANCELLATION' ? 'text-amber-500 bg-amber-500/10' :
-                                                    booking.status === 'FINISHED' ? 'text-green-500 bg-green-500/10' : 'text-gray-400 bg-white/5'
+                                                booking.status === 'FINISHED' ? 'text-green-500 bg-green-500/10' :
+                                                    booking.status === 'CANCELED' ? 'text-red-500 bg-red-500/10' :
+                                                        'text-blue-400 bg-blue-500/10'
                                                 }`}>
                                                 {booking.status === "WAITING_CANCELLATION" ? "Solicitado" :
                                                     booking.status === "CONFIRMED" ? "Agendado" :
@@ -317,13 +325,70 @@ export default function MySchedulePage() {
                 onConfirm={onDecision}
                 variant="destructive"
             />
+
+            {/* SELETOR DE DATA */}
+            <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                <DialogContent className="w-[90%] rounded-2xl bg-[#1A1B1F] border-[#26272B] text-white p-0 overflow-hidden">
+                    <DialogHeader className="p-4 border-b border-[#26272B]">
+                        <DialogTitle>Selecionar Data</DialogTitle>
+                    </DialogHeader>
+                    <div className="p-4">
+                        <Calendar
+                            mode="single"
+                            selected={viewDate}
+                            onSelect={(date) => {
+                                if (date) {
+                                    setViewDate(date)
+                                    setPeriod("day")
+                                    setIsCalendarOpen(false)
+                                }
+                            }}
+                            locale={ptBR}
+                            className="rounded-xl border border-[#26272B] bg-black/20 w-full"
+                            classNames={{
+                                month: "space-y-4 w-full",
+                                table: "w-full border-collapse space-y-1",
+                                head_row: "flex w-full justify-between",
+                                row: "flex w-full mt-2 justify-between",
+                                head_cell: "text-gray-500 rounded-md w-full font-normal text-[0.8rem]",
+                                cell: "h-9 w-full text-center text-sm p-0 relative focus-within:z-20",
+                                day: "h-9 w-full p-0 font-normal aria-selected:opacity-100 rounded-md hover:bg-primary hover:text-white transition-all",
+                                nav_button: "hover:bg-secondary rounded-md transition-colors",
+                            }}
+                        />
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
 
 function FilterButton({ label, icon: Icon, active, onClick, variant = "default" }: any) {
-    const activeClass = variant === "warning" ? "bg-amber-600 text-white" : "bg-primary text-white"
-    const inactiveText = variant === "warning" ? "text-amber-500 border-amber-500/20" : "text-gray-400 border-white/5"
+    let activeClass = "bg-primary text-white"
+    let inactiveText = "text-gray-400 border-white/5"
+
+    switch (variant) {
+        case "warning":
+            activeClass = "bg-amber-600 text-white"
+            inactiveText = "text-amber-500 border-amber-500/20"
+            break
+        case "destructive":
+            activeClass = "bg-red-600 text-white"
+            inactiveText = "text-red-500 border-red-500/20"
+            break
+        case "green":
+            activeClass = "bg-green-600 text-white"
+            inactiveText = "text-green-500 border-green-500/20"
+            break
+        case "blue":
+            activeClass = "bg-blue-600 text-white"
+            inactiveText = "text-blue-500 border-blue-500/20"
+            break
+        default:
+            activeClass = "bg-primary text-white"
+            inactiveText = "text-gray-400 border-white/5"
+            break
+    }
 
     return (
         <Button
