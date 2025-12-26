@@ -107,16 +107,17 @@ const SidebarRight = ({ barbershop }: SidebarRightProps) => {
                     {/* Comodidades */}
                     {barbershop.amenities && barbershop.amenities.length > 0 && (
                         <div className="border-y border-[#26272B] py-4">
-                            <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
+                            <h4 className="font-bold text-white text-xs mb-3 tracking-widest uppercase">COMODIDADES</h4>
+                            <div className="flex flex-wrap gap-3">
                                 {barbershop.amenities.map(a => {
                                     const Item = amenityIcons[a]
                                     if (!Item) return null
                                     return (
-                                        <div key={a} className="flex flex-col items-center gap-1 text-gray-400 min-w-[60px]">
-                                            <div className="p-2 bg-black/40 rounded-full border border-secondary/50">
-                                                <Item.icon size={16} />
+                                        <div key={a} className="flex flex-col items-center gap-1.5 text-gray-400 w-[70px] mb-1">
+                                            <div className="p-2.5 bg-black/40 rounded-2xl border border-secondary/50 group-hover:border-primary/50 transition-colors">
+                                                <Item.icon size={18} className="text-gray-300" />
                                             </div>
-                                            <span className="text-[9px] font-bold">{Item.label}</span>
+                                            <span className="text-[9px] font-bold text-center leading-none">{Item.label}</span>
                                         </div>
                                     )
                                 })}

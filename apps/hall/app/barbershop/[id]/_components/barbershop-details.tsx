@@ -204,24 +204,21 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
                             </div>
                         </div>
 
-                        {/* Comodidades (Mobile) */}
-                        {barbershop.amenities && barbershop.amenities.length > 0 && (
-                            <div className="mb-8 lg:hidden">
-                                <h2 className="text-sm font-bold text-gray-500 uppercase mb-4 tracking-widest">Comodidades</h2>
-                                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                                    {barbershop.amenities.map(a => {
-                                        const Item = amenityIcons[a]
-                                        if (!Item) return null
-                                        return (
-                                            <div key={a} className="flex flex-col items-center gap-2 min-w-[70px] bg-[#1A1B1F] p-3 rounded-xl border border-secondary">
-                                                <Item.icon size={20} className="text-primary" />
-                                                <span className="text-[10px] text-gray-300 font-bold">{Item.label}</span>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
+                        <div className="mb-8 lg:hidden">
+                            <h2 className="text-sm font-bold text-gray-500 uppercase mb-4 tracking-widest">Comodidades ({barbershop.amenities.length})</h2>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                {barbershop.amenities.map(a => {
+                                    const Item = amenityIcons[a]
+                                    if (!Item) return null
+                                    return (
+                                        <div key={a} className="flex flex-col items-center justify-center gap-2 bg-[#1A1B1F] p-3 rounded-xl border border-secondary hover:border-primary/50 transition-colors">
+                                            <Item.icon size={20} className="text-primary" />
+                                            <span className="text-[10px] text-gray-300 font-bold text-center leading-tight">{Item.label}</span>
+                                        </div>
+                                    )
+                                })}
                             </div>
-                        )}
+                        </div>
 
                         {/* SEÇÃO DE AVALIAÇÕES (MODIFICADA: Sem Avatar/Nome) */}
                         {visibleRatings.length > 0 && (
