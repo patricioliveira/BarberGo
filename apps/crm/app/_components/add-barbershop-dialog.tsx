@@ -28,7 +28,8 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                 price: Number(fd.get("price")),
                 referredById: fd.get("referredById") === "direct" ? null : fd.get("referredById") as string,
                 trialDays: Number(fd.get("trialDays")),
-                billingType: fd.get("billingType") as "PREPAID" | "POSTPAID"
+                billingType: fd.get("billingType") as "PREPAID" | "POSTPAID",
+                isClosed: false
             })
             setResult({ ...res, email: fd.get("email") })
             toast.success("Unidade e Dono registrados!")
