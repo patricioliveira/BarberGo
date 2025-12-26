@@ -74,31 +74,109 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
         setHour(undefined)
     }, [date, barbershop.id, selectedBarber])
 
+    // Interface auxiliar
+    interface WorkingHour {
+        day: string
+        open: string
+        close: string
+        isOpen: boolean
+    }
+
     const timeList = useMemo(() => {
         if (!date || !selectedBarber) return []
-        const openHour = 9
-        const closeHour = 21
-        const interval = 15
-        const list: string[] = []
-        let currentTime = setMinutes(setHours(date, openHour), 0)
-        const endTime = setMinutes(setHours(date, closeHour), 0)
 
-        while (currentTime < endTime) {
+        const weekDays = [
+            "Domingo",
+            "Segunda-feira",
+            "Terça-feira",
+            "Quarta-feira",
+            "Quinta-feira",
+            "Sexta-feira",
+            "Sábado",
+        ]
+        const dayName = weekDays[date.getDay()]
+
+        // Default horarios
+        let startMin = 9 * 60
+        let endMin = 21 * 60
+
+        // Helper para converter "HH:MM" para minutos do dia
+        const toMinutes = (timeString: string) => {
+            const [h, m] = timeString.split(":").map(Number)
+            return h * 60 + m
+        }
+
+        // 1. Horário da Barbearia
+        if (barbershop.openingHours && Array.isArray(barbershop.openingHours)) {
+            const hours = barbershop.openingHours as unknown as WorkingHour[]
+            const shopSchedule = hours.find((h) => h.day === dayName)
+            if (shopSchedule) {
+                if (!shopSchedule.isOpen) return [] // Dia fechado
+                startMin = toMinutes(shopSchedule.open)
+                endMin = toMinutes(shopSchedule.close)
+            }
+        }
+
+        // 2. Horário do Staff (Se existir, refinamos o intervalo - Interseção)
+        if (selectedBarber.openingHours && Array.isArray(selectedBarber.openingHours)) {
+            const hours = selectedBarber.openingHours as unknown as WorkingHour[]
+            const staffSchedule = hours.find((h) => h.day === dayName)
+            if (staffSchedule) {
+                if (!staffSchedule.isOpen) return [] // Barbeiro não atende nesse dia
+                const staffStart = toMinutes(staffSchedule.open)
+                const staffEnd = toMinutes(staffSchedule.close)
+
+                // Pega o maior inicio e o menor fim (Interseção)
+                startMin = Math.max(startMin, staffStart)
+                endMin = Math.min(endMin, staffEnd)
+            }
+        }
+
+        const interval = 15 // min
+        const list: string[] = []
+
+        // Gerar slots
+        let currentTime = setMinutes(setHours(date, 0), startMin) // Começa no minuto absoluto
+        // Recalcular currentTime corretamente baseado em horas e minutos
+        const startH = Math.floor(startMin / 60)
+        const startM = startMin % 60
+        currentTime = setMinutes(setHours(date, startH), startM)
+
+        const endOfServiceLimit = setMinutes(setHours(date, Math.floor(endMin / 60)), endMin % 60)
+
+        while (currentTime < endOfServiceLimit) {
             const slotStart = currentTime
             const slotEnd = addMinutes(currentTime, totalDuration)
-            if (slotEnd > endTime) break
+
+            // Se allowOvertime for false (padrão antigo não tinha flag no front, assumimos false ou checamos backend na hora de salvar)
+            // Mas aqui é display. Se não permitir overtime, o slotEnd não pode passar do limite.
+            // Para simplificar e bater com a validação do backend:
+            // Vamos assumir que se o usuário desabilitou overtime, NÃO mostramos slots que estouram.
+            // Precisaríamos da flag allowOvertime vindo do backend no objeto barbershop.
+            // Vou verificar se ele pode passar do horário final.
+
+            // SE allowOvertime (que checamos no backend) for false, então slotEnd <= endOfServiceLimit
+            const allowOvertime = (barbershop as any).allowOvertime
+
+            if (!allowOvertime && slotEnd > endOfServiceLimit) {
+                break
+            }
+
+            // Validação de colisão com agendamentos existentes
             const isBusy = dayBookings.some((booking) => {
                 const bStart = new Date(booking.date)
                 const bEnd = addMinutes(bStart, booking.service.duration)
                 return slotEnd > bStart && slotStart < bEnd
             })
+
             if (!isBusy && !isPast(slotStart)) {
                 list.push(format(slotStart, "HH:mm"))
             }
+
             currentTime = addMinutes(currentTime, interval)
         }
         return list
-    }, [date, dayBookings, totalDuration, selectedBarber])
+    }, [date, dayBookings, totalDuration, selectedBarber, barbershop.openingHours, barbershop])
 
     const handleBookingSubmit = async () => {
         if (!date || !hour || !session?.user || !selectedBarber) return
