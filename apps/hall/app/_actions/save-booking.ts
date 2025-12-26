@@ -11,6 +11,8 @@ interface SaveBookingParams {
     userId: string
     date: Date
     staffId: string
+    observation?: string
+    silentAppointment?: boolean
 }
 
 export const saveBooking = async ({
@@ -19,6 +21,8 @@ export const saveBooking = async ({
     userId,
     date,
     staffId,
+    observation,
+    silentAppointment,
 }: SaveBookingParams) => {
     try {
         // 1. Busca completa de integridade (Barbearia + Subscrição + Staff + Serviços + Bloqueio)
@@ -177,7 +181,9 @@ export const saveBooking = async ({
                                 date,
                                 barbershopId,
                                 staffId,
-                            },
+                                observation,
+                                silentAppointment,
+                            } as any,
                         })
                     )
                 )

@@ -12,7 +12,7 @@ import {
     ChevronLeft, CheckCircle2, Clock, XCircle, User,
     CalendarCheck2, AlertTriangle, Check, X, Loader2,
     MessageCircle, Phone, Trash2, Search, ArrowUpDown,
-    ChevronRight, Calendar as CalendarIcon
+    ChevronRight, Calendar as CalendarIcon, VolumeX, FileText
 } from "lucide-react"
 import Link from "next/link"
 import { getAdminDashboard } from "@/_actions/get-admin-dashboard"
@@ -271,6 +271,22 @@ export default function MySchedulePage() {
                                                     <p className="font-bold text-white text-sm">{booking.user.name}</p>
                                                 </div>
                                                 <p className="text-xs text-gray-400">{booking.service.name}</p>
+
+                                                {/* FLAGS DE OBSERVAÇÃO/SILÊNCIO */}
+                                                {(booking.silentAppointment || booking.observation) && (
+                                                    <div className="flex flex-wrap gap-2 mt-1.5">
+                                                        {booking.silentAppointment && (
+                                                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[9px] font-bold border border-blue-500/20">
+                                                                <VolumeX size={10} /> Silencioso
+                                                            </div>
+                                                        )}
+                                                        {booking.observation && (
+                                                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-500/10 text-gray-400 text-[9px] font-bold border border-white/5" title={booking.observation}>
+                                                                <FileText size={10} /> Obs: {booking.observation.length > 20 ? booking.observation.substring(0, 20) + "..." : booking.observation}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 

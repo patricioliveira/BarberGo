@@ -10,7 +10,7 @@ import {
 import {
     MapPinIcon, UserIcon, CalendarIcon,
     ClockIcon, ChevronRight, TimerIcon, XCircleIcon, CheckCircle2,
-    CalendarX2, AlertCircle, StarIcon, Loader2
+    CalendarX2, AlertCircle, StarIcon, Loader2, VolumeX, FileText
 } from "lucide-react"
 import { format, isFuture, isPast } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -25,6 +25,8 @@ type BookingWithDetails = Booking & {
     barbershop: Barbershop
     staff: (BarberStaff & { user?: PrismaUser | null }) | null
     rating?: Rating | null
+    observation: string | null
+    silentAppointment: boolean
 }
 
 interface AppointmentsClientProps {
@@ -202,6 +204,31 @@ export default function AppointmentsClient({ initialBookings }: AppointmentsClie
                     <p className="text-xs text-white font-bold">{format(new Date(booking.date), "HH:mm")}</p>
                 </div>
             </div>
+
+            {/* NOVOS CAMPOS: SILÊNCIO E OBSERVAÇÃO */}
+            {(booking.silentAppointment || booking.observation) && (
+                <div className="space-y-3">
+                    {booking.silentAppointment && (
+                        <div className="bg-blue-500/10 border border-blue-500/20 p-3 rounded-xl flex items-center gap-3">
+                            <VolumeX size={18} className="text-blue-400" />
+                            <div>
+                                <p className="text-xs font-bold text-blue-100">Prefere não conversar</p>
+                                <p className="text-[10px] text-blue-200/60">Agendamento silencioso solicitado.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {booking.observation && (
+                        <div className="bg-black/20 border border-white/5 p-4 rounded-xl space-y-2">
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <FileText size={14} />
+                                <span className="text-[10px] font-bold uppercase">Observações</span>
+                            </div>
+                            <p className="text-xs text-gray-300 italic leading-relaxed">"{booking.observation}"</p>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* SEÇÃO DE AVALIAÇÃO - Só aparece se confirmado, passado e SEM rating */}
             {booking.status === "CONFIRMED" && isPast(new Date(booking.date)) && !booking.rating && (

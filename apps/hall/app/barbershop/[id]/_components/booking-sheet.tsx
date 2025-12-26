@@ -36,6 +36,8 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
     const [hour, setHour] = useState<string | undefined>(undefined)
     const [isLoading, setIsLoading] = useState(false)
     const [dayBookings, setDayBookings] = useState<any[]>([])
+    const [observation, setObservation] = useState("")
+    const [silentAppointment, setSilentAppointment] = useState(false)
 
     const DEFAULT_BARBER_IMAGE = "https://static.vecteezy.com/ti/vetor-gratis/p1/46533466-volta-pessoa-botao-icone-conta-e-meu-pagina-botao-vetor.jpg"
 
@@ -191,6 +193,8 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
                 staffId: selectedBarber.id,
                 date: newDate,
                 userId: session.user.id,
+                observation,
+                silentAppointment,
             })
 
             if (!result.success) {
@@ -377,7 +381,37 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
                                                     </div>
                                                 </div>
 
-                                                <div className="pt-2 flex justify-between items-center">
+                                                {/* OBSERVATION & SILENT APPOINTMENT */}
+                                                <div className="space-y-3 pt-2">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-bold text-gray-500 uppercase">Observação (Opcional)</label>
+                                                        <textarea
+                                                            className="w-full bg-black/20 border border-white/5 rounded-xl p-3 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 resize-none h-20"
+                                                            placeholder="Alguma preferência especial? Ex: Cabelo mais curto na lateral..."
+                                                            value={observation}
+                                                            onChange={(e) => setObservation(e.target.value)}
+                                                        />
+                                                    </div>
+
+                                                    <label className="flex items-start gap-3 p-3 bg-black/20 rounded-xl border border-white/5 cursor-pointer hover:bg-black/30 transition-colors">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={silentAppointment}
+                                                            onChange={(e) => setSilentAppointment(e.target.checked)}
+                                                            className="mt-0.5 accent-primary h-4 w-4 rounded-sm"
+                                                        />
+                                                        <div className="flex-1">
+                                                            <p className="text-xs font-bold text-white flex items-center gap-2">
+                                                                Agendamento Silencioso 🤫
+                                                            </p>
+                                                            <p className="text-[10px] text-gray-500 leading-tight mt-0.5">
+                                                                Selecione se prefere evitar conversas durante o atendimento (exceto dúvidas necessárias).
+                                                            </p>
+                                                        </div>
+                                                    </label>
+                                                </div>
+
+                                                <div className="pt-2 flex justify-between items-center border-t border-white/5 mt-2">
                                                     <span className="text-sm font-bold text-white">Valor a Pagar</span>
                                                     <span className="text-xl font-black text-primary">
                                                         {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(totalPrice)}
