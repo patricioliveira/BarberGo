@@ -42,7 +42,39 @@ enum BillingType {
   POSTPAID
 }
 
+enum NotificationType {
+  NEW_BOOKING
+  CANCEL_REQUEST
+  NEW_REVIEW
+  DAILY_SUMMARY
+  FINANCE_ALERT
+}
+
 // --- MODELS ---
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  title       String
+  message     String
+  type        NotificationType
+  read        Boolean          @default(false)
+  link        String?
+  bookingId   String?
+  booking     Booking?         @relation(fields: [bookingId], references: [id])
+  createdAt   DateTime         @default(now())
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  keys      Json     // Auth and P256dh keys
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
 model User {
   id            String    @id @default(cuid())
@@ -63,14 +95,15 @@ model User {
   commissionPercentage Decimal @default(0) @db.Decimal(5, 2)
   isActive             Boolean @default(true)
 
-  // Relação: Barbearias que este usuário é DONO
   managedBarbershops Barbershop[] @relation("BarbershopOwner")
   referredBarbershops Barbershop[] @relation("PartnerReferral")
 
-  // NOVOS CAMPOS PARA RELAÇÃO
   ratings   Rating[]
   favorites Favorite[]
   blockedUsers BarbershopBlock[]
+
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -117,9 +150,8 @@ model Barbershop {
   subscription   Subscription?
   cnpj           String?
   openingHours   Json?
-  // NOVOS CAMPOS
   instagram      String?
-  amenities      String[] // Ex: ["WIFI", "PARKING", "KIDS", "ACCESSIBILITY"]
+  amenities      String[] 
   allowOvertime  Boolean  @default(false)
 
   isClosed       Boolean  @default(false)
@@ -134,8 +166,6 @@ model Barbershop {
   services BarbershopService[]
   bookings Booking[]           @relation("BarbershopBookings")
   staff    BarberStaff[]
-
-  // NOVOS CAMPOS PARA RELAÇÃO
   ratings   Rating[]
   favorites Favorite[]
   blockedUsers BarbershopBlock[]
@@ -200,10 +230,11 @@ model Booking {
   staffId      String?
   staff        BarberStaff?      @relation(fields: [staffId], references: [id])
 
-  // NOVO CAMPO PARA RELAÇÃO
   rating Rating?
   observation       String?
   silentAppointment Boolean @default(false)
+
+  notifications Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -284,3 +315,4 @@ model ServiceStaffPrice {
 
   @@unique([serviceId, staffId])
 }
+

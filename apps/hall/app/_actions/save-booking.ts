@@ -3,7 +3,10 @@
 import { db } from "@barbergo/database"
 import { revalidatePath } from "next/cache"
 import { addMinutes } from "date-fns"
-import { Prisma } from "@prisma/client"
+import { Prisma, NotificationType } from "@barbergo/database"
+import { sendNotification } from "../_lib/notifications"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
 interface SaveBookingParams {
     barbershopId: string
@@ -30,11 +33,12 @@ export const saveBooking = async ({
             where: { id: barbershopId },
             include: {
                 subscription: true,
-                staff: { where: { id: staffId } },
+                staff: { where: { id: staffId }, include: { user: true } },
                 services: { where: { id: { in: serviceIds } } },
                 blockedUsers: {
                     where: { userId },
                 },
+                owner: true,
             },
         })
 
@@ -193,6 +197,50 @@ export const saveBooking = async ({
                 timeout: 10000, // 10s timeout para evitar deadlocks longos
             }
         )
+
+        // --- Lógica de Notificação (Pós-Transação) ---
+        // Executamos fora da transação para não bloquear e porque falhas aqui não devem cancelar o agendamento
+        try {
+            const [clientUser, serviceList] = await Promise.all([
+                db.user.findUnique({ where: { id: userId } }),
+                db.barbershopService.findMany({ where: { id: { in: serviceIds } } })
+            ])
+
+            const clientName = clientUser?.name || "Um cliente"
+            const serviceNames = serviceList.map(s => s.name).join(", ")
+            const formattedDate = format(date, "dd 'de' MMM 'às' HH:mm", { locale: ptBR })
+
+            // 1. Notifica Admin (Dono)
+            if (barbershop.ownerId) {
+                await sendNotification({
+                    recipientId: barbershop.ownerId,
+                    title: "Novo Agendamento",
+                    message: `${clientName} agendou ${serviceNames} para ${formattedDate}.`,
+                    type: NotificationType.NEW_BOOKING,
+                    link: `/admin/appointments`  // Poderia filtrar por data
+                })
+            }
+
+            // 2. Notifica Profissional (se não for o mesmo que o dono)
+            // O staff carregado na linha 61 agora tem o user incluso devido à alteração no include
+            // Mas o objeto 'staff' da linha 61 é tipado como array element.
+            // Precisamos garantir que pegamos o userId corretamente.
+            const staffUser = barbershop.staff[0]?.userId
+
+            if (staffUser && staffUser !== barbershop.ownerId) {
+                await sendNotification({
+                    recipientId: staffUser,
+                    title: "Novo Agendamento com Você",
+                    message: `${clientName} agendou ${serviceNames} com você para ${formattedDate}.`,
+                    type: NotificationType.NEW_BOOKING,
+                    link: `/admin/appointments`
+                })
+            }
+
+        } catch (notifError) {
+            console.error("Erro ao enviar notificação:", notifError)
+            // Não retorna erro para o cliente, apenas loga
+        }
 
         revalidatePath("/")
         revalidatePath("/appointments")

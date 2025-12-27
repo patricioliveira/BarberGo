@@ -16,7 +16,8 @@ import {
 } from "@barbergo/ui"
 import AuthDialog from "./auth-dialog"
 import { useState } from "react"
-import UserNotificationBell from "./user-notification-bell" // Importe o novo sininho
+import UserNotificationBell from "./user-notification-bell"
+import { NotificationBell } from "./notification-bell"
 
 const Header = () => {
     const { data: session } = useSession()
@@ -39,6 +40,10 @@ const Header = () => {
                     {/* SININHO APENAS PARA USER COMUM */}
                     {session?.user && isCommonUser && (
                         <UserNotificationBell />
+                    )}
+
+                    {session?.user && hasAdminAccess && (
+                        <NotificationBell />
                     )}
 
                     {/* Botão Menu Hamburguer (Mobile) */}

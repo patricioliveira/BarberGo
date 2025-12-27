@@ -1,81 +1,138 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { Bell, CalendarPlus, XCircle, Clock } from "lucide-react"
-import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@barbergo/ui"
-import { format, differenceInMinutes, isToday } from "date-fns"
+import { useEffect, useState } from "react"
+import { Bell } from "lucide-react"
+
+import { getNotifications, getUnreadCount, markNotificationAsRead, markAllNotificationsAsRead } from "../_actions/notifications"
+import { usePushNotifications } from "../_hooks/use-push-notifications"
+import { Notification } from "@barbergo/database"
+import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { DropdownMenu, DropdownMenuTrigger, Button, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@barbergo/ui"
 
-export default function NotificationBell({ bookings }: { bookings: any[] }) {
-    const [now, setNow] = useState(new Date())
+export function NotificationBell() {
+    const [notifications, setNotifications] = useState<Notification[]>([])
+    const [unreadCount, setUnreadCount] = useState(0)
+    const [isOpen, setIsOpen] = useState(false)
+    const { subscribeToPush, subscription, isSupported } = usePushNotifications()
+    const router = useRouter()
 
+    const fetchNotifications = async () => {
+        try {
+            const [data, count] = await Promise.all([
+                getNotifications(10), // Pega as ultimas 10
+                getUnreadCount()
+            ])
+            setNotifications(data)
+            setUnreadCount(count)
+        } catch (error) {
+            console.error("Failed to fetch notifications", error)
+        }
+    }
+
+    // Polling a cada 30 segundos
     useEffect(() => {
-        const timer = setInterval(() => setNow(new Date()), 60000)
-        return () => clearInterval(timer)
+        fetchNotifications()
+        const interval = setInterval(fetchNotifications, 30000)
+        return () => clearInterval(interval)
     }, [])
 
-    const notifications = useMemo(() => {
-        const waiting = bookings.filter(b => b.status === "WAITING_CANCELLATION")
+    const handleMarkAsRead = async (notification: Notification) => {
+        if (!notification.read) {
+            // Otimisticamente atualiza UI
+            setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n))
+            setUnreadCount(prev => Math.max(0, prev - 1))
 
-        // Lógica de Lembrete 15 min
-        const reminders = bookings.filter(b => {
-            if (b.status !== "CONFIRMED" || !isToday(new Date(b.date))) return false
-            const diff = differenceInMinutes(new Date(b.date), now)
-            return diff > 0 && diff <= 15
-        })
+            await markNotificationAsRead(notification.id)
+        }
 
-        return [
-            ...reminders.map(b => ({
-                id: `rem-${b.id}`,
-                type: 'reminder',
-                text: `PRÓXIMO CLIENTE: ${b.user.name} em ${differenceInMinutes(new Date(b.date), now)} min!`,
-                date: b.date
-            })),
-            ...waiting.map(b => ({
-                id: b.id,
-                type: 'cancel',
-                text: `Solicitação de cancelamento: ${b.user.name}`,
-                date: b.date
-            }))
-        ]
-    }, [bookings, now])
+        if (notification.link) {
+            setIsOpen(false)
+            router.push(notification.link)
+        }
+    }
 
-    const unreadCount = notifications.length
+    const handleMarkAllRead = async () => {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+        setUnreadCount(0)
+        await markAllNotificationsAsRead()
+        toast.success("Todas marcadas como lidas")
+    }
+
+    const handleEnablePush = async () => {
+        const success = await subscribeToPush()
+        if (success) {
+            toast.success("Notificações ativadas com sucesso!")
+        } else {
+            toast.error("Erro ao ativar notificações. Verifique permissões.")
+        }
+    }
 
     return (
-        <Sheet>
-            <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative hover:bg-secondary rounded-full">
-                    <Bell size={20} className="text-gray-400" />
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-4 w-4 bg-primary text-[10px] items-center justify-center font-bold text-white">
-                                {unreadCount}
-                            </span>
-                        </span>
+                        <span className="absolute top-1 right-1 h-3 w-3 rounded-full bg-red-600 border-2 border-background" />
                     )}
                 </Button>
-            </SheetTrigger>
-            <SheetContent className="bg-[#141518] border-l border-white/5 text-white w-full sm:max-w-md">
-                <SheetHeader className="mb-6"><SheetTitle className="text-white flex items-center gap-2"><Bell size={18} className="text-primary" /> Notificações</SheetTitle></SheetHeader>
-                <div className="space-y-4">
-                    {notifications.length > 0 ? notifications.map((n) => (
-                        <Link key={n.id} href="/admin/my-schedule" className={`block p-4 rounded-2xl border transition-all ${n.type === 'reminder' ? 'bg-primary/10 border-primary/30 animate-pulse' : 'bg-[#1A1B1F] border-white/5'}`}>
-                            <div className="flex gap-4">
-                                <div className={`p-2 rounded-xl h-fit ${n.type === 'cancel' ? 'bg-amber-500/10 text-amber-500' : 'bg-primary text-white'}`}>
-                                    {n.type === 'cancel' ? <XCircle size={18} /> : <Clock size={18} />}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel className="flex justify-between items-center">
+                    <span>Notificações</span>
+                    {unreadCount > 0 && (
+                        <Button variant="ghost" className="text-xs h-6 px-2" onClick={handleMarkAllRead}>
+                            Ler todas
+                        </Button>
+                    )}
+                </DropdownMenuLabel>
+
+                {isSupported && !subscription && (
+                    <div className="p-2 bg-muted/50 text-xs text-center border-b">
+                        <Button variant="outline" size="sm" className="w-full h-7" onClick={handleEnablePush}>
+                            Ativar notificações no navegador
+                        </Button>
+                    </div>
+                )}
+
+                <DropdownMenuSeparator />
+
+                <div className="max-h-[70vh] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                            Nenhuma notificação
+                        </div>
+                    ) : (
+                        notifications.map((notification) => (
+                            <DropdownMenuItem
+                                key={notification.id}
+                                className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${!notification.read ? "bg-muted/30 font-medium" : ""
+                                    }`}
+                                onClick={() => handleMarkAsRead(notification)}
+                            >
+                                <div className="flex justify-between w-full">
+                                    <span className="text-sm font-semibold">{notification.title}</span>
+                                    <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
+                                        {formatDistanceToNow(new Date(notification.createdAt), {
+                                            addSuffix: true,
+                                            locale: ptBR,
+                                        })}
+                                    </span>
                                 </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-bold leading-tight">{n.text}</p>
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold">{format(new Date(n.date), "HH:mm", { locale: ptBR })}</p>
-                                </div>
-                            </div>
-                        </Link>
-                    )) : <div className="text-center py-20 text-gray-600"><Bell size={40} className="mx-auto mb-2 opacity-10" /><p className="text-sm">Sem notificações.</p></div>}
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                    {notification.message}
+                                </p>
+                                {!notification.read && (
+                                    <span className="block w-2 h-2 bg-blue-500 rounded-full mt-1 self-end" />
+                                )}
+                            </DropdownMenuItem>
+                        ))
+                    )}
                 </div>
-            </SheetContent>
-        </Sheet>
+            </DropdownMenuContent>
+        </DropdownMenu>
     )
 }

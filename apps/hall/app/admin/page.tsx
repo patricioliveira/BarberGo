@@ -21,7 +21,7 @@ import Footer from "@/_components/footer"
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
-import NotificationBell from "../_components/notification-bell"
+import { NotificationBell } from "../_components/notification-bell"
 
 export default function AdminPage() {
     const { status } = useSession()
@@ -218,7 +218,7 @@ export default function AdminPage() {
                                             {viewMode === "personal" ? "Meu Perfil Profissional" : "Painel da Barbearia"}
                                         </h2>
                                         <Badge className={stats.role === "ADMIN" ? "bg-primary" : "bg-green-600"}>{stats.role}</Badge>
-                                        <NotificationBell bookings={viewMode === "personal" ? stats.personalBookings : stats.bookings} />
+                                        <NotificationBell />
                                     </div>
                                 </div>
 
