@@ -62,11 +62,13 @@ export function NotificationBell() {
     }
 
     const handleEnablePush = async () => {
-        const success = await subscribeToPush()
-        if (success) {
+        const result = await subscribeToPush()
+        // O hook agora retorna { success: boolean, message?: string }
+        // Se retornar undefined (caso antigo), tratamos como erro genérico para segurança
+        if (result && result.success) {
             toast.success("Notificações ativadas com sucesso!")
         } else {
-            toast.error("Erro ao ativar notificações. Verifique permissões.")
+            toast.error(result?.message || "Erro desconhecido ao ativar notificações.")
         }
     }
 

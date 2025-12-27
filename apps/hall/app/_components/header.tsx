@@ -3,6 +3,8 @@
 import Image from "next/image"
 import { Card, CardContent, Button, Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, Avatar, AvatarImage, AvatarFallback } from "@barbergo/ui"
 import { MenuIcon, CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, UserIcon, LayoutDashboardIcon, UserRoundPen } from "lucide-react"
+import { usePathname } from "next/navigation"
+
 import { signIn, signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import SideMenu from "./side-menu"
@@ -22,9 +24,10 @@ import { NotificationBell } from "./notification-bell"
 const Header = () => {
     const { data: session } = useSession()
     const [isAuthOpen, setIsAuthOpen] = useState(false)
+    const pathname = usePathname()
 
     const hasAdminAccess = session?.user?.role === "ADMIN" || session?.user?.role === "STAFF"
-    const isCommonUser = session?.user?.role === "USER"
+    // const isCommonUser = session?.user?.role === "USER" // Removed strict check
 
     return (
         <Card className="border-none rounded-none bg-[#141518]/80 backdrop-blur-md sticky top-0 z-50 pt-safe transition-all duration-300">
@@ -37,12 +40,13 @@ const Header = () => {
                 {/* Área de Ações */}
                 <div className="flex items-center gap-2">
 
-                    {/* SININHO APENAS PARA USER COMUM */}
-                    {session?.user && isCommonUser && (
+                    {/* SININHO DE AGENDAMENTOS (PARA TODOS OS USUÁRIOS LOGADOS) */}
+                    {session?.user && (
                         <UserNotificationBell />
                     )}
 
-                    {session?.user && hasAdminAccess && (
+                    {/* SININHO DO SISTEMA ADMIN (Apenas se tiver acesso e NÃO estiver no painel admin) */}
+                    {session?.user && hasAdminAccess && !pathname?.startsWith("/admin") && (
                         <NotificationBell />
                     )}
 

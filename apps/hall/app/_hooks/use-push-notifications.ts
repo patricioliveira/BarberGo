@@ -41,10 +41,18 @@ export function usePushNotifications() {
         }
     }
 
-    async function subscribeToPush() {
-        if (!isSupported || !VAPID_PUBLIC_KEY) {
-            console.warn("Push not supported or VAPID key missing")
-            return
+    async function subscribeToPush(): Promise<{ success: boolean; message?: string }> {
+        if (!isSupported) {
+            return { success: false, message: "Notificações não suportadas neste navegador." }
+        }
+
+        if (!VAPID_PUBLIC_KEY) {
+            console.error("VAPID Key is missing in environment variables")
+            return { success: false, message: "Erro de configuração: Chave VAPID ausente." }
+        }
+
+        if (Notification.permission === 'denied') {
+            return { success: false, message: "Permissão para notificações foi negada." }
         }
 
         try {
@@ -61,10 +69,10 @@ export function usePushNotifications() {
 
             setSubscription(sub)
             console.log('User subscribed to push')
-            return true
+            return { success: true }
         } catch (error) {
             console.error('Failed to subscribe to push:', error)
-            return false
+            return { success: false, message: "Erro ao ativar notificações. Tente novamente." }
         }
     }
 
