@@ -26,7 +26,10 @@ import Header from "@/_components/header"
 import { toggleFavorite } from "@/_actions/toggle-favorite"
 
 
-type ServiceWithNumberPrice = Omit<BarbershopService, "price"> & { price: number }
+type ServiceWithNumberPrice = Omit<BarbershopService, "price"> & {
+    price: number
+    staffPrices?: { staffId: string; price: number; isLinked: boolean }[]
+}
 type PhoneObj = { number: string; isWhatsapp: boolean }
 
 interface BarbershopDetailsProps {
@@ -159,6 +162,34 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
             setIsAuthOpen(true)
             return
         }
+
+        // --- VALIDATION RULES FOR EXCLUSIVE SERVICES ---
+        const linkedServices = selectedServices.filter(s => s.staffPrices?.some(sp => sp.isLinked))
+        const unlinkedServices = selectedServices.filter(s => !s.staffPrices?.some(sp => sp.isLinked))
+
+        // Rule 1: Cannot mix Linked and Unlinked
+        if (linkedServices.length > 0 && unlinkedServices.length > 0) {
+            toast.error("Não é possível misturar serviços exclusivos com serviços comuns. Por favor, faça agendamentos separados.", {
+                duration: 5000,
+                action: {
+                    label: "Entendi",
+                    onClick: () => { }
+                }
+            })
+            return
+        }
+
+        // Rule 2: Cannot mix Linked services from different barbers
+        if (linkedServices.length > 1) {
+            const staffIds = new Set(linkedServices.map(s => s.staffPrices?.find(sp => sp.isLinked)?.staffId))
+            if (staffIds.size > 1) {
+                toast.error("Não é possível agendar com barbeiros diferentes no mesmo horário. Faça agendamentos separados.", {
+                    duration: 5000
+                })
+                return
+            }
+        }
+
         setIsSheetOpen(true)
     }
 

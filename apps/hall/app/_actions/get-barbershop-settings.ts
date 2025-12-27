@@ -14,7 +14,11 @@ export const getBarbershopSettings = async () => {
             ownerId: (session.user as any).id,
         },
         include: {
-            services: true,
+            services: {
+                include: {
+                    staffPrices: true
+                }
+            },
             staff: true,
         },
     })
@@ -23,11 +27,14 @@ export const getBarbershopSettings = async () => {
 
     return {
         ...barbershop,
-        // CORREÇÃO: Removida tipagem restritiva no parâmetro do map
         services: barbershop.services.map((s) => ({
             ...s,
             price: s.price.toString(),
-            description: s.description || ""
+            description: s.description || "",
+            staffPrices: s.staffPrices.map(sp => ({
+                ...sp,
+                price: sp.price.toString()
+            }))
         })),
         staff: barbershop.staff.map((st) => ({
             ...st,

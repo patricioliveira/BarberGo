@@ -21,6 +21,12 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+    Badge
 } from "@barbergo/ui"
 import {
     Save,
@@ -49,7 +55,9 @@ import {
     Beer,
     Gamepad2,
     PawPrint,
-    Martini
+    Martini,
+    DollarSign,
+    User
 } from "lucide-react"
 import Header from "../../_components/header"
 
@@ -72,7 +80,8 @@ const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChang
 
 type StaffMember = { id: string; name: string; email: string; jobTitle: string; isActive: boolean }
 // Correção: imageUrl agora é obrigatório (string), usamos string vazia quando não houver imagem
-type Service = { id: string; name: string; description: string; price: string; duration: number; imageUrl: string }
+type ServiceStaffPrice = { staffId: string; price: string; isLinked: boolean }
+type Service = { id: string; name: string; description: string; price: string; duration: number; imageUrl: string; staffPrices: ServiceStaffPrice[] }
 type WorkingHour = { day: string; open: string; close: string; isOpen: boolean }
 type PhoneInput = { number: string; isWhatsapp: boolean }
 
@@ -179,7 +188,12 @@ export default function SettingsPage() {
                             description: s.description || "",
                             price: s.price ? String(s.price) : "",
                             duration: Number(s.duration) || 30,
-                            imageUrl: s.imageUrl || ""
+                            imageUrl: s.imageUrl || "",
+                            staffPrices: s.staffPrices ? s.staffPrices.map((sp: any) => ({
+                                staffId: sp.staffId,
+                                price: sp.price ? String(sp.price) : "",
+                                isLinked: sp.isLinked
+                            })) : []
                         })))
                     }
                 } catch (error) {
@@ -539,53 +553,89 @@ export default function SettingsPage() {
 
                     <TabsContent value="services" className="space-y-4">
                         <div className="flex justify-end">
-                            <Button size="sm" onClick={() => { setServices([...services, { id: Date.now().toString(), name: "", description: "", price: "0.00", duration: 30, imageUrl: "" }]); setIsDirty(true) }}>
+                            <Button size="sm" onClick={() => { setServices([...services, { id: Date.now().toString(), name: "", description: "", price: "0.00", duration: 30, imageUrl: "", staffPrices: [] }]); setIsDirty(true) }}>
                                 <Plus size={16} className="mr-2" /> Novo Serviço
                             </Button>
                         </div>
-                        {services.map((s, i) => (
-                            <Card key={s.id} className="bg-[#1A1B1F] border border-secondary/40 p-4 text-white">
-                                <div className="flex flex-col md:flex-row gap-6">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="relative h-24 w-24 rounded-lg overflow-hidden border border-secondary bg-black/20 group">
-                                            {s.imageUrl ? (
-                                                <>
-                                                    <Image src={s.imageUrl} alt={s.name} fill className="object-cover" />
-                                                    <Label htmlFor={`service-img-${i}`} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
-                                                        <Camera size={16} />
+                        {services.map((s, i) => {
+                            const linkedStaffId = s.staffPrices?.find(sp => sp.isLinked)?.staffId || "none"
+                            return (
+                                <Card key={s.id} className="bg-[#1A1B1F] border border-secondary/40 p-4 text-white">
+                                    <div className="flex flex-col md:flex-row gap-6">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="relative h-24 w-24 rounded-lg overflow-hidden border border-secondary bg-black/20 group">
+                                                {s.imageUrl ? (
+                                                    <>
+                                                        <Image src={s.imageUrl} alt={s.name} fill className="object-cover" />
+                                                        <Label htmlFor={`service-img-${i}`} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                                                            <Camera size={16} />
+                                                        </Label>
+                                                    </>
+                                                ) : (
+                                                    <Label htmlFor={`service-img-${i}`} className="absolute inset-0 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-white/5 transition-colors">
+                                                        <ImagePlus size={20} className="text-gray-600" />
+                                                        <span className="text-[8px] text-gray-500 font-bold uppercase">Foto</span>
                                                     </Label>
-                                                </>
-                                            ) : (
-                                                <Label htmlFor={`service-img-${i}`} className="absolute inset-0 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-white/5 transition-colors">
-                                                    <ImagePlus size={20} className="text-gray-600" />
-                                                    <span className="text-[8px] text-gray-500 font-bold uppercase">Foto</span>
-                                                </Label>
+                                                )}
+                                                {uploadingServiceId === s.id && (
+                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                        <Loader2 size={16} className="animate-spin text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <input id={`service-img-${i}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleServiceImageUpload(i, e)} disabled={uploadingServiceId === s.id} />
+                                            {s.imageUrl && (
+                                                <button onClick={() => { const n = [...services]; n[i].imageUrl = ""; setServices(n); setIsDirty(true) }} className="text-[9px] text-red-500 font-bold uppercase hover:underline">Remover</button>
                                             )}
-                                            {uploadingServiceId === s.id && (
-                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                    <Loader2 size={16} className="animate-spin text-primary" />
+                                        </div>
+                                        <div className="flex-1 space-y-4">
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                <div><Label className="text-xs">Nome</Label><Input value={s.name} onChange={e => { const n = [...services]; n[i].name = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div><Label className="text-xs">Preço</Label><Input type="number" value={s.price} onChange={e => { const n = [...services]; n[i].price = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
+                                                    <div><Label className="text-xs">Minutos</Label><Input type="number" value={s.duration} onChange={e => { const n = [...services]; n[i].duration = parseInt(e.target.value); setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
                                                 </div>
-                                            )}
+                                            </div>
+
+                                            <div className="p-3 rounded-lg border border-secondary bg-black/20">
+                                                <Label className="text-[10px] text-gray-500 font-bold uppercase mb-2 block flex items-center gap-2">
+                                                    <User size={12} className="text-primary" /> Vínculo de Profissional (Exclusivo)
+                                                </Label>
+                                                <Select
+                                                    value={linkedStaffId}
+                                                    onValueChange={(val) => {
+                                                        const n = [...services]
+                                                        if (val === "none") {
+                                                            n[i].staffPrices = []
+                                                        } else {
+                                                            // Cria vinculo com o preço atual do serviço
+                                                            n[i].staffPrices = [{ staffId: val, price: n[i].price, isLinked: true }]
+                                                        }
+                                                        setServices(n)
+                                                        setIsDirty(true)
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="bg-transparent border-none p-0 h-auto text-sm">
+                                                        <SelectValue placeholder="Selecione um profissional..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">Sem vínculo (Qualquer barbeiro atende)</SelectItem>
+                                                        {staff.map(m => (
+                                                            <SelectItem key={m.id} value={m.id}>{m.name} {m.isActive ? '' : '(Inativo)'}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <Input placeholder="Descrição..." value={s.description} onChange={e => { const n = [...services]; n[i].description = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none flex-1 h-8 text-xs" />
+                                                <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => { setServices(services.filter(x => x.id !== s.id)); setIsDirty(true) }}><Trash2 size={14} /></Button>
+                                            </div>
                                         </div>
-                                        <input id={`service-img-${i}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleServiceImageUpload(i, e)} disabled={uploadingServiceId === s.id} />
-                                        {s.imageUrl && (
-                                            <button onClick={() => { const n = [...services]; n[i].imageUrl = ""; setServices(n); setIsDirty(true) }} className="text-[9px] text-red-500 font-bold uppercase hover:underline">Remover</button>
-                                        )}
                                     </div>
-                                    <div className="flex-1 space-y-4">
-                                        <div className="grid md:grid-cols-3 gap-4">
-                                            <div><Label className="text-xs">Nome</Label><Input value={s.name} onChange={e => { const n = [...services]; n[i].name = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
-                                            <div><Label className="text-xs">Preço</Label><Input type="number" value={s.price} onChange={e => { const n = [...services]; n[i].price = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
-                                            <div><Label className="text-xs">Minutos</Label><Input type="number" value={s.duration} onChange={e => { const n = [...services]; n[i].duration = parseInt(e.target.value); setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Input placeholder="Descrição..." value={s.description} onChange={e => { const n = [...services]; n[i].description = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none flex-1 h-8 text-xs" />
-                                            <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => { setServices(services.filter(x => x.id !== s.id)); setIsDirty(true) }}><Trash2 size={14} /></Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Card>
-                        ))}
+                                </Card>
+                            )
+                        })}
                     </TabsContent>
 
                     <TabsContent value="staff" className="space-y-4">

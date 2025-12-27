@@ -18,7 +18,11 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
             id: params.id,
         },
         include: {
-            services: true,
+            services: {
+                include: {
+                    staffPrices: true
+                }
+            },
             staff: {
                 include: {
                     user: true
@@ -37,6 +41,11 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
         services: barbershop.services.map((service) => ({
             ...service,
             price: Number(service.price),
+            staffPrices: service.staffPrices.map(sp => ({
+                staffId: sp.staffId,
+                price: Number(sp.price),
+                isLinked: sp.isLinked
+            }))
         })),
     }
 

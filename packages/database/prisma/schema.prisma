@@ -145,6 +145,7 @@ model Barbershop {
 }
 
 model BarberStaff {
+  servicePrices ServiceStaffPrice[]
   id           String     @id @default(cuid())
   name         String
   jobTitle     String     @default("Barbeiro")
@@ -174,6 +175,7 @@ model BarbershopBlock {
 }
 
 model BarbershopService {
+  staffPrices ServiceStaffPrice[]
   id           String     @id @default(uuid())
   name         String
   description  String
@@ -266,4 +268,19 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+}
+
+model ServiceStaffPrice {
+  id        String            @id @default(cuid())
+  serviceId String
+  service   BarbershopService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staffId   String
+  staff     BarberStaff       @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  price     Decimal           @db.Decimal(10, 2)
+  isLinked  Boolean           @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([serviceId, staffId])
 }

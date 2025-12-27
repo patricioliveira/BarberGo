@@ -58,13 +58,32 @@ export const updateBarbershopSettings = async (params: {
             })
 
             for (const s of params.services) {
+                const { staffPrices, ...serviceData } = s
                 const isNew = !s.id || s.id.length < 15
+                let serviceId = s.id
+
                 if (isNew) {
-                    await tx.barbershopService.create({
-                        data: { ...s, id: undefined, price: s.price, barbershopId: params.barbershopId, imageUrl: s.imageUrl || "https://utfs.io/f/0ddfbd26-a424-43a0-aaf3-c3f1dc6d4116-16g.png" }
+                    const created = await tx.barbershopService.create({
+                        data: { ...serviceData, id: undefined, price: s.price, barbershopId: params.barbershopId, imageUrl: s.imageUrl || "" }
                     })
+                    serviceId = created.id
                 } else {
                     await tx.barbershopService.update({ where: { id: s.id }, data: { name: s.name, description: s.description, price: s.price, duration: s.duration, imageUrl: s.imageUrl } })
+                }
+
+                if (staffPrices && Array.isArray(staffPrices)) {
+                    await tx.serviceStaffPrice.deleteMany({ where: { serviceId } })
+
+                    if (staffPrices.length > 0) {
+                        await tx.serviceStaffPrice.createMany({
+                            data: staffPrices.map((sp: any) => ({
+                                serviceId,
+                                staffId: sp.staffId,
+                                price: sp.price,
+                                isLinked: sp.isLinked
+                            }))
+                        })
+                    }
                 }
             }
 

@@ -10,14 +10,17 @@ import { ptBR } from "date-fns/locale"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 
-import { Loader2, User as UserIcon, CalendarIcon, ClockIcon, MapPinIcon, ScissorsIcon, Ban } from "lucide-react"
+import { Loader2, User as UserIcon, CalendarIcon, ClockIcon, MapPinIcon, ScissorsIcon, Ban, Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { getDayBookings } from "@/_actions/get-day-bookings"
 import { saveBooking } from "@/_actions/save-booking"
 
 type StaffWithUser = BarberStaff & { user?: PrismaUser | null }
 type BarbershopWithStaff = Barbershop & { staff: StaffWithUser[] }
-type ServiceWithNumberPrice = Omit<BarbershopService, "price"> & { price: number }
+type ServiceWithNumberPrice = Omit<BarbershopService, "price"> & {
+    price: number
+    staffPrices?: { staffId: string; price: number; isLinked: boolean }[]
+}
 
 interface BookingSheetProps {
     services: ServiceWithNumberPrice[]
@@ -60,7 +63,40 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
     }, [date])
 
     const totalDuration = useMemo(() => services.reduce((acc, s) => acc + s.duration, 0), [services])
-    const totalPrice = useMemo(() => services.reduce((acc, s) => acc + s.price, 0), [services])
+
+    // Cálculo de Preço considerando Override por Barbeiro
+    const totalPrice = useMemo(() => {
+        return services.reduce((acc, s) => {
+            if (selectedBarber && s.staffPrices) {
+                const staffPrice = s.staffPrices.find(sp => sp.staffId === selectedBarber.id)
+                if (staffPrice) return acc + Number(staffPrice.price)
+            }
+            return acc + s.price
+        }, 0)
+    }, [services, selectedBarber])
+
+
+    // Identificar se há um barbeiro exclusivo para os serviços selecionados
+    const exclusiveBarberId = useMemo(() => {
+        // Como o barbershop-details já valida que todos os linked apontam pro mesmo, pegamos o primeiro
+        const linked = services.find(s => s.staffPrices?.some(sp => sp.isLinked))
+        if (linked) {
+            return linked.staffPrices?.find(sp => sp.isLinked)?.staffId
+        }
+        return null
+    }, [services])
+
+    // Auto-seleção de Barbeiro Vinculado
+    useEffect(() => {
+        if (!isOpen) return
+
+        if (exclusiveBarberId) {
+            const staffMember = activeStaff.find(s => s.id === exclusiveBarberId)
+            if (staffMember) {
+                setSelectedBarber(staffMember)
+            }
+        }
+    }, [isOpen, exclusiveBarberId, activeStaff])
 
     useEffect(() => {
         if (!date) return
@@ -282,26 +318,41 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
                                         ref={barberScrollRef}
                                         className="flex gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden flex-nowrap"
                                     >
-                                        {activeStaff.map((barber) => (
-                                            <button
-                                                key={barber.id}
-                                                onClick={() => setSelectedBarber(barber)}
-                                                className={`flex flex-col items-center gap-2 w-[110px] min-w-[110px] p-4 rounded-xl border transition-all ${selectedBarber?.id === barber.id ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(129,91,64,0.1)]" : "bg-[#1A1B1F] border-[#26272B]"}`}
-                                            >
-                                                <div className={`relative p-0.5 rounded-full border-2 ${selectedBarber?.id === barber.id ? "border-primary" : "border-transparent"}`}>
-                                                    <Avatar className="h-12 w-12">
-                                                        <AvatarImage src={barber.user?.image || barber.imageUrl || DEFAULT_BARBER_IMAGE} className="object-cover" />
-                                                        <AvatarFallback><UserIcon /></AvatarFallback>
-                                                    </Avatar>
-                                                </div>
-                                                <div className="text-center w-full">
-                                                    <p className={`text-xs font-bold truncate w-full ${selectedBarber?.id === barber.id ? "text-primary" : "text-white"}`}>
-                                                        {barber.name}
-                                                    </p>
-                                                    <p className="text-[9px] text-gray-500 uppercase font-medium truncate w-full">{barber.jobTitle}</p>
-                                                </div>
-                                            </button>
-                                        ))}
+                                        {activeStaff.map((barber) => {
+                                            const isSelected = selectedBarber?.id === barber.id
+                                            const isExclusive = exclusiveBarberId === barber.id
+                                            const isLockedOut = exclusiveBarberId && !isExclusive
+
+                                            return (
+                                                <button
+                                                    key={barber.id}
+                                                    onClick={() => !isLockedOut && setSelectedBarber(barber)}
+                                                    disabled={!!isLockedOut}
+                                                    className={`flex flex-col items-center gap-2 w-[110px] min-w-[110px] p-4 rounded-xl border transition-all 
+                                                        ${isSelected ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(129,91,64,0.1)]" : "bg-[#1A1B1F] border-[#26272B]"}
+                                                        ${isLockedOut ? "opacity-30 grayscale cursor-not-allowed" : "hover:border-primary/50"}
+                                                    `}
+                                                >
+                                                    <div className={`relative p-0.5 rounded-full border-2 ${isSelected ? "border-primary" : "border-transparent"}`}>
+                                                        <Avatar className="h-12 w-12">
+                                                            <AvatarImage src={barber.user?.image || barber.imageUrl || DEFAULT_BARBER_IMAGE} className="object-cover" />
+                                                            <AvatarFallback><UserIcon /></AvatarFallback>
+                                                        </Avatar>
+                                                        {isExclusive && (
+                                                            <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center shadow-sm">
+                                                                <Lock size={8} className="mr-0.5" /> EXCLUSIVO
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-center w-full">
+                                                        <p className={`text-xs font-bold truncate w-full ${isSelected ? "text-primary" : "text-white"}`}>
+                                                            {barber.name}
+                                                        </p>
+                                                        <p className="text-[9px] text-gray-500 uppercase font-medium truncate w-full">{barber.jobTitle}</p>
+                                                    </div>
+                                                </button>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             )}
