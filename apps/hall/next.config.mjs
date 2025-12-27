@@ -49,9 +49,7 @@ const pwaConfig = withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development', // Desativa em dev para evitar problemas de cache
-  workboxOptions: {
-    importScripts: ['/sw-custom.js'],
-  },
+  importScripts: ['/sw-custom.js'],
 })(nextConfig);
 
 export default pwaConfig;
