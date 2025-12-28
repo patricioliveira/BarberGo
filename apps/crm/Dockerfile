@@ -34,9 +34,13 @@ ENV NODE_ENV=production
 ENV PORT=3002
 ENV HOSTNAME="0.0.0.0"
 
-# Instala curl para o Healthcheck e ca-certificates para HTTPS
+# Instala curl para o Healthcheck e ca-certificates para HTTPS, e cliente Postgres 17
 RUN apt-get update -y \
-    && apt-get install -y curl ca-certificates postgresql-client \
+    && apt-get install -y curl ca-certificates gnupg lsb-release \
+    && sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg \
+    && apt-get update -y \
+    && apt-get install -y postgresql-client-17 \
     && rm -rf /var/lib/apt/lists/*
 
 # Cria um usuário não-root por segurança
