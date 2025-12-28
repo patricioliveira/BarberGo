@@ -10,9 +10,9 @@
 apps/exclusive/node_modules
 apps/hall/node_modules
 apps/crm/node_modules
+packages/*/node_modules
 
-# packages
-/packages
+
 /.pnp
 .pnp.js
 .yarn/install-state.gz
