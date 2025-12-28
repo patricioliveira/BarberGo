@@ -96,8 +96,10 @@ export default async function OwnerDashboard() {
                         <CardHeader className="p-5 md:p-8 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-black/20">
                             <CardTitle className="text-lg md:text-xl font-bold">Carteira de Clientes</CardTitle>
                             <div className="flex flex-wrap gap-2">
+                                <Badge className="bg-blue-500/10 text-blue-500 border-none text-[10px]">BASIC: {barbershops.filter(b => b.subscription?.plan === 'BASIC').length}</Badge>
+                                <Badge className="bg-green-500/10 text-green-500 border-none text-[10px]">INTER: {barbershops.filter(b => b.subscription?.plan === 'INTERMEDIUM').length}</Badge>
                                 <Badge className="bg-primary/10 text-primary border-none text-[10px]">PRO: {barbershops.filter(b => b.subscription?.plan === 'PRO').length}</Badge>
-                                <Badge className="bg-purple-500/10 text-purple-500 border-none text-[10px]">PREMIUM: {barbershops.filter(b => b.subscription?.plan === 'PREMIUM').length}</Badge>
+                                <Badge className="bg-purple-500/10 text-purple-500 border-none text-[10px]">EXCL: {barbershops.filter(b => b.subscription?.plan === 'EXCLUSIVE').length}</Badge>
                             </div>
                         </CardHeader>
 
@@ -125,9 +127,9 @@ export default async function OwnerDashboard() {
                                             </td>
                                             <td className="px-4 py-4 md:px-6 md:py-6 text-center">
                                                 <Badge className={`font-black border-none text-[9px] px-2 py-0.5 ${shop.subscription?.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500' :
-                                                        shop.subscription?.status === 'PAST_DUE' ? 'bg-red-500/10 text-red-500' :
-                                                            shop.subscription?.status === 'SUSPENDED' ? 'bg-red-600 text-white' :
-                                                                'bg-amber-500/10 text-amber-500'
+                                                    shop.subscription?.status === 'PAST_DUE' ? 'bg-red-500/10 text-red-500' :
+                                                        shop.subscription?.status === 'SUSPENDED' ? 'bg-red-600 text-white' :
+                                                            'bg-amber-500/10 text-amber-500'
                                                     }`}>
                                                     {shop.subscription?.status || 'TRIAL'}
                                                 </Badge>
