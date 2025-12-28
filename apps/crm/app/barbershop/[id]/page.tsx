@@ -10,8 +10,6 @@ import { ActivateSubscriptionDialog } from "./_components/activate-subscription-
 import { PaymentHistoryCard } from "./_components/payment-history-card"
 import { ChangePlanDialog } from "./_components/change-plan-dialog"
 import { PlanType } from "@barbergo/shared"
-import { BackupSystem } from "./_components/backup-system"
-
 
 const statusMap = {
     TRIAL: {
@@ -74,9 +72,6 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
                     <currentStatus.icon size={14} />
                     {subscription.status}
                 </Badge>
-                <div className="flex gap-2">
-                    <BackupSystem />
-                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

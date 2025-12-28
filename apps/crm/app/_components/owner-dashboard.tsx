@@ -8,6 +8,7 @@ import { AddBarbershopDialog } from "./add-barbershop-dialog";
 import { AddPartnerDialog } from "./add-partner-dialog";
 import { LogoutButton } from "./logout-button";
 import { PartnersTable } from "./partners-table";
+import { BackupSystem } from "./backup-system";
 
 export default async function OwnerDashboard() {
     // Busca Clientes e Parceiros
@@ -58,6 +59,7 @@ export default async function OwnerDashboard() {
 
                 {/* Ações: Botões de Adicionar */}
                 <div className="flex flex-col gap-3 w-full sm:w-auto sm:flex-row sm:items-center">
+                    <BackupSystem />
                     {/* Logout no Desktop (escondido no mobile aqui para evitar duplicidade) */}
                     <div className="hidden sm:block">
                         <LogoutButton />
