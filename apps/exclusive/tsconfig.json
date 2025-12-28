@@ -1,5 +1,7 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "lib": [
       "dom",
       "dom.iterable",
@@ -20,7 +22,21 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "paths": {
+      "@/*": [
+        "./app/*"
+      ],
+      "@barbergo/shared": [
+        "../../packages/shared/src"
+      ],
+      "@barbergo/ui": [
+        "../../packages/ui/src"
+      ],
+      "@barbergo/database": [
+        "../../packages/database/src"
+      ]
+    }
   },
   "include": [
     "next-env.d.ts",

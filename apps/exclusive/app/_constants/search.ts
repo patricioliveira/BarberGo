@@ -1,0 +1,1 @@
+export { quickSearchOptions } from "@barbergo/shared"

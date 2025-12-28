@@ -1,34 +1,90 @@
-import { redirect } from "next/navigation"
 import { db } from "@barbergo/database"
-import { appConfig } from "./config"
+import BarbershopDetails from "./barbershop-feature/components/barbershop-details"
+import { notFound } from "next/navigation"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/_lib/auth"
+import { ViewTracker } from "@/_components/view-tracker"
 
-const Home = async () => {
-  if (!appConfig.barbershopSlug) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-lg text-gray-500">
-          Configuração de barbearia não encontrada
-        </p>
-      </div>
-    )
+export default async function ExclusiveHomePage() {
+  const barbershopId = process.env.EXCLUSIVE_BARBERSHOP_ID
+
+  if (!barbershopId) {
+    console.error("EXCLUSIVE_BARBERSHOP_ID is not defined")
+    return notFound()
   }
 
-  const barbershop = await db.barbershop.findFirst({
+  const barbershop = await db.barbershop.findUnique({
     where: {
-      slug: appConfig.barbershopSlug,
-      isExclusive: true,
+      id: barbershopId,
+    },
+    include: {
+      services: {
+        include: {
+          staffPrices: true
+        }
+      },
+      staff: {
+        include: {
+          user: true
+        }
+      },
+      ratings: {
+        include: {
+          user: true
+        }
+      },
     },
   })
 
   if (!barbershop) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-lg text-gray-500">Barbearia não encontrada</p>
-      </div>
-    )
+    return notFound()
   }
 
-  redirect(`/barbershop/${barbershop.id}`)
-}
+  const serializedBarbershop = {
+    ...barbershop,
+    services: barbershop.services.map((service) => ({
+      ...service,
+      price: Number(service.price),
+      staffPrices: service.staffPrices.map(sp => ({
+        staffId: sp.staffId,
+        price: Number(sp.price),
+        isLinked: sp.isLinked
+      }))
+    })),
+  }
 
-export default Home
+  let isFavorited = false
+  const session = await getServerSession(authOptions)
+
+  if (session?.user) {
+    const favorite = await db.favorite.findUnique({
+      where: {
+        userId_barbershopId: {
+          userId: (session.user as any).id,
+          barbershopId: barbershopId,
+        },
+      },
+    })
+    if (favorite) isFavorited = true
+  }
+
+  const theme = (barbershop as any).themeConfig
+  const primary = theme?.primaryColor
+  const secondary = theme?.secondaryColor
+
+  return (
+    <>
+      {(primary || secondary) && (
+        <style dangerouslySetInnerHTML={{
+          __html: `
+                    :root {
+                        ${primary ? `--primary: ${primary} !important;` : ''}
+                        ${secondary ? `--background: ${secondary} !important;` : ''}
+                    }
+                `}} />
+      )}
+      <ViewTracker barbershopId={barbershop.id} />
+      <BarbershopDetails barbershop={serializedBarbershop} initialIsFavorited={isFavorited} />
+    </>
+  )
+}

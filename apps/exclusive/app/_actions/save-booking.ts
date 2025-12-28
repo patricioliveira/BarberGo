@@ -1,0 +1,259 @@
+"use server"
+
+import { db } from "@barbergo/database"
+import { revalidatePath } from "next/cache"
+import { addMinutes } from "date-fns"
+import { Prisma, NotificationType } from "@barbergo/database"
+import { sendNotification } from "../_lib/notifications"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+
+interface SaveBookingParams {
+    barbershopId: string
+    serviceIds: string[]
+    userId: string
+    date: Date
+    staffId: string
+    observation?: string
+    silentAppointment?: boolean
+}
+
+export const saveBooking = async ({
+    barbershopId,
+    serviceIds,
+    userId,
+    date,
+    staffId,
+    observation,
+    silentAppointment,
+}: SaveBookingParams) => {
+    try {
+        // 1. Busca completa de integridade (Barbearia + Subscrição + Staff + Serviços + Bloqueio)
+        const barbershop = await db.barbershop.findUnique({
+            where: { id: barbershopId },
+            include: {
+                subscription: true,
+                staff: { where: { id: staffId }, include: { user: true } },
+                services: { where: { id: { in: serviceIds } } },
+                blockedUsers: {
+                    where: { userId },
+                },
+                owner: true,
+            },
+        })
+
+        if (!barbershop) throw new Error("Barbearia não encontrada.")
+
+        // 2. Validação de Cliente Bloqueado
+        if (barbershop.blockedUsers.length > 0) {
+            throw new Error(
+                "Você está bloqueado nesta barbearia e não pode realizar agendamentos."
+            )
+        }
+
+        // 3. Validação de Status da Barbearia
+        if (barbershop.isClosed)
+            throw new Error("A barbearia está fechada no momento.")
+
+        // 4. Validação de Subscrição (CRM)
+        const subStatus = barbershop.subscription?.status
+        if (subStatus === "SUSPENDED" || subStatus === "CANCELED") {
+            throw new Error("Agendamentos indisponíveis para esta unidade.")
+        }
+
+        // 5. Validação do Profissional
+        const staff = barbershop.staff[0]
+        if (!staff || !staff.isActive) {
+            throw new Error(
+                "O profissional selecionado não está mais disponível."
+            )
+        }
+
+        // 6. Validação dos Serviços
+        if (barbershop.services.length !== serviceIds.length) {
+            throw new Error(
+                "Um ou mais serviços selecionados não estão mais ativos."
+            )
+        }
+
+        // Calcular duração total
+        const totalDuration = barbershop.services.reduce(
+            (acc, s) => acc + s.duration,
+            0
+        )
+        const bookingStart = new Date(date)
+        const bookingEnd = addMinutes(bookingStart, totalDuration)
+
+        // 6.5 Validação de Horário Limite (Overtime)
+        // Se a barbearia NÃO permite overtime, verificamos se o agendamento excede o horário de fechamento
+        if (!(barbershop as any).allowOvertime) {
+            const weekDays = [
+                "Domingo",
+                "Segunda-feira",
+                "Terça-feira",
+                "Quarta-feira",
+                "Quinta-feira",
+                "Sexta-feira",
+                "Sábado",
+            ]
+            const dayName = weekDays[bookingStart.getDay()]
+            const bookingEndTimeString = bookingEnd.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
+
+            // Helper para converter "HH:MM" em minutos para comparação
+            const toMinutes = (time: string) => {
+                const [h, m] = time.split(":").map(Number)
+                return h * 60 + m
+            }
+
+            const bookingEndMinutes = toMinutes(bookingEndTimeString)
+
+            // Verifica horário da Barbearia
+            const shopHours = (barbershop.openingHours as any[] || []).find((h: any) => h.day === dayName)
+            if (shopHours && shopHours.isOpen) {
+                const shopCloseMinutes = toMinutes(shopHours.close)
+                if (bookingEndMinutes > shopCloseMinutes && shopCloseMinutes !== 0) { // 00:00 geralmente tratado como fechado ou virada, mas aqui assumo fechamento simples
+                    throw new Error("O serviço selecionado excede o horário de funcionamento da barbearia.")
+                }
+            }
+
+            // Verifica horário do Staff
+            const staffHours = (staff.openingHours as any[] || []).find((h: any) => h.day === dayName)
+            if (staffHours && staffHours.isOpen) {
+                const staffCloseMinutes = toMinutes(staffHours.close)
+                if (bookingEndMinutes > staffCloseMinutes && staffCloseMinutes !== 0) {
+                    throw new Error("O serviço selecionado excede o horário de trabalho do profissional.")
+                }
+            }
+        }
+
+        // 7. Transação com Isolamento Serializável e Locking Pessimista
+        // O nível Serializable garante isolamento, mas o update dummy garante locking de linha
+        // impedindo que duas transações leiam o estado "livre" ao mesmo tempo.
+        await db.$transaction(
+            async (tx) => {
+                // LOCK: Força bloqueio de linha no Staff para serializar agendamentos neste profissional
+                await tx.barberStaff.update({
+                    where: { id: staffId },
+                    data: { updatedAt: new Date() }, // Dummy update para travar a linha
+                })
+
+                // Define janela de busca (Dia inteiro do agendamento) para garantir cache/busca correta
+                const dayStart = new Date(bookingStart)
+                dayStart.setHours(0, 0, 0, 0)
+                const dayEnd = new Date(bookingStart)
+                dayEnd.setHours(23, 59, 59, 999)
+
+                // Busca TODOS os agendamentos do dia para verificar colisão em memória
+                const dayBookings = await tx.booking.findMany({
+                    where: {
+                        staffId,
+                        status: { not: "CANCELED" },
+                        date: {
+                            gte: dayStart,
+                            lte: dayEnd,
+                        },
+                    },
+                    include: { service: true },
+                })
+
+                // Verificação de sobreposição precisa
+                for (const existingBooking of dayBookings) {
+                    const existingStart = new Date(existingBooking.date)
+                    const existingEnd = addMinutes(
+                        existingStart,
+                        existingBooking.service.duration
+                    )
+
+                    // Fórmula de colisão de intervalos: (StartA < EndB) && (EndA > StartB)
+                    if (
+                        bookingStart < existingEnd &&
+                        bookingEnd > existingStart
+                    ) {
+                        throw new Error(
+                            "Este horário acabou de ser ocupado por outro cliente. Por favor, escolha outro."
+                        )
+                    }
+                }
+
+                // Criação dos agendamentos (se passou pela validação)
+                await Promise.all(
+                    serviceIds.map((serviceId) =>
+                        tx.booking.create({
+                            data: {
+                                serviceId,
+                                userId,
+                                date,
+                                barbershopId,
+                                staffId,
+                                observation,
+                                silentAppointment,
+                            } as any,
+                        })
+                    )
+                )
+            },
+            {
+                isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, // ReadCommitted é suficiente com o Row Lock explícito acima
+                timeout: 10000, // 10s timeout para evitar deadlocks longos
+            }
+        )
+
+        // --- Lógica de Notificação (Pós-Transação) ---
+        // Executamos fora da transação para não bloquear e porque falhas aqui não devem cancelar o agendamento
+        try {
+            const [clientUser, serviceList] = await Promise.all([
+                db.user.findUnique({ where: { id: userId } }),
+                db.barbershopService.findMany({ where: { id: { in: serviceIds } } })
+            ])
+
+            const clientName = clientUser?.name || "Um cliente"
+            const serviceNames = serviceList.map(s => s.name).join(", ")
+            const formattedDate = format(date, "dd 'de' MMM 'às' HH:mm", { locale: ptBR })
+
+            // 1. Notifica Admin (Dono)
+            if (barbershop.ownerId) {
+                await sendNotification({
+                    recipientId: barbershop.ownerId,
+                    title: "Novo Agendamento",
+                    message: `${clientName} agendou ${serviceNames} para ${formattedDate}.`,
+                    type: NotificationType.NEW_BOOKING,
+                    link: `/admin/appointments`  // Poderia filtrar por data
+                })
+            }
+
+            // 2. Notifica Profissional (se não for o mesmo que o dono)
+            // O staff carregado na linha 61 agora tem o user incluso devido à alteração no include
+            // Mas o objeto 'staff' da linha 61 é tipado como array element.
+            // Precisamos garantir que pegamos o userId corretamente.
+            const staffUser = barbershop.staff[0]?.userId
+
+            if (staffUser && staffUser !== barbershop.ownerId) {
+                await sendNotification({
+                    recipientId: staffUser,
+                    title: "Novo Agendamento com Você",
+                    message: `${clientName} agendou ${serviceNames} com você para ${formattedDate}.`,
+                    type: NotificationType.NEW_BOOKING,
+                    link: `/admin/appointments`
+                })
+            }
+
+        } catch (notifError) {
+            console.error("Erro ao enviar notificação:", notifError)
+            // Não retorna erro para o cliente, apenas loga
+        }
+
+        revalidatePath("/")
+        revalidatePath("/appointments")
+
+        return { success: true }
+    } catch (error) {
+        console.error("Erro ao salvar agendamento:", error)
+        if (error instanceof Error) {
+            return { success: false, message: error.message }
+        }
+        return {
+            success: false,
+            message: "Erro inesperado ao realizar o agendamento.",
+        }
+    }
+}

@@ -1,16 +1,10 @@
-import { Card, CardContent } from "@barbergo/ui"
+"use client"
 
 const Footer = () => {
     return (
-        <footer>
-            <Card className="rounded-none border-0 border-t">
-                <CardContent className="px-5 py-6">
-                    <p className="text-sm text-gray-400">
-                        © 2024 Copyright <span className="font-bold">BarberGo</span>
-                    </p>
-                </CardContent>
-            </Card>
-        </footer>
+        <div className="w-full mt-10 pt-6 pb-6 border-t border-[#26272B] text-center text-xs text-gray-500">
+            © 2026 Copyright barberGO
+        </div>
     )
 }
 
