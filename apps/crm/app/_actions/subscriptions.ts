@@ -20,8 +20,23 @@ export const switchPlan = async (subscriptionId: string, newPlan: PlanType) => {
                     isExclusive: newPlan === PlanType.EXCLUSIVE
                 }
             }
+        },
+        include: {
+            barbershop: true
         }
     })
+
+    if (sub.barbershop.ownerId) {
+        await db.notification.create({
+            data: {
+                recipientId: sub.barbershop.ownerId,
+                title: "Plano Alterado",
+                message: `Seu plano foi alterado para ${planDetails.name} pela equipe de suporte.`,
+                type: "FINANCE_ALERT",
+                read: false
+            }
+        })
+    }
 
     revalidatePath("/")
     return { success: true }

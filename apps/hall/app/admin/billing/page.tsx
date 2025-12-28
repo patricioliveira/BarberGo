@@ -19,6 +19,7 @@ import { ptBR } from "date-fns/locale"
 import Footer from "@/_components/footer"
 import { toast } from "sonner"
 import { InvoiceDetails } from "../_components/invoice-details"
+import { PLANS, PlanType } from "@barbergo/shared"
 
 export default function BillingPage() {
     const router = useRouter()
@@ -94,6 +95,9 @@ export default function BillingPage() {
         }).format(Number(value || 0))
     }
 
+    const currentPlanId = (subscription?.plan as PlanType) || PlanType.PRO
+    const planDetails = PLANS[currentPlanId] || PLANS[PlanType.PRO]
+
     return (
         <div className="min-h-screen bg-background text-white flex flex-col">
             <Header />
@@ -126,7 +130,13 @@ export default function BillingPage() {
                             <div className="grid grid-cols-2 gap-8">
                                 <div className="space-y-1">
                                     <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Plano Atual</p>
-                                    <p className="text-xl font-bold text-white uppercase italic">{subscription?.plan || "PRO"}</p>
+                                    <p className="text-xl font-bold text-white uppercase italic">{planDetails.name || subscription?.plan}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{planDetails.description}</p>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        <Badge variant="outline" className="text-[10px] border-white/10 text-gray-400">
+                                            {planDetails.maxProfessionals === Infinity ? '∞ Profissionais' : `Até ${planDetails.maxProfessionals} prof.`}
+                                        </Badge>
+                                    </div>
                                 </div>
                                 <div className="space-y-1 text-right">
                                     <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Valor Mensal</p>
