@@ -42,27 +42,6 @@ export const switchPlan = async (subscriptionId: string, newPlan: PlanType) => {
     return { success: true }
 }
 
-// 0. Backup (Exportação de Dados Críticos)
-export const backupDatabase = async () => {
-    const users = await db.user.findMany()
-    const barbershops = await db.barbershop.findMany()
-    const subscriptions = await db.subscription.findMany()
-    const staff = await db.barberStaff.findMany()
-
-    const data = {
-        meta: {
-            date: new Date().toISOString(),
-            version: "1.0"
-        },
-        users,
-        barbershops,
-        subscriptions,
-        staff
-    }
-
-    return data
-}
-
 
 // 1. Confirmar Pagamento e Ativar
 export const confirmPaymentAndActivate = async (subscriptionId: string, amount: number, method: string) => {

@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { Button } from "@barbergo/ui"
-import { DatabaseBackup, Loader2, Download } from "lucide-react"
-import { backupDatabase } from "@/app/_actions/subscriptions"
+import { DatabaseBackup, Loader2 } from "lucide-react"
+import { backupDatabase } from "@/app/_actions/system"
 import { toast } from "sonner"
 
 export function BackupSystem() {
@@ -12,24 +12,20 @@ export function BackupSystem() {
     const handleBackup = async () => {
         setIsLoading(true)
         try {
-            const data = await backupDatabase()
-            
-            // Generate filename with date
-            const date = new Date()
-            const filename = `barbergo_backup_${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}_${String(date.getHours()).padStart(2, '0')}-${String(date.getMinutes()).padStart(2, '0')}.json`
-            
-            // Create Blob and download
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-            const url = window.URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.download = filename
-            document.body.appendChild(a)
-            a.click()
-            window.URL.revokeObjectURL(url)
-            document.body.removeChild(a)
-            
-            toast.success("Backup realizado e download iniciado!")
+            // @ts-ignore
+            const res = await backupDatabase()
+
+            if (res.success && res.url) {
+                const a = document.createElement("a")
+                a.href = res.url
+                a.download = res.filename || "backup.sql"
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                toast.success("Backup realizado e enviado para o Storage!")
+            } else {
+                toast.error("Erro ao gerar backup.")
+            }
         } catch (error) {
             console.error(error)
             toast.error("Erro ao gerar backup.")

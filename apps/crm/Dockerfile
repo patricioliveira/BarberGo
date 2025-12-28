@@ -36,7 +36,7 @@ ENV HOSTNAME="0.0.0.0"
 
 # Instala curl para o Healthcheck e ca-certificates para HTTPS
 RUN apt-get update -y \
-    && apt-get install -y curl ca-certificates \
+    && apt-get install -y curl ca-certificates postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Cria um usuário não-root por segurança
