@@ -57,7 +57,10 @@ import {
     PawPrint,
     Martini,
     DollarSign,
-    User
+    User,
+    Copy,
+    Share2,
+    AlertTriangle
 } from "lucide-react"
 import Header from "../../_components/header"
 
@@ -106,6 +109,7 @@ export default function SettingsPage() {
     const [uploadingServiceId, setUploadingServiceId] = useState<string | null>(null)
 
     const [isNewStaffModalOpen, setIsNewStaffModalOpen] = useState(false)
+    const [createdCredentials, setCreatedCredentials] = useState<{ email: string, password: string } | null>(null) // NOVO
     const [dialogConfig, setDialogConfig] = useState<{
         isOpen: boolean; title: string; description: string; onConfirm: () => void; variant?: "default" | "destructive";
     }>({ isOpen: false, title: "", description: "", onConfirm: () => { } })
@@ -283,9 +287,40 @@ export default function SettingsPage() {
         if (!newStaff.email || !newStaff.name) return toast.error("Preencha os campos obrigatórios")
         setIsSubmittingStaff(true)
         const res = await addOrUpdateStaff({ ...newStaff, barbershopId: storeData.id })
-        if (res.success) { toast.success("Funcionário cadastrado!"); setIsNewStaffModalOpen(false); window.location.reload() }
+
+        if (res.success) {
+            toast.success("Funcionário cadastrado!");
+            setIsNewStaffModalOpen(false);
+
+            // Verifica se gerou credenciais
+            if (res.generatedPassword) {
+                setCreatedCredentials({ email: newStaff.email, password: res.generatedPassword })
+            } else {
+                window.location.reload()
+            }
+        }
         else toast.error(res.error)
         setIsSubmittingStaff(false)
+    }
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text)
+        toast.success("Copiado para a área de transferência!")
+    }
+
+    const shareCredentials = async () => {
+        if (createdCredentials && navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Suas Credenciais BarberGo',
+                    text: `Olá ${newStaff.name}, aqui estão seus dados de acesso:\nLogin: ${createdCredentials.email}\nSenha: ${createdCredentials.password}\n\nPor favor, altere sua senha no primeiro acesso.`
+                })
+            } catch (err) {
+                console.log('Error sharing', err)
+            }
+        } else {
+            copyToClipboard(`Login: ${createdCredentials?.email}\nSenha: ${createdCredentials?.password}`)
+        }
     }
 
     const handleDeleteStaff = async (id: string) => {
@@ -342,6 +377,51 @@ export default function SettingsPage() {
                             <div className="space-y-1"><Label>Cargo</Label><Input value={newStaff.jobTitle} onChange={e => setNewStaff({ ...newStaff, jobTitle: e.target.value })} className="bg-secondary border-none" /></div>
                         </div>
                         <DialogFooter><Button variant="outline" onClick={() => setIsNewStaffModalOpen(false)}>Cancelar</Button><Button onClick={handleCreateNewStaff} disabled={isSubmittingStaff}>{isSubmittingStaff && <Loader2 className="mr-2 animate-spin" size={16} />}Adicionar</Button></DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Dialogo de Credenciais Geradas */}
+                <Dialog open={!!createdCredentials} onOpenChange={(open) => { if (!open) { setCreatedCredentials(null); window.location.reload() } }}>
+                    <DialogContent className="bg-[#1A1B1F] border-secondary text-white max-w-sm">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-green-500">
+                                <Check size={20} /> Conta Criada com Sucesso!
+                            </DialogTitle>
+                        </DialogHeader>
+
+                        <div className="space-y-4 py-4">
+                            <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg flex gap-3 text-yellow-500 text-sm items-start">
+                                <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+                                <p>Uma conta foi criada automaticamente. Salve estes dados agora, a senha não será mostrada novamente.</p>
+                            </div>
+
+                            <div className="space-y-3 bg-black/40 p-4 rounded-xl border border-white/5">
+                                <div>
+                                    <Label className="text-[10px] text-gray-500 uppercase font-bold">Login (Email)</Label>
+                                    <div className="flex items-center justify-between gap-2 mt-1">
+                                        <code className="text-sm font-mono">{createdCredentials?.email}</code>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(createdCredentials?.email || "")}><Copy size={12} /></Button>
+                                    </div>
+                                </div>
+                                <div className="h-px bg-white/5" />
+                                <div>
+                                    <Label className="text-[10px] text-gray-500 uppercase font-bold">Senha Temporária</Label>
+                                    <div className="flex items-center justify-between gap-2 mt-1">
+                                        <code className="text-lg font-mono text-primary font-bold tracking-wider">{createdCredentials?.password}</code>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(createdCredentials?.password || "")}><Copy size={12} /></Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="flex-col gap-2 sm:flex-col">
+                            <Button className="w-full gap-2" size="lg" onClick={shareCredentials}>
+                                <Share2 size={16} /> Copiar e Compartilhar
+                            </Button>
+                            <Button variant="ghost" className="w-full text-xs text-gray-500" onClick={() => { setCreatedCredentials(null); window.location.reload() }}>
+                                Fechar e Atualizar
+                            </Button>
+                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
 

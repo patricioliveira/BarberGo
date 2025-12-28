@@ -20,6 +20,7 @@ export const addOrUpdateStaff = async (params: AddStaffParams) => {
 
     try {
         let targetUserId = params.userId
+        let generatedPassword: string | null = null
 
         // 1. Lógica de Usuário (se não for o próprio admin)
         if (!targetUserId) {
@@ -50,6 +51,7 @@ export const addOrUpdateStaff = async (params: AddStaffParams) => {
                     }
                 })
                 targetUserId = newUser.id
+                generatedPassword = tempPassword
 
                 // IMPORTANTE: Aqui você dispararia um e-mail com a 'tempPassword'
                 console.log(`USUÁRIO CRIADO: ${params.email} | SENHA: ${tempPassword}`)
@@ -76,12 +78,15 @@ export const addOrUpdateStaff = async (params: AddStaffParams) => {
         })
 
         revalidatePath("/admin/settings")
-        return { success: true }
+
+        return { success: true, generatedPassword }
     } catch (error) {
         console.error(error)
         return { error: "Erro ao gerenciar equipe." }
     }
 }
+
+// VOU REESCREVER A FUNÇÃO INTEIRA PARA FICAR MAIS LIMPO E CAPTURAR A SENHA CORRETAMENTE
 
 export const toggleStaffStatus = async (staffId: string, isActive: boolean) => {
     await db.barberStaff.update({
