@@ -7,7 +7,7 @@ import {
     CalendarIcon, DollarSign, Users, ShieldCheck, User,
     CalendarCheck2, Settings2, Power, Loader2, Store,
     ChevronLeft, ChevronRight, CalendarDays, CreditCard,
-    ShieldAlert, Star
+    ShieldAlert, Star, Eye
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -29,6 +29,7 @@ export default function AdminPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [stats, setStats] = useState<any>(null)
     const [viewMode, setViewMode] = useState<"shop" | "personal">("shop")
+    const [chartType, setChartType] = useState<"revenue" | "views">("revenue")
     const [period, setPeriod] = useState<"day" | "week" | "month">("day") // Default to day per requirement: "por padrão ao inciar a pagina, ja mostra do dia corrente"
     const [viewDate, setViewDate] = useState(new Date())
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
@@ -68,11 +69,18 @@ export default function AdminPage() {
 
     const chartDataToDisplay = useMemo(() => {
         if (!stats) return []
-        const rawData = viewMode === "personal" ? stats.personalChartData : stats.chartData
+
+        // Decide which dataset to use
+        const rawData = viewMode === "personal"
+            ? stats.personalChartData
+            : (chartType === "views" ? stats.viewsChartData : stats.chartData)
+
         const bookings = viewMode === "personal" ? stats.personalBookings : stats.bookings
 
-        if (period === "day") {
-            // Restore Hourly aggregation for "Day" View
+        if (period === "day" && chartType === "revenue") {
+            // Restore Hourly aggregation for "Day" View (only for Revenue, Views are typically daily or we need hourly views logic)
+            // If we don't have hourly views, we might just show the daily total as a single bar or mock it.
+            // For now, let's keep the hourly revenue logic.
             const hours = Array.from({ length: 13 }, (_, i) => i + 8) // 08:00 to 20:00
             return hours.map(h => ({
                 date: `${h}h`,
@@ -263,21 +271,29 @@ export default function AdminPage() {
                                 <KpiCard title={viewMode === "personal" ? "Meus Resultados" : "Faturamento"} icon={DollarSign} value={viewMode === "personal" ? stats.personalKpi.revenue : stats.kpi.revenue} isMoney />
                                 <KpiCard title="Minha Agenda" icon={CalendarIcon} value={viewMode === "personal" ? stats.personalKpi.bookings : stats.kpi.bookings} />
                                 <KpiCard title="Agenda Hoje" icon={Users} value={viewMode === "personal" ? stats.personalKpi.today : stats.kpi.today} sub="Clientes agendados" />
-                                <KpiCard title="Status" icon={ShieldCheck} value={viewMode === "personal" ? (isStaffActive ? "Ativo" : "Inativo") : (stats.kpi.isClosed ? "Fechada" : "Aberta")} />
+                                {viewMode === "shop" && <KpiCard title="Visualizações" icon={Eye} value={stats.kpi.views || 0} sub="Visitas no perfil" />}
+                                {viewMode === "personal" && <KpiCard title="Status" icon={ShieldCheck} value={isStaffActive ? "Ativo" : "Inativo"} />}
+                                {viewMode === "shop" && <KpiCard title="Status" icon={ShieldCheck} value={stats.kpi.isClosed ? "Fechada" : "Aberta"} />}
                             </div>
 
                             <div className="grid gap-4 grid-cols-1 md:grid-cols-7">
                                 <Card className="col-span-1 md:col-span-4 bg-[#1A1B1F] border-none shadow-xl ring-1 ring-white/5">
                                     <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-primary/10 rounded-lg text-primary"><CalendarDays size={20} /></div>
+                                            <div className="p-2 bg-primary/10 rounded-lg text-primary">{chartType === 'revenue' ? <DollarSign size={20} /> : <Eye size={20} />}</div>
                                             <div>
-                                                <CardTitle className="text-white text-sm uppercase tracking-widest font-bold">Produtividade (R$)</CardTitle>
+                                                <CardTitle className="text-white text-sm uppercase tracking-widest font-bold">{chartType === 'revenue' ? 'Faturamento (R$)' : 'Visualizações'}</CardTitle>
                                                 <p className="text-[10px] text-gray-500 font-medium mt-1 uppercase">
-                                                    Resumo Financeiro
+                                                    {chartType === 'revenue' ? 'Resumo Financeiro' : 'Tráfego do Perfil'}
                                                 </p>
                                             </div>
                                         </div>
+                                        {viewMode === "shop" && (
+                                            <div className="flex bg-black/40 p-1 rounded-lg border border-white/5 gap-1">
+                                                <Button variant={chartType === "revenue" ? "default" : "ghost"} size="sm" onClick={() => setChartType("revenue")} className="h-7 text-[10px] font-bold">Faturamento</Button>
+                                                <Button variant={chartType === "views" ? "default" : "ghost"} size="sm" onClick={() => setChartType("views")} className="h-7 text-[10px] font-bold">Visualizações</Button>
+                                            </div>
+                                        )}
                                     </CardHeader>
                                     <CardContent className="pt-6">
                                         <AdminOverviewChart data={chartDataToDisplay} />

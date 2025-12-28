@@ -149,6 +149,22 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
         }))
     }
 
+    const shopViews = await db.barbershopView.findMany({
+        where: {
+            barbershopId,
+            date: { gte: start, lte: end }
+        }
+    })
+
+    const calculateViewsChart = () => {
+        const days = eachDayOfInterval({ start: start, end: end })
+        return days.map(day => ({
+            date: format(day, "dd"),
+            fullDate: day,
+            total: shopViews.filter(v => format(new Date(v.date), "yyyy-MM-dd") === format(day, "yyyy-MM-dd")).length
+        }))
+    }
+
     return {
         role: user.role,
         isBarber,
@@ -156,6 +172,7 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
         barberId: staffProfile?.id,
         kpi: { ...calculateKpis(shopBookings), views: viewsCount, isClosed: barbershop?.isClosed || false },
         chartData: calculateChart(shopBookings),
+        viewsChartData: calculateViewsChart(),
         // Return refined list for the "Next Clients" card
         bookings: shopListBookings.map((b: any) => ({
             ...b, service: { ...b.service, price: Number(b.service.price) }
