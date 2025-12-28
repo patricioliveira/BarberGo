@@ -8,6 +8,9 @@ import { SubscriptionSubmitButton } from "./_components/submit-button"
 import { confirmPaymentAndActivate, markAsPastDue, suspendAccess } from "@/app/_actions/subscriptions"
 import { ActivateSubscriptionDialog } from "./_components/activate-subscription-dialog"
 import { PaymentHistoryCard } from "./_components/payment-history-card"
+import { ChangePlanDialog } from "./_components/change-plan-dialog"
+import { PlanType } from "@barbergo/shared"
+import { BackupSystem } from "./_components/backup-system"
 
 
 const statusMap = {
@@ -71,6 +74,9 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
                     <currentStatus.icon size={14} />
                     {subscription.status}
                 </Badge>
+                <div className="flex gap-2">
+                    <BackupSystem />
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -127,7 +133,10 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
                             </div>
                         </div>
                         <div className="pt-4 border-t border-white/5 space-y-2 text-xs text-gray-400">
-                            <p className="flex justify-between">Plano: <span className="text-white font-bold italic">PRO</span></p>
+                            <div className="flex justify-between items-center">
+                                <span>Plano: <span className="text-white font-bold italic">{subscription.plan}</span></span>
+                                <ChangePlanDialog subscriptionId={subscription.id} currentPlan={subscription.plan as PlanType} />
+                            </div>
                             <p className="flex justify-between">Tipo: <span className="text-white font-bold">{subscription.billingType || "RECORRENTE"}</span></p>
                         </div>
                     </CardContent>

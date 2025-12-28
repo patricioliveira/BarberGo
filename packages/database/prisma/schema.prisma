@@ -33,8 +33,10 @@ enum SubscriptionStatus {
 }
 
 enum PlanType {
+  BASIC
+  INTERMEDIUM
   PRO
-  PREMIUM
+  EXCLUSIVE
 }
 
 enum BillingType {

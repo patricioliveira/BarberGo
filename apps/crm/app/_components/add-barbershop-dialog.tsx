@@ -6,11 +6,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Button
 import { UserPlus, Copy, CheckCircle2, Loader2 } from "lucide-react"
 import { createBarbershopWithDetails } from "../_actions/barbershop"
 import { toast } from "sonner"
+import { PLANS, PlanType } from "@barbergo/shared"
 
 export function AddBarbershopDialog({ partners }: { partners: any[] }) {
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState<any>(null)
+    const [plan, setPlan] = useState<PlanType>(PlanType.PRO)
+    const [price, setPrice] = useState(PLANS[PlanType.PRO].price)
+
+    const handlePlanChange = (val: PlanType) => {
+        setPlan(val)
+        setPrice(PLANS[val].price)
+    }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -88,11 +96,14 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                             </div>
                             <div className="space-y-1">
                                 <Label className="text-gray-400 text-xs font-bold uppercase">Plano</Label>
-                                <Select name="plan" defaultValue="PRO">
+                                <Select name="plan" value={plan} onValueChange={(v) => handlePlanChange(v as PlanType)}>
                                     <SelectTrigger className="bg-black/20 border-white/10 h-11"><SelectValue /></SelectTrigger>
                                     <SelectContent className="bg-secondary text-white border-white/10">
-                                        <SelectItem value="PRO">PRO</SelectItem>
-                                        <SelectItem value="PREMIUM">PREMIUM</SelectItem>
+                                        {Object.values(PLANS).map((p) => (
+                                            <SelectItem key={p.id} value={p.id}>
+                                                {p.name} ({p.description})
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -120,7 +131,14 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <Label className="text-gray-400 text-xs font-bold uppercase">Mensalidade (R$)</Label>
-                                    <Input name="price" type="number" step="0.01" defaultValue="89.90" className="bg-black/20 border-white/10 text-primary font-bold h-11" />
+                                    <Input
+                                        name="price"
+                                        type="number"
+                                        step="0.01"
+                                        value={price}
+                                        onChange={(e) => setPrice(Number(e.target.value))}
+                                        className="bg-black/20 border-white/10 text-primary font-bold h-11"
+                                    />
                                 </div>
                                 <div className="space-y-1">
                                     <Label className="text-gray-400 text-xs font-bold uppercase">Dias de Trial</Label>

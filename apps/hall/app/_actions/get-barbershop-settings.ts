@@ -20,6 +20,7 @@ export const getBarbershopSettings = async () => {
                 }
             },
             staff: true,
+            subscription: true
         },
     })
 

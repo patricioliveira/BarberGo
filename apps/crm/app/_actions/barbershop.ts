@@ -3,6 +3,7 @@
 import { db } from "@barbergo/database"
 import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
+import { PlanType } from "@barbergo/shared"
 
 export const createBarbershopWithDetails = async (data: {
     name: string,
@@ -10,7 +11,7 @@ export const createBarbershopWithDetails = async (data: {
     address: string,
     ownerName: string,
     ownerEmail: string,
-    plan: "PRO" | "PREMIUM",
+    plan: PlanType,
     price: number,
     referredById?: string | null,
     trialDays: number,
@@ -66,10 +67,10 @@ export const createBarbershopWithDetails = async (data: {
             isClosed: true,
             ownerId: user.id,
             referredById: data.referredById,
-            isExclusive: data.plan === 'PREMIUM',
+            isExclusive: data.plan === PlanType.EXCLUSIVE,
             subscription: {
                 create: {
-                    plan: data.plan,
+                    plan: data.plan as any,
                     price: data.price,
                     status: "TRIAL",
                     trialDays: data.trialDays,

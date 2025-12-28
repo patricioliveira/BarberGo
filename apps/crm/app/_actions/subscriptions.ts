@@ -2,6 +2,52 @@
 
 import { db } from "@barbergo/database"
 import { revalidatePath } from "next/cache"
+import { PLANS, PlanType } from "@barbergo/shared"
+
+// 0. Trocar de Plano
+export const switchPlan = async (subscriptionId: string, newPlan: PlanType) => {
+    const planDetails = PLANS[newPlan]
+    if (!planDetails) throw new Error("Plano inválido")
+
+    // Atualiza Assinatura E Barbearia (Exclusive precisa ser atualizado)
+    const sub = await db.subscription.update({
+        where: { id: subscriptionId },
+        data: {
+            plan: newPlan,
+            price: planDetails.price,
+            barbershop: {
+                update: {
+                    isExclusive: newPlan === PlanType.EXCLUSIVE
+                }
+            }
+        }
+    })
+
+    revalidatePath("/")
+    return { success: true }
+}
+
+// 0. Backup (Exportação de Dados Críticos)
+export const backupDatabase = async () => {
+    const users = await db.user.findMany()
+    const barbershops = await db.barbershop.findMany()
+    const subscriptions = await db.subscription.findMany()
+    const staff = await db.barberStaff.findMany()
+
+    const data = {
+        meta: {
+            date: new Date().toISOString(),
+            version: "1.0"
+        },
+        users,
+        barbershops,
+        subscriptions,
+        staff
+    }
+
+    return data
+}
+
 
 // 1. Confirmar Pagamento e Ativar
 export const confirmPaymentAndActivate = async (subscriptionId: string, amount: number, method: string) => {

@@ -62,6 +62,7 @@ import {
     Share2,
     AlertTriangle
 } from "lucide-react"
+import { PLANS, PlanType } from "@barbergo/shared"
 import Header from "../../_components/header"
 
 import { updateBarbershopSettings } from "../../_actions/update-barbershop-settings"
@@ -135,6 +136,7 @@ export default function SettingsPage() {
     const [hours, setHours] = useState<WorkingHour[]>(DEFAULT_HOURS)
     const [staff, setStaff] = useState<StaffMember[]>([])
     const [services, setServices] = useState<Service[]>([])
+    const [currentPlan, setCurrentPlan] = useState<PlanType>(PlanType.BASIC)
 
     const isAdminAlreadyStaff = staff.some((m) => m.email === session?.user?.email)
 
@@ -200,6 +202,10 @@ export default function SettingsPage() {
                                 isLinked: sp.isLinked
                             })) : []
                         })))
+
+                        if (data.subscription) {
+                            setCurrentPlan(data.subscription.plan as PlanType)
+                        }
                     }
                 } catch (error) {
                     toast.error("Erro ao carregar configurações.")
@@ -729,10 +735,13 @@ export default function SettingsPage() {
 
                     <TabsContent value="staff" className="space-y-4">
                         <div className="flex flex-col sm:flex-row justify-between gap-3 mb-6">
-                            <Button variant="outline" className="border-green-600 text-green-500 bg-transparent hover:bg-green-600/10 disabled:opacity-30 disabled:border-gray-700 disabled:text-gray-700" onClick={handleAddAdminAsStaff} disabled={isAdminAlreadyStaff}>
+                            <Button variant="outline" className="border-green-600 text-green-500 bg-transparent hover:bg-green-600/10 disabled:opacity-30 disabled:border-gray-700 disabled:text-gray-700" onClick={handleAddAdminAsStaff} disabled={isAdminAlreadyStaff || staff.length >= PLANS[currentPlan].maxProfessionals}>
                                 {isAdminAlreadyStaff ? "Você já é Barbeiro" : "Me adicionar como Barbeiro"}
                             </Button>
-                            <Button onClick={() => setIsNewStaffModalOpen(true)}><UserPlus className="mr-2 h-4 w-4" /> Novo Funcionário</Button>
+                            <Button onClick={() => setIsNewStaffModalOpen(true)} disabled={staff.length >= PLANS[currentPlan].maxProfessionals}>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                {staff.length >= PLANS[currentPlan].maxProfessionals ? `Limite Atingido (${staff.length}/${PLANS[currentPlan].maxProfessionals})` : `Novo Funcionário (${staff.length}/${PLANS[currentPlan].maxProfessionals})`}
+                            </Button>
                         </div>
                         <div className="grid gap-4">
                             {staff.map((m, i) => (

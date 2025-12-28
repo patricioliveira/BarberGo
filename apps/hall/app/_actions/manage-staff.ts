@@ -5,6 +5,7 @@ import { authOptions } from "@/_lib/auth"
 import { getServerSession } from "next-auth"
 import { revalidatePath } from "next/cache"
 import { hash } from "bcryptjs"
+import { PLANS, PlanType } from "@barbergo/shared"
 
 interface AddStaffParams {
     barbershopId: string
@@ -17,6 +18,33 @@ interface AddStaffParams {
 export const addOrUpdateStaff = async (params: AddStaffParams) => {
     const session = await getServerSession(authOptions)
     if (!session?.user) return { error: "Não autorizado" }
+
+    // 0. VERIFICAÇÃO DE LIMITES DO PLANO
+    const barbershop = await db.barbershop.findUnique({
+        where: { id: params.barbershopId },
+        select: {
+            subscription: { select: { plan: true } }
+        }
+    })
+
+    if (!barbershop?.subscription) return { error: "Erro: Assinatura não encontrada." }
+
+    // Cast para garantir compatibilidade com o enum compartilhado
+    const currentPlan = barbershop.subscription.plan as PlanType
+    const planDetails = PLANS[currentPlan]
+
+    // Se o plano não for encontrado (ex: dados antigos), fallback para BASIC
+    const validPlan = planDetails || PLANS[PlanType.BASIC]
+
+    const currentCount = await db.barberStaff.count({
+        where: { barbershopId: params.barbershopId }
+    })
+
+    if (currentCount >= validPlan.maxProfessionals) {
+        return {
+            error: `Limite de profissionais do plano ${validPlan.name} atingido (${validPlan.maxProfessionals} profissionais). Faça upgrade para adicionar mais.`
+        }
+    }
 
     try {
         let targetUserId = params.userId
