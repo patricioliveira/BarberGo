@@ -60,7 +60,8 @@ import {
     User,
     Copy,
     Share2,
-    AlertTriangle
+    AlertTriangle,
+    Palette
 } from "lucide-react"
 import { PLANS, PlanType } from "@barbergo/shared"
 import Header from "../../_components/header"
@@ -130,7 +131,8 @@ export default function SettingsPage() {
         isClosed: false,
         instagram: "",
         amenities: [] as string[],
-        allowOvertime: false
+        allowOvertime: false,
+        themeConfig: { primaryColor: "", secondaryColor: "" }
     })
 
     const [hours, setHours] = useState<WorkingHour[]>(DEFAULT_HOURS)
@@ -176,7 +178,8 @@ export default function SettingsPage() {
                             isClosed: data.isClosed || false,
                             instagram: data.instagram || "",
                             amenities: data.amenities || [],
-                            allowOvertime: (data as any).allowOvertime || false
+                            allowOvertime: (data as any).allowOvertime || false,
+                            themeConfig: (data as any).themeConfig || { primaryColor: "", secondaryColor: "" }
                         })
                         if (data.openingHours) setHours(data.openingHours as unknown as WorkingHour[])
 
@@ -456,6 +459,7 @@ export default function SettingsPage() {
                         <TabsTrigger value="hours">Horários</TabsTrigger>
                         <TabsTrigger value="services">Serviços</TabsTrigger>
                         <TabsTrigger value="staff">Equipe</TabsTrigger>
+                        {currentPlan === "EXCLUSIVE" && <TabsTrigger value="customization">Personalização</TabsTrigger>}
                     </TabsList>
 
                     <TabsContent value="general" className="space-y-6">
@@ -759,6 +763,58 @@ export default function SettingsPage() {
                             ))}
                         </div>
                     </TabsContent>
+
+                    {currentPlan === "EXCLUSIVE" && (
+                        <TabsContent value="customization" className="space-y-6">
+                            <Card className="bg-[#1A1B1F] border-none text-white overflow-hidden">
+                                <CardHeader><CardTitle className="text-primary flex items-center gap-2"><Palette size={20} /> Identidade Visual (Exclusive)</CardTitle></CardHeader>
+                                <CardContent className="space-y-6">
+                                    <p className="text-sm text-gray-400">Estas configurações se aplicam apenas se você possuir o plano <strong>EXCLUSIVE</strong> ativado.</p>
+                                    <div className="grid md:grid-cols-2 gap-8">
+                                        <div className="space-y-3">
+                                            <Label>Cor Primária (Destaques)</Label>
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 rounded-lg border border-secondary" style={{ backgroundColor: storeData.themeConfig?.primaryColor || "#815F3C" }} />
+                                                <Input
+                                                    disabled={currentPlan !== "EXCLUSIVE"}
+                                                    type="color"
+                                                    value={storeData.themeConfig?.primaryColor || "#815F3C"}
+                                                    onChange={(e) => {
+                                                        setStoreData({
+                                                            ...storeData,
+                                                            themeConfig: { ...storeData.themeConfig, primaryColor: e.target.value }
+                                                        })
+                                                        setIsDirty(true)
+                                                    }}
+                                                    className="bg-secondary border-none h-12 w-full cursor-pointer disabled:opacity-50"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <Label>Cor Secundária (Fundo)</Label>
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 rounded-lg border border-secondary" style={{ backgroundColor: storeData.themeConfig?.secondaryColor || "#1A1B1F" }} />
+                                                <Input
+                                                    disabled={currentPlan !== "EXCLUSIVE"}
+                                                    type="color"
+                                                    value={storeData.themeConfig?.secondaryColor || "#1A1B1F"}
+                                                    onChange={(e) => {
+                                                        setStoreData({
+                                                            ...storeData,
+                                                            themeConfig: { ...storeData.themeConfig, secondaryColor: e.target.value }
+                                                        })
+                                                        setIsDirty(true)
+                                                    }}
+                                                    className="bg-secondary border-none h-12 w-full cursor-pointer disabled:opacity-50"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    )}
                 </Tabs>
             </div>
         </div>
