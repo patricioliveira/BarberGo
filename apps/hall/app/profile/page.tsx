@@ -17,6 +17,7 @@ import { changePassword, getUserProfile, updateProfile } from "@/_actions/update
 import { uploadImageAction } from "@/_actions/upload-image"
 import Footer from "@/_components/footer"
 import { toast } from "sonner"
+import { updateUserAvatar } from "@/_actions/update-images"
 
 interface UserPhone {
     number: string
@@ -107,11 +108,25 @@ export default function ProfilePage() {
         const formData = new FormData()
         formData.append("file", file)
 
+
         try {
             // PASSAMOS o estado 'image' que contém a URL atual do perfil
             const res = await uploadImageAction(formData, image)
-            setImage(res.url)
-            toast.success("Foto atualizada com sucesso!")
+
+            // Auto-Save: Persiste no banco imediatamente
+            const saveRes = await updateUserAvatar(res.url)
+
+            if (saveRes.success) {
+                setImage(res.url)
+                // Atualiza a sessão para refletir no header sem recarregar
+                await update({
+                    ...session,
+                    user: { ...session?.user, image: res.url }
+                })
+                toast.success("Foto atualizada com sucesso!")
+            } else {
+                toast.error("Erro ao salvar no banco.")
+            }
         } catch (error: any) {
             toast.error(error.message || "Erro no upload")
         } finally {

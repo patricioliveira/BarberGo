@@ -69,6 +69,7 @@ import { ConfirmDialog } from "../../_components/confirm-dialog"
 import { getBarbershopSettings } from "@/_actions/get-barbershop-settings"
 import { addOrUpdateStaff, toggleStaffStatus, deleteStaff } from "@/_actions/manage-staff"
 import { uploadImageAction } from "../../_actions/upload-image"
+import { updateBarbershopLogo, updateServiceImage } from "@/_actions/update-images"
 import { toast } from "sonner"
 
 const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (c: boolean) => void }) => (
@@ -225,6 +226,7 @@ export default function SettingsPage() {
         else toast.error(res.error)
     }
 
+
     const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
@@ -235,9 +237,16 @@ export default function SettingsPage() {
 
         try {
             const res = await uploadImageAction(formData, storeData.imageUrl)
-            setStoreData(prev => ({ ...prev, imageUrl: res.url }))
-            setIsDirty(true)
-            toast.success("Foto carregada e antiga removida!")
+
+            // Auto-Save
+            const saveRes = await updateBarbershopLogo(storeData.id, res.url)
+
+            if (saveRes.success) {
+                setStoreData(prev => ({ ...prev, imageUrl: res.url }))
+                toast.success("Foto atualizada!")
+            } else {
+                toast.error("Erro ao salvar no banco.")
+            }
         } catch (error: any) {
             toast.error(error.message || "Erro no upload")
         } finally {

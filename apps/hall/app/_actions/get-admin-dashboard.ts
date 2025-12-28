@@ -94,14 +94,22 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
 
     const shopListBookings = await db.booking.findMany(listBookingsQuery)
 
+    const viewsCount = await db.barbershopView.count({
+        where: {
+            barbershopId,
+            date: { gte: start, lte: end }
+        }
+    })
+
     const barbershop = await db.barbershop.findUnique({
         where: { id: barbershopId },
-        select: { views: true, isClosed: true, subscription: true },
+        select: { isClosed: true, subscription: true },
     })
 
     let personalBookings: any[] = []
     let personalListBookings: any[] = []
 
+    // ... (keep personal bookings logic)
     if (isBarber) {
         // Staff Stats (Selected Period)
         personalBookings = await db.booking.findMany({
@@ -131,12 +139,6 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
     const calculateChart = (bookingsList: any[]) => {
         const activeBookings = filterActive(bookingsList)
         const days = eachDayOfInterval({ start: start, end: end })
-        // If period is month, returning 30 days is fine. 
-        // If period is year (not supported yet) fine.
-        // If period is day, returning 1 day (or hours?) 
-        // The frontend chart handles "Day" view by hours manually. We just need to ensure the raw data is passed or formatted.
-        // Current frontend logic for 'day' uses 'bookings' array and filters locally.
-        // We will pass `chartData` matching the interval.
 
         return days.map(day => ({
             date: format(day, "dd"),
@@ -152,7 +154,7 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
         isBarber,
         subscription: barbershop?.subscription || null,
         barberId: staffProfile?.id,
-        kpi: { ...calculateKpis(shopBookings), views: barbershop?.views || 0, isClosed: barbershop?.isClosed || false },
+        kpi: { ...calculateKpis(shopBookings), views: viewsCount, isClosed: barbershop?.isClosed || false },
         chartData: calculateChart(shopBookings),
         // Return refined list for the "Next Clients" card
         bookings: shopListBookings.map((b: any) => ({

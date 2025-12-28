@@ -38,7 +38,8 @@ export const uploadFileAsync = async (buffer: Buffer, objectKey: string, content
 
     // IMPORTANTE: Retorna a URL pública (HTTPS) para salvar no banco de dados
     // independentemente do endpoint interno usado para o upload
-    return `${publicUrlBase}/${objectKey}`;
+    // Formato: https://file.pulefila.com.br/barbergo/uploads/nome.jpg
+    return `${publicUrlBase}/${bucketName}/${objectKey}`;
 };
 
 /**

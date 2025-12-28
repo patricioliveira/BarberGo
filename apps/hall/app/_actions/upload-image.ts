@@ -13,13 +13,18 @@ export const uploadImageAction = async (formData: FormData, oldImageUrl?: string
 
     try {
         // 1. REMOVER IMAGEM ANTIGA (Se existir e for do nosso MinIO)
-        const endpoint = process.env.MINIO_ENDPOINT!;
+        const publicUrl = process.env.NEXT_PUBLIC_MINIO_URL!; // Usamos a URL pública para identificar
         const bucket = process.env.MINIO_BUCKET || "barbergo";
 
-        if (oldImageUrl && oldImageUrl.includes(endpoint)) {
+        if (oldImageUrl && oldImageUrl.includes(publicUrl)) {
             try {
                 // Extrai a key (caminho após o nome do bucket)
-                const key = oldImageUrl.split(`${bucket}/`)[1];
+                // Ex: https://domain/bucket/uploads/file.jpg -> split(bucket/) -> [..., 'uploads/file.jpg']
+                const parts = oldImageUrl.split(`${bucket}/`);
+                const key = parts.length > 1 ? parts[1] : null;
+
+                console.log("[STORAGE] Tentando deletar:", { oldImageUrl, bucket, key });
+
                 if (key) {
                     await deleteFileAsync(key);
                     console.log(`[STORAGE] Antiga imagem removida: ${key}`);

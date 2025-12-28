@@ -3,6 +3,7 @@ import BarbershopDetails from "./_components/barbershop-details"
 import { notFound } from "next/navigation"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/_lib/auth"
+import { ViewTracker } from "../../_components/view-tracker"
 
 interface BarbershopDetailsPageProps {
     params: {
@@ -28,7 +29,11 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
                     user: true
                 }
             },
-            ratings: true,
+            ratings: {
+                include: {
+                    user: true
+                }
+            },
         },
     })
 
@@ -64,6 +69,12 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
         if (favorite) isFavorited = true
     }
 
+    //...
     // @ts-ignore - staff agora está incluso no objeto
-    return <BarbershopDetails barbershop={serializedBarbershop} initialIsFavorited={isFavorited} />
+    return (
+        <>
+            <ViewTracker barbershopId={barbershop.id} />
+            <BarbershopDetails barbershop={serializedBarbershop} initialIsFavorited={isFavorited} />
+        </>
+    )
 }

@@ -139,6 +139,7 @@ model Invoice {
 }
 
 model Barbershop {
+  viewsHistory BarbershopView[]
   id             String   @id @default(uuid())
   name           String
   slug           String   @unique
@@ -316,3 +317,14 @@ model ServiceStaffPrice {
   @@unique([serviceId, staffId])
 }
 
+
+
+model BarbershopView {
+  id           String     @id @default(cuid())
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+  date         DateTime   @default(now())
+  
+  @@index([barbershopId])
+  @@index([date])
+}
