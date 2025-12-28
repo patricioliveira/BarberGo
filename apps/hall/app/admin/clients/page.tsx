@@ -87,7 +87,7 @@ export default function AdminClientsPage() {
             </div>
 
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetContent className="bg-[#1A1B1F] border-secondary text-white w-full sm:max-w-md overflow-y-auto">
+                <SheetContent className="bg-[#1A1B1F] border-secondary text-white w-full sm:max-w-md overflow-y-auto pt-[calc(env(safe-area-inset-top)+2rem)]">
                     {selectedClient && (
                         <>
                             <SheetHeader className="mb-6 text-left">

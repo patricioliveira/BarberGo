@@ -62,7 +62,7 @@ export function InvoiceDetails({ isOpen, onClose, invoice, barbershopName }: Inv
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
             {/* Ajuste de largura e bordas para mobile */}
-            <SheetContent className="w-full h-full md:h-auto sm:max-w-md bg-[#141518] border-l border-white/5 text-white overflow-y-auto p-0 md:p-6 md:rounded-l-2xl pt-safe pb-safe">
+            <SheetContent className="w-full h-full md:h-auto sm:max-w-md bg-[#141518] border-l border-white/5 text-white overflow-y-auto p-0 md:p-6 md:rounded-l-2xl pt-[calc(env(safe-area-inset-top)+2rem)] pb-safe">
                 <SheetHeader className="mb-6 p-6 md:p-0 pb-0">
                     <div className="flex items-center justify-between">
                         <SheetTitle className="text-white text-xl font-bold">Detalhes da Fatura</SheetTitle>

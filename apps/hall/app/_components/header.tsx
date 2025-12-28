@@ -53,7 +53,7 @@ const Header = () => {
                                     <MenuIcon size={16} />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent className="p-0 border-none">
+                            <SheetContent className="p-0 pt-[calc(env(safe-area-inset-top)+1rem)] border-none">
                                 <SideMenu />
                             </SheetContent>
                         </Sheet>

@@ -250,7 +250,7 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
 
     return (
         <Sheet open={isOpen} onOpenChange={onOpenChange}>
-            <SheetContent className="w-[90%] md:w-[450px] bg-[#141518] border-l border-[#26272B] p-0 text-white overflow-y-auto custom-scrollbar">
+            <SheetContent className="w-[90%] md:w-[450px] bg-[#141518] border-l border-[#26272B] p-0 pt-[calc(3rem+env(safe-area-inset-top))] text-white overflow-y-auto custom-scrollbar">
                 <SheetHeader className="p-5 border-b border-[#26272B]">
                     <SheetTitle className="text-white font-bold text-left">Concluir Agendamento</SheetTitle>
                 </SheetHeader>
