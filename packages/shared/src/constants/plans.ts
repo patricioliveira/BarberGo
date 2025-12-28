@@ -24,7 +24,7 @@ export const PLANS = {
   },
   [PlanType.PRO]: {
     id: PlanType.PRO,
-    name: 'Pró',
+    name: 'Pro',
     price: 109.90,
     maxProfessionals: 15,
     description: '6 a 15 profissionais',
