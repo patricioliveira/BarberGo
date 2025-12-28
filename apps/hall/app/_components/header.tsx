@@ -40,14 +40,9 @@ const Header = () => {
                 {/* Área de Ações */}
                 <div className="flex items-center gap-2">
 
-                    {/* SININHO DE AGENDAMENTOS (PARA TODOS OS USUÁRIOS LOGADOS) */}
-                    {session?.user && (
+                    {/* SININHO DE AGENDAMENTOS (PARA TODOS OS USUÁRIOS LOGADOS, EXCETO EM /admin) */}
+                    {session?.user && !pathname?.startsWith("/admin") && (
                         <UserNotificationBell />
-                    )}
-
-                    {/* SININHO DO SISTEMA ADMIN (Apenas se tiver acesso e NÃO estiver no painel admin) */}
-                    {session?.user && hasAdminAccess && !pathname?.startsWith("/admin") && (
-                        <NotificationBell />
                     )}
 
                     {/* Botão Menu Hamburguer (Mobile) */}

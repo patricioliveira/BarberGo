@@ -49,6 +49,9 @@ export async function getNotifications(limit = 10) {
     return await db.notification.findMany({
         where: { recipientId: session.user.id },
         orderBy: { createdAt: 'desc' },
+        include: {
+            booking: true
+        },
         take: limit,
     })
 }

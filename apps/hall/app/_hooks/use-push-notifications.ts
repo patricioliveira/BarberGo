@@ -19,11 +19,13 @@ function urlBase64ToUint8Array(base64String: string) {
 export function usePushNotifications() {
     const [isSupported, setIsSupported] = useState(false)
     const [subscription, setSubscription] = useState<PushSubscription | null>(null)
+    const [permission, setPermission] = useState<NotificationPermission>('default')
 
     useEffect(() => {
         if ('serviceWorker' in navigator && 'PushManager' in window) {
             setIsSupported(true)
             registerServiceWorker()
+            setPermission(Notification.permission)
         }
     }, [])
 
@@ -51,34 +53,55 @@ export function usePushNotifications() {
             return { success: false, message: "Erro de configuração: Chave VAPID ausente." }
         }
 
-        if (Notification.permission === 'denied') {
-            return { success: false, message: "Permissão para notificações foi negada." }
+        if (permission === 'denied') {
+            return { success: false, message: "Permissão para notificações foi negada. Habilite nas configurações do navegador." }
+        }
+
+        if (permission === 'default') {
+            const newPermission = await Notification.requestPermission()
+            setPermission(newPermission)
+            if (newPermission !== 'granted') {
+                return { success: false, message: "Permissão negada pelo usuário." }
+            }
         }
 
         try {
-            const registration = await navigator.serviceWorker.ready
+            // Race: Aguarda o SW estar pronto ou Timeout de 10s
+            const registration = await Promise.race([
+                navigator.serviceWorker.ready,
+                new Promise<ServiceWorkerRegistration>((_, reject) =>
+                    setTimeout(() => reject(new Error("Timeout: Service Worker não respondeu a tempo.")), 10000)
+                )
+            ])
+
             const sub = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
             })
 
             // Envia para o backend via Server Action
-            // Precisamos serializar o subscription para passar para a server action
             const subJson = JSON.parse(JSON.stringify(sub))
             await subscribeUserToPush(subJson)
 
             setSubscription(sub)
             console.log('User subscribed to push')
             return { success: true }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to subscribe to push:', error)
-            return { success: false, message: "Erro ao ativar notificações. Tente novamente." }
+
+            // Mensagem amigável para Timeout
+            if (error.message && error.message.includes('Timeout')) {
+                return { success: false, message: "A conexão demorou um pouco. Tente novamente em instantes." }
+            }
+
+            return { success: false, message: "Não foi possível ativar agora. Tente recarregar a página." }
         }
     }
 
     return {
         isSupported,
         subscription,
+        permission,
         subscribeToPush,
     }
 }
