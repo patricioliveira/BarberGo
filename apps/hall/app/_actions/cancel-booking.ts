@@ -5,9 +5,18 @@ import { revalidatePath } from "next/cache"
 
 // Chamada pelo CLIENTE
 export const requestCancellation = async (bookingId: string) => {
+    const booking = await db.booking.findUnique({
+        where: { id: bookingId },
+        include: { barbershop: true }
+    })
+
+    if (!booking) return
+
+    const requireApproval = booking.barbershop.requireCancellationApproval
+
     await db.booking.update({
         where: { id: bookingId },
-        data: { status: "WAITING_CANCELLATION" }
+        data: { status: requireApproval ? "WAITING_CANCELLATION" : "CANCELED" }
     })
     revalidatePath("/appointments")
     revalidatePath("/admin")

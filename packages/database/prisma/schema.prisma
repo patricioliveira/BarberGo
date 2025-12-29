@@ -166,6 +166,8 @@ model Barbershop {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  requireCancellationApproval Boolean @default(true)
 
   services BarbershopService[]
   bookings Booking[]           @relation("BarbershopBookings")

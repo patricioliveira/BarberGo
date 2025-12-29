@@ -25,6 +25,7 @@ export const updateBarbershopSettings = async (params: {
         amenities: string[]
         themeConfig?: any
         allowOvertime: boolean
+        requireCancellationApproval: boolean
     }
     hours: any[]
     services: any[]
@@ -49,6 +50,7 @@ export const updateBarbershopSettings = async (params: {
                     instagram: params.storeData.instagram,
                     amenities: params.storeData.amenities,
                     allowOvertime: params.storeData.allowOvertime,
+                    requireCancellationApproval: params.storeData.requireCancellationApproval,
                     themeConfig: params.storeData.themeConfig ?? Prisma.DbNull,
                 } as any,
             })

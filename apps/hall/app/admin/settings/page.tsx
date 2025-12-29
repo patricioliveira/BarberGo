@@ -132,6 +132,7 @@ export default function SettingsPage() {
         instagram: "",
         amenities: [] as string[],
         allowOvertime: false,
+        requireCancellationApproval: true,
         themeConfig: { primaryColor: "", secondaryColor: "" }
     })
 
@@ -179,6 +180,7 @@ export default function SettingsPage() {
                             instagram: data.instagram || "",
                             amenities: data.amenities || [],
                             allowOvertime: (data as any).allowOvertime || false,
+                            requireCancellationApproval: (data as any).requireCancellationApproval ?? true,
                             themeConfig: (data as any).themeConfig || { primaryColor: "", secondaryColor: "" }
                         })
                         if (data.openingHours) setHours(data.openingHours as unknown as WorkingHour[])
@@ -513,6 +515,14 @@ export default function SettingsPage() {
                                         <p className="text-[10px] text-gray-400">Permitir que serviços terminem após o horário de fechamento.</p>
                                     </div>
                                     <Switch checked={storeData.allowOvertime} onCheckedChange={(v) => { setStoreData({ ...storeData, allowOvertime: v }); setIsDirty(true) }} />
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 border border-secondary rounded-lg bg-black/20">
+                                    <div className="space-y-1">
+                                        <Label>Exigir Aprovação para Cancelamento</Label>
+                                        <p className="text-[10px] text-gray-400">Se desativado, o cliente poderá cancelar agendamentos futuros instantaneamente sem sua aprovação manual.</p>
+                                    </div>
+                                    <Switch checked={storeData.requireCancellationApproval} onCheckedChange={(v) => { setStoreData({ ...storeData, requireCancellationApproval: v }); setIsDirty(true) }} />
                                 </div>
 
                                 <div className="grid md:grid-cols-2 gap-4">
