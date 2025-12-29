@@ -16,7 +16,7 @@ import { getDayBookings } from "@/_actions/get-day-bookings"
 import { saveBooking } from "@/_actions/save-booking"
 
 type StaffWithUser = BarberStaff & { user?: PrismaUser | null }
-type BarbershopWithStaff = Barbershop & { staff: StaffWithUser[] }
+type BarbershopWithStaff = Barbershop & { staff: StaffWithUser[], services: ServiceWithNumberPrice[] }
 type ServiceWithNumberPrice = Omit<BarbershopService, "price"> & {
     price: number
     staffPrices?: { staffId: string; price: number; isLinked: boolean }[]
@@ -47,7 +47,18 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
     // Bloqueios de Regra de Negócio
     const isBarbershopClosed = barbershop.isClosed
     const isSubscriptionSuspended = barbershop.subscription?.status === "SUSPENDED" || barbershop.subscription?.status === "CANCELED"
-    const activeStaff = barbershop.staff?.filter(s => s.isActive) || []
+
+    // Identificar barbeiros especialistas (vinculados a pelo menos um serviço na barbearia)
+    // Se um barbeiro está vinculado a qualquer serviço, ele é considerado especialista e não deve aparecer em serviços gerais
+    const specialistStaffIds = useMemo(() => {
+        const ids = new Set<string>()
+        barbershop.services.forEach(s => {
+            s.staffPrices?.forEach(sp => {
+                if (sp.isLinked) ids.add(sp.staffId)
+            })
+        })
+        return ids
+    }, [barbershop.services])
 
     useEffect(() => {
         const el = barberScrollRef.current
@@ -76,7 +87,7 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
     }, [services, selectedBarber])
 
 
-    // Identificar se há um barbeiro exclusivo para os serviços selecionados
+    // Identificar se há um barbeiro exclusivo para os serviços selecionados ATUAIS
     const exclusiveBarberId = useMemo(() => {
         // Como o barbershop-details já valida que todos os linked apontam pro mesmo, pegamos o primeiro
         const linked = services.find(s => s.staffPrices?.some(sp => sp.isLinked))
@@ -85,6 +96,27 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
         }
         return null
     }, [services])
+
+    // Filtra staff ativo baseado na regra de exclusividade
+    const activeStaff = useMemo(() => {
+        const staff = barbershop.staff?.filter(s => s.isActive) || []
+
+        if (exclusiveBarberId) {
+            // Se tem barbeiro exclusivo para o serviço selecionado, só mostra ele (ou todos se quiser só desabilitar, mas o requisito é filtrar)
+            // Mantendo lógica visual atual que parece mostrar todos e desabilitar os outros no render.
+            // Mas para garantir consistência com a "seleção", podemos retornar todos e tratar no disable.
+            // PORÉM, o requisito do user é: "se ele for vinculado a pelo menos 1 ele não pode aparecer, em serviços que não tem barbeiro vinculado."
+            // Então aqui vamos filtrar a lista usada para renderizar.
+
+            // Se estamos num serviço exclusivo, a lista deve permitir selecionar o exclusivo.
+            // Os outros podem aparecer desabilitados ou não aparecer.
+            return staff
+        } else {
+            // Se é serviço GERAL (sem exclusiveBarberId)
+            // Remover qualquer staff que seja especialista (esteja em specialistStaffIds)
+            return staff.filter(s => !specialistStaffIds.has(s.id))
+        }
+    }, [barbershop.staff, exclusiveBarberId, specialistStaffIds])
 
     // Auto-seleção de Barbeiro Vinculado
     useEffect(() => {
