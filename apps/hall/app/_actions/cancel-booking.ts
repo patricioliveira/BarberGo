@@ -34,7 +34,8 @@ export const requestCancellation = async (bookingId: string) => {
             title: title,
             message: message,
             type: NotificationType.CANCEL_REQUEST,
-            link: "/admin/my-schedule"
+            link: "/admin/my-schedule",
+            bookingId: booking.id
         })
     }
 
@@ -53,7 +54,8 @@ export const requestCancellation = async (bookingId: string) => {
                 title: title,
                 message: message,
                 type: NotificationType.CANCEL_REQUEST,
-                link: "/admin/my-schedule"
+                link: "/admin/my-schedule",
+                bookingId: booking.id
             })
         }
     }
@@ -78,7 +80,8 @@ export const handleCancellationDecision = async (bookingId: string, accept: bool
         title: accept ? "Cancelamento Confirmado" : "Cancelamento Recusado",
         message: `Sua solicitação de cancelamento para ${updatedBooking.service.name} em ${dateFormatted} foi ${accept ? "aceita" : "recusada"}.`,
         type: NotificationType.CANCEL_REQUEST,
-        link: "/appointments"
+        link: "/appointments",
+        bookingId: updatedBooking.id
     })
 
     revalidatePath("/admin/my-schedule")

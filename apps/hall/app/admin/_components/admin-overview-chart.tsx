@@ -4,11 +4,11 @@ interface AdminOverviewChartProps {
     data: { date: string; total: number }[]
 }
 
-const AdminOverviewChart = ({ data }: AdminOverviewChartProps) => {
+const AdminOverviewChart = ({ data, isMoney = true }: AdminOverviewChartProps & { isMoney?: boolean }) => {
     if (!data || data.length === 0) {
         return (
             <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed border-[#26272B] rounded-2xl bg-black/10">
-                <p className="text-sm">Sem faturamento para o período</p>
+                <p className="text-sm">{isMoney ? "Sem faturamento" : "Sem dados"} para o período</p>
             </div>
         )
     }
@@ -35,7 +35,10 @@ const AdminOverviewChart = ({ data }: AdminOverviewChartProps) => {
                     return (
                         <div key={index} className="group relative flex-1 flex flex-col items-center gap-2 h-full justify-end">
                             <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] font-black px-2 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap z-10 pointer-events-none shadow-2xl scale-75 group-hover:scale-100 origin-bottom">
-                                {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.total)}
+                                {isMoney
+                                    ? Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(item.total)
+                                    : item.total
+                                }
                             </div>
 
                             <div

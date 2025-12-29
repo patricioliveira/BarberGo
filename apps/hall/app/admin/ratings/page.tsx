@@ -14,6 +14,11 @@ export default async function AdminRatingsPage() {
     const session = await getServerSession(authOptions)
     if (!session?.user) return redirect("/")
 
+    // Proteção de Rota
+    if ((session.user as any).role !== "ADMIN") {
+        return redirect("/admin")
+    }
+
     // Busca a barbearia que o usuário administra
     const managedShop = await db.barbershop.findFirst({
         where: { ownerId: (session.user as any).id }

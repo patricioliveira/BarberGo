@@ -21,10 +21,9 @@ export default function AdminClientsPage() {
     useEffect(() => {
         if (status === "unauthenticated") router.push("/")
         if (status === "authenticated") {
-            getBarbershopClients().then(data => {
-                setClients(data)
-                setIsLoading(false)
-            })
+            if ((status as any) === "authenticated" && (useSession as any)?.data?.user?.role === "STAFF") {
+                router.push("/admin")
+            }
         }
     }, [status, router])
 

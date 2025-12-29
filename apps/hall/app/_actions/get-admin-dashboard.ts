@@ -173,6 +173,7 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
         kpi: { ...calculateKpis(shopBookings), views: viewsCount, isClosed: barbershop?.isClosed || false },
         chartData: calculateChart(shopBookings),
         viewsChartData: calculateViewsChart(),
+        shopViews: shopViews, // Exposing raw data for client-side hourly aggregation
         // Return refined list for the "Next Clients" card
         bookings: shopListBookings.map((b: any) => ({
             ...b, service: { ...b.service, price: Number(b.service.price) }

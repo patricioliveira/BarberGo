@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import Header from "../../_components/header"
 import {
     Card, CardContent, CardHeader, CardTitle,
@@ -27,19 +28,32 @@ export default function BillingPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
 
+    const { data: session, status } = useSession() // Hook Session adicionado
+
     useEffect(() => {
-        const load = async () => {
-            try {
-                const data = await getBarbershopSubscription()
-                setSubscription(data)
-            } catch (error) {
-                toast.error("Erro ao carregar dados financeiros.")
-            } finally {
-                setIsLoading(false)
-            }
+        if (status === "unauthenticated") {
+            router.push("/")
+            return
         }
-        load()
-    }, [])
+        if (status === "authenticated") {
+            if (session?.user?.role !== "ADMIN") {
+                router.push("/admin")
+                return
+            }
+
+            const load = async () => {
+                try {
+                    const data = await getBarbershopSubscription()
+                    setSubscription(data)
+                } catch (error) {
+                    toast.error("Erro ao carregar dados financeiros.")
+                } finally {
+                    setIsLoading(false)
+                }
+            }
+            load()
+        }
+    }, [status, session, router])
 
     const handleContactSupport = () => {
         const message = encodeURIComponent(`Olá, sou administrador de barbearia na BarberGo e preciso de suporte com meu faturamento.`)

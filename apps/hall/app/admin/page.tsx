@@ -77,25 +77,36 @@ export default function AdminPage() {
 
         const bookings = viewMode === "personal" ? stats.personalBookings : stats.bookings
 
-        if (period === "day" && chartType === "revenue") {
-            // Restore Hourly aggregation for "Day" View (only for Revenue, Views are typically daily or we need hourly views logic)
-            // If we don't have hourly views, we might just show the daily total as a single bar or mock it.
-            // For now, let's keep the hourly revenue logic.
-            const hours = Array.from({ length: 13 }, (_, i) => i + 8) // 08:00 to 20:00
-            return hours.map(h => ({
-                date: `${h}h`,
-                total: bookings
-                    .filter((b: any) => {
-                        const bookingDate = new Date(b.date)
-                        return isSameDay(bookingDate, viewDate) && bookingDate.getHours() === h && b.status !== "CANCELED"
-                    })
-                    .reduce((acc: number, b: any) => acc + Number(b.service.price), 0)
-            }))
+        if (period === "day") {
+            const hours = Array.from({ length: 24 }, (_, i) => i) // 00:00 to 23:00
+
+            if (chartType === "revenue") {
+                return hours.map(h => ({
+                    date: `${h}h`,
+                    total: bookings
+                        .filter((b: any) => {
+                            const bookingDate = new Date(b.date)
+                            return isSameDay(bookingDate, viewDate) && bookingDate.getHours() === h && b.status !== "CANCELED"
+                        })
+                        .reduce((acc: number, b: any) => acc + Number(b.service.price), 0)
+                }))
+            }
+
+            if (chartType === "views") {
+                return hours.map(h => ({
+                    date: `${h}h`,
+                    total: (stats.shopViews || [])
+                        .filter((v: any) => {
+                            const viewDateObj = new Date(v.date)
+                            return isSameDay(viewDateObj, viewDate) && viewDateObj.getHours() === h
+                        }).length
+                }))
+            }
         }
 
         // For Week/Month, server returns Daily data
         return rawData
-    }, [stats, viewMode, period, viewDate])
+    }, [stats, viewMode, period, viewDate, chartType])
 
     // REMOVED early return if generic isLoading. Will render Skeleton instead.
     // However, if !stats, we can't determine layout fully, but Skeleton mimics layout.
@@ -296,7 +307,7 @@ export default function AdminPage() {
                                         )}
                                     </CardHeader>
                                     <CardContent className="pt-6">
-                                        <AdminOverviewChart data={chartDataToDisplay} />
+                                        <AdminOverviewChart data={chartDataToDisplay} isMoney={chartType === 'revenue'} />
                                     </CardContent>
                                 </Card>
 
