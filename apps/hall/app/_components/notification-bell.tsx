@@ -125,7 +125,7 @@ export function NotificationBell() {
                     </div>
 
                     {/* Context Switcher para quem é Admin e Staff */}
-                    {session?.user?.role !== 'USER' && (
+                    {session?.user?.role === 'ADMIN' && (
                         <div className="flex p-1 bg-muted/50 rounded-lg gap-1">
                             <Button
                                 variant={activeTab === 'ALL' ? 'secondary' : 'ghost'}

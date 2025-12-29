@@ -66,7 +66,7 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
     let listBookingsQuery: any = {
         where: {
             barbershopId,
-            status: { notIn: ["CANCELED", "COMPLETED"] }, // User wants to hide finalized
+            status: { notIn: ["CANCELED"] }, // User wants to hide finalized
             date: { gte: viewDateIsPast ? start : now } // If viewing past, show range. If viewing present/future, show from NOW.
         },
         orderBy: { date: 'asc' },
