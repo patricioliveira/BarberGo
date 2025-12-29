@@ -24,6 +24,7 @@ export const updateBarbershopSettings = async (params: {
         instagram?: string
         amenities: string[]
         allowOvertime: boolean
+        requireCancellationApproval: boolean
     }
     hours: any[]
     services: any[]
@@ -48,6 +49,7 @@ export const updateBarbershopSettings = async (params: {
                     instagram: params.storeData.instagram,
                     amenities: params.storeData.amenities,
                     allowOvertime: params.storeData.allowOvertime,
+                    requireCancellationApproval: params.storeData.requireCancellationApproval,
                 } as any,
             })
 

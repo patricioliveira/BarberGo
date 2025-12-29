@@ -1,9 +1,8 @@
 import { Button } from "@barbergo/ui"
-import { CalendarIcon, HomeIcon, ScissorsIcon, SettingsIcon, LogOutIcon } from "lucide-react"
+import { CalendarIcon, HomeIcon, ScissorsIcon, SettingsIcon, LogOutIcon, UsersIcon, StarIcon, ClockIcon } from "lucide-react"
 import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
-import Image from "next/image"
 import { authOptions } from "../_lib/auth"
 
 export default async function AdminLayout({
@@ -18,17 +17,13 @@ export default async function AdminLayout({
         redirect("/")
     }
 
-    // TODO: Futuramente, validar aqui se session.user.role === 'ADMIN'
-    // Por enquanto deixamos passar para você testar visualmente
-
     return (
         <div className="flex min-h-screen flex-col md:flex-row">
             {/* Sidebar Desktop / Mobile Header */}
-            <aside className="w-full border-b bg-background md:w-64 md:border-b-0 md:border-r">
+            <aside className="w-full border-b bg-background md:w-64 md:border-b-0 md:border-r flex-shrink-0">
                 <div className="flex h-16 items-center px-6 border-b">
                     <Link href="/admin" className="flex items-center gap-2 font-bold text-lg">
-                        {/* Você pode trocar por uma logo Admin depois */}
-                        <ScissorsIcon className="h-6 w-6" />
+                        <ScissorsIcon className="h-6 w-6 text-primary" />
                         <span className="">Gestão</span>
                     </Link>
                 </div>
@@ -37,19 +32,31 @@ export default async function AdminLayout({
                     <Button variant="ghost" className="justify-start gap-2" asChild>
                         <Link href="/admin">
                             <HomeIcon size={18} />
-                            Início
+                            Dashboard
                         </Link>
                     </Button>
                     <Button variant="ghost" className="justify-start gap-2" asChild>
-                        <Link href="/admin/bookings">
+                        <Link href="/admin/my-schedule">
                             <CalendarIcon size={18} />
-                            Agenda
+                            Minha Agenda
                         </Link>
                     </Button>
                     <Button variant="ghost" className="justify-start gap-2" asChild>
-                        <Link href="/admin/services">
-                            <ScissorsIcon size={18} />
-                            Serviços
+                        <Link href="/admin/clients">
+                            <UsersIcon size={18} />
+                            Clientes
+                        </Link>
+                    </Button>
+                    <Button variant="ghost" className="justify-start gap-2" asChild>
+                        <Link href="/admin/ratings">
+                            <StarIcon size={18} />
+                            Avaliações
+                        </Link>
+                    </Button>
+                    <Button variant="ghost" className="justify-start gap-2" asChild>
+                        <Link href="/admin/my-hours">
+                            <ClockIcon size={18} />
+                            Meus Horários
                         </Link>
                     </Button>
                     <Button variant="ghost" className="justify-start gap-2" asChild>
@@ -61,7 +68,7 @@ export default async function AdminLayout({
 
                     <div className="md:mt-auto pt-4 border-t md:border-t-0">
                         <Button variant="ghost" className="justify-start gap-2 w-full text-red-500 hover:text-red-600 hover:bg-red-50" asChild>
-                            <Link href="/admin/logout">
+                            <Link href="/api/auth/signout">
                                 <LogOutIcon size={18} />
                                 Sair
                             </Link>

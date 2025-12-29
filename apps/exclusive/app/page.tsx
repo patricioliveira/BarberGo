@@ -68,21 +68,10 @@ export default async function ExclusiveHomePage() {
     if (favorite) isFavorited = true
   }
 
-  const theme = (barbershop as any).themeConfig
-  const primary = theme?.primaryColor
-  const secondary = theme?.secondaryColor
+
 
   return (
     <>
-      {(primary || secondary) && (
-        <style dangerouslySetInnerHTML={{
-          __html: `
-                    :root {
-                        ${primary ? `--primary: ${primary} !important;` : ''}
-                        ${secondary ? `--background: ${secondary} !important;` : ''}
-                    }
-                `}} />
-      )}
       <ViewTracker barbershopId={barbershop.id} />
       <BarbershopDetails barbershop={serializedBarbershop} initialIsFavorited={isFavorited} />
     </>
