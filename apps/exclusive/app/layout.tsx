@@ -43,15 +43,28 @@ export default async function RootLayout({
   let themeConfig = null
 
   if (barbershopId) {
-    const barbershop = await db.barbershop.findUnique({
-      where: { id: barbershopId },
-      select: { themeConfig: true }
-    })
-    themeConfig = (barbershop as any)?.themeConfig
+    console.log("[Layout] Fetching theme for:", barbershopId)
+    try {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout getting barbershop theme")), 3000)
+      )
+
+      const dbPromise = db.barbershop.findUnique({
+        where: { id: barbershopId },
+        select: { themeConfig: true }
+      })
+
+      const barbershop = await Promise.race([dbPromise, timeoutPromise]) as any
+      themeConfig = barbershop?.themeConfig
+      console.log("[Layout] Theme loaded:", themeConfig ? "Yes" : "No")
+    } catch (error) {
+      console.error("[Layout] Error loading theme:", error)
+      // Fallback is null, which uses CSS variables defaults
+    }
   }
 
   return (
-    <html lang="pt-br" className="dark">
+    <html lang="pt-br" className="dark" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.svg" />
         <link rel="icon" type="image/x-icon" href="/favicon.svg" />

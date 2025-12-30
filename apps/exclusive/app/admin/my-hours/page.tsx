@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-
+import Header from "../../_components/header"
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@barbergo/ui"
 import { ChevronLeft, Clock, Save, AlertCircle, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { getStaffHoursData, updateStaffHours } from "@/_actions/manage-staff-hours"
+import { getStaffHoursData, updateStaffHours } from "../../_actions/manage-staff-hours"
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
 import Footer from "@/_components/footer"
@@ -108,7 +108,7 @@ export default function MyHoursPage() {
 
     return (
         <div className="min-h-screen bg-background text-white pb-10">
-
+            <Header />
             <div className="container mx-auto p-4 md:p-8 space-y-6 max-w-3xl">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">

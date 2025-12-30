@@ -157,6 +157,12 @@ importers:
       '@auth/prisma-adapter':
         specifier: ^2.4.2
         version: 2.11.1(@prisma/client@5.22.0(prisma@5.22.0))
+      '@aws-sdk/client-s3':
+        specifier: ^3.957.0
+        version: 3.957.0
+      '@aws-sdk/s3-request-presigner':
+        specifier: ^3.957.0
+        version: 3.957.0
       '@barbergo/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -220,6 +226,12 @@ importers:
       react-hook-form:
         specifier: ^7.52.2
         version: 7.69.0(react@18.3.1)
+      server-only:
+        specifier: ^0.0.1
+        version: 0.0.1
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
       sonner:
         specifier: ^1.5.0
         version: 1.7.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -229,6 +241,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.19(tsx@4.21.0))
+      web-push:
+        specifier: 3.6.7
+        version: 3.6.7
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -242,6 +257,9 @@ importers:
       '@types/react-dom':
         specifier: ^18
         version: 18.3.7(@types/react@18.3.27)
+      '@types/web-push':
+        specifier: ^3.6.4
+        version: 3.6.4
       eslint:
         specifier: ^8
         version: 8.57.1

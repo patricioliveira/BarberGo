@@ -2,7 +2,7 @@
 
 import Image, { ImageProps } from "next/image"
 import { useState, useEffect } from "react"
-import { Scissors } from "lucide-react"
+import { Store, Scissors } from "lucide-react"
 
 interface BarbershopImageProps extends Omit<ImageProps, "onError" | "src"> {
     src?: string | null

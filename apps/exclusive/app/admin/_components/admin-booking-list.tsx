@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@barbergo/ui"
 import { Badge } from "@barbergo/ui"
 import { Booking, BarbershopService, User, BarberStaff } from "@prisma/client"
 import { format, isToday } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { Scissors } from "lucide-react"
 
 // Tipo estendido para incluir relacionamentos, preço corrigido e o profissional (staff)

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { db } from "@barbergo/database"
 import Header from "../_components/header"
 import Footer from "../_components/footer"
-import AppointmentsClient from "../_components/appointments-client"
+import AppointmentsClient from "@/_components/appointments-client"
 
 export default async function AppointmentsPage() {
     const session = await getServerSession(authOptions)
@@ -14,7 +14,7 @@ export default async function AppointmentsPage() {
     }
 
     const bookings = await db.booking.findMany({
-        where: { userId: (session.user as any).id },
+        where: { userId: session.user.id },
         include: {
             service: true,
             barbershop: true,
@@ -26,6 +26,10 @@ export default async function AppointmentsPage() {
         orderBy: { date: "desc" },
     })
 
+    // Serializa os dados (converte Decimal para number/string se necessário, embora o componente aceite number)
+    // O Next.js reclama de objetos complexos passados para Client Components, 
+    // mas se seus tipos estiverem alinhados, passará direto.
+    // Caso tenha erro de serialização de Decimal, precisará de um map.
     const serializedBookings = bookings.map(booking => ({
         ...booking,
         service: {

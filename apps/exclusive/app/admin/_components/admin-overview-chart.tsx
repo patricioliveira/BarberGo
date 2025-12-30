@@ -8,7 +8,7 @@ const AdminOverviewChart = ({ data, isMoney = true }: AdminOverviewChartProps & 
     if (!data || data.length === 0) {
         return (
             <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed border-[#26272B] rounded-2xl bg-black/10">
-                <p className="text-sm">{isMoney ? "Sem faturamento" : "Sem dados"}</p>
+                <p className="text-sm">{isMoney ? "Sem faturamento" : "Sem dados"} para o período</p>
             </div>
         )
     }

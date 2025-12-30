@@ -14,6 +14,11 @@ export default async function AdminRatingsPage() {
     const session = await getServerSession(authOptions)
     if (!session?.user) return redirect("/")
 
+    // Proteção de Rota
+    if ((session.user as any).role !== "ADMIN") {
+        return redirect("/admin")
+    }
+
     // Busca a barbearia que o usuário administra
     const managedShop = await db.barbershop.findFirst({
         where: { ownerId: (session.user as any).id }
@@ -29,18 +34,7 @@ export default async function AdminRatingsPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            {/* Header removido se necessário, ou mantido se for layout diferente. O admin layout do exclusive tem sidebar? 
-                Sim, baseado em layout.tsx anterior, mas vou manter o header importado se for standalone.
-                Verifiquei layout.tsx do adminExclusive e ele tem navegação.
-                Vou manter o Header aqui para garantir consistência visual se o layout for diferente.
-                Mas no clients/page.tsx eu tirei. Vou tirar aqui também... 
-                Espere, no clients/page.tsx eu removi o Header import? Não, eu removi a <Header /> tag no return.
-                Vou verificar o clients/page.tsx que acabei de escrever.
-            */}
-
-            {/* Verificação rápida: clients/page.tsx removeu <Header/>? Sim, no comentário.
-                Vamos remover aqui também para manter consistência com o Dashboard que usa Sidebar/Layout.
-             */}
+            <Header />
 
             <div className="p-5 space-y-6 text-white max-w-4xl mx-auto pb-24">
 

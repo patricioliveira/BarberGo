@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-
+import Header from "../../_components/header"
 import { Card, CardContent, Button, Badge, Input, Dialog, DialogContent, DialogHeader, DialogTitle, Calendar } from "@barbergo/ui"
 import {
     format, addDays, subDays, addWeeks, subWeeks, addMonths, subMonths,
@@ -168,7 +168,7 @@ export default function MySchedulePage() {
 
     return (
         <div className="min-h-screen bg-background text-white flex flex-col">
-
+            <Header />
             <div className="container mx-auto p-4 md:p-8 space-y-6 flex-1">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">

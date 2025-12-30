@@ -23,6 +23,7 @@ export const updateBarbershopSettings = async (params: {
         isClosed: boolean
         instagram?: string
         amenities: string[]
+        themeConfig?: any
         allowOvertime: boolean
         requireCancellationApproval: boolean
     }
@@ -50,6 +51,7 @@ export const updateBarbershopSettings = async (params: {
                     amenities: params.storeData.amenities,
                     allowOvertime: params.storeData.allowOvertime,
                     requireCancellationApproval: params.storeData.requireCancellationApproval,
+                    themeConfig: params.storeData.themeConfig ?? Prisma.DbNull,
                 } as any,
             })
 
@@ -105,7 +107,7 @@ export const updateBarbershopSettings = async (params: {
             }
         })
 
-        revalidatePath("/")
+        revalidatePath("/", "layout")
         revalidatePath("/admin/settings")
         revalidatePath(`/barbershop/${params.barbershopId}`)
 

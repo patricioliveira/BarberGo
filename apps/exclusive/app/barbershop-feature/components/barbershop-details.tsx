@@ -198,8 +198,14 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
     const totalPrice = selectedServices.reduce((acc, s) => acc + s.price, 0)
     const totalDuration = selectedServices.reduce((acc, s) => acc + s.duration, 0)
 
+    // --- THEME CONFIGURATION ---
+    const themeConfig = (props.barbershop.themeConfig as any) || {}
+    const { showMap = true, showReviews = true, welcomeText } = themeConfig
+    const primaryColor = themeConfig.primaryColor || "#815F3C"
+    // Note: Secondary color is handled globally by ThemeProvider/CSS variables, but we can access it if needed.
+
     return (
-        <div className="min-h-screen bg-[#121214] text-white selection:bg-primary/30 pb-10">
+        <div className="min-h-screen bg-background text-white selection:bg-primary/30 pb-10">
 
             {/* HERO SECTION IMMERSIVE */}
             <div className="relative w-full h-[60vh] min-h-[500px] lg:h-[70vh]">
@@ -210,8 +216,8 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
                     className="object-cover opacity-80"
                     priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#121214] via-[#121214]/60 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#121214]/80 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-transparent" />
 
                 {/* Header Flutuante Transparente */}
                 <div className="absolute top-0 left-0 w-full z-50 p-6">
@@ -227,7 +233,7 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
                                     Premium Barbershop
                                 </div>
                                 <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white tracking-tight leading-none shadow-black drop-shadow-lg">
-                                    {props.barbershop.name}
+                                    {welcomeText || props.barbershop.name}
                                 </h1>
                                 <button onClick={handleCopyAddress} className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-left group">
                                     <div className="bg-white/10 p-2 rounded-full group-hover:bg-primary/20 transition-colors backdrop-blur-md">
@@ -238,18 +244,20 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
                             </div>
 
                             <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100">
-                                <div className="flex items-center gap-3 bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl">
-                                    <div className="flex flex-col">
-                                        <span className="text-3xl font-bold text-white leading-none">{averageRating.toFixed(1)}</span>
-                                        <div className="flex gap-0.5 mt-1">
-                                            {[...Array(5)].map((_, i) => (
-                                                <StarIcon key={i} size={12} className={i < Math.round(averageRating) ? "fill-primary text-primary" : "text-gray-600"} />
-                                            ))}
+                                {showReviews && (
+                                    <div className="flex items-center gap-3 bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl">
+                                        <div className="flex flex-col">
+                                            <span className="text-3xl font-bold text-white leading-none">{averageRating.toFixed(1)}</span>
+                                            <div className="flex gap-0.5 mt-1">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <StarIcon key={i} size={12} className={i < Math.round(averageRating) ? "fill-primary text-primary" : "text-gray-600"} />
+                                                ))}
+                                            </div>
                                         </div>
+                                        <div className="h-10 w-px bg-white/10" />
+                                        <span className="text-xs text-gray-300 font-medium w-16 leading-tight">{totalRatings} opniões verificadas</span>
                                     </div>
-                                    <div className="h-10 w-px bg-white/10" />
-                                    <span className="text-xs text-gray-300 font-medium w-16 leading-tight">{totalRatings} opniões verificadas</span>
-                                </div>
+                                )}
 
                                 <button
                                     onClick={handleToggleFavorite}
@@ -283,7 +291,7 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
                                     const Item = amenityIcons[a]
                                     if (!Item) return null
                                     return (
-                                        <div key={a} className="flex flex-col items-center justify-center gap-2 bg-[#1A1B1F] p-4 rounded-2xl border border-white/5 hover:border-primary/30 hover:bg-[#202125] transition-all group">
+                                        <div key={a} className="flex flex-col items-center justify-center gap-2 bg-card p-4 rounded-2xl border border-white/5 hover:border-primary/30 hover:bg-card/80 transition-all group">
                                             <div className="p-3 bg-white/5 rounded-full group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-300">
                                                 <Item.icon size={20} className="text-gray-400 group-hover:text-primary transition-colors" />
                                             </div>
@@ -315,7 +323,7 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
                         </section>
 
                         {/* AVALIAÇÕES */}
-                        {visibleRatings.length > 0 && (
+                        {showReviews && visibleRatings.length > 0 && (
                             <section>
                                 <div className="flex items-center gap-3 mb-8">
                                     <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10"></span>
@@ -324,7 +332,7 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
                                 </div>
                                 <div className="grid md:grid-cols-2 gap-4">
                                     {visibleRatings.map((rating) => (
-                                        <div key={rating.id} className="bg-[#1A1B1F] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                                        <div key={rating.id} className="bg-card p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
                                             <div className="flex justify-between items-start mb-4">
                                                 <div className="flex gap-1">
                                                     {[...Array(5)].map((_, i) => (
@@ -344,24 +352,25 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
 
                         {/* MOBILE INFO */}
                         <div className="lg:hidden space-y-12 pt-8 border-t border-white/5">
-                            <section>
-                                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><MapPinIcon size={18} className="text-primary" /> Localização</h2>
-                                <div className="relative h-[200px] w-full rounded-2xl overflow-hidden shadow-lg border border-white/10 mb-4" onClick={handleOpenMap}>
-                                    <Image src="/map.png" fill alt="Mapa" className="object-cover opacity-60 hover:opacity-100 transition-opacity duration-300" />
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <div className="bg-primary p-3 rounded-full shadow-xl animate-bounce">
-                                            <MapPinIcon size={24} className="text-white" />
+                            {showMap && (
+                                <section>
+                                    <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><MapPinIcon size={18} className="text-primary" /> Localização</h2>
+                                    <div className="relative h-[200px] w-full rounded-2xl overflow-hidden shadow-lg border border-white/10 mb-4" onClick={handleOpenMap}>
+                                        <Image src="/map.png" fill alt="Mapa" className="object-cover opacity-60 hover:opacity-100 transition-opacity duration-300" />
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                            <div className="bg-primary p-3 rounded-full shadow-xl animate-bounce">
+                                                <MapPinIcon size={24} className="text-white" />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <p className="text-gray-400 text-sm text-center">{barbershop.address}</p>
-                            </section>
-
+                                    <p className="text-gray-400 text-sm text-center">{barbershop.address}</p>
+                                </section>
+                            )}
                             <section>
                                 <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><ChevronDownIcon size={18} className="text-primary" /> Horários</h2>
                                 <div className="grid grid-cols-1 gap-2">
                                     {openingHours.map((h, i) => (
-                                        <div key={h.day} className={`flex justify-between items-center p-3 rounded-lg border ${h.isOpen ? "bg-[#1A1B1F] border-white/5" : "bg-white/5 border-transparent opacity-50"}`}>
+                                        <div key={h.day} className={`flex justify-between items-center p-3 rounded-lg border ${h.isOpen ? "bg-card border-white/5" : "bg-white/5 border-transparent opacity-50"}`}>
                                             <span className="text-sm text-gray-300 font-medium">{h.day}</span>
                                             <span className={`text-xs font-bold px-2 py-1 rounded bg-black/20 ${h.isOpen ? "text-green-400" : "text-red-400"}`}>
                                                 {h.isOpen ? `${h.open} - ${h.close}` : "Fechado"}
@@ -371,7 +380,6 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
                                 </div>
                             </section>
                         </div>
-
                     </div>
 
                     {/* RIGHT SIDEBAR (Desktop) */}
@@ -387,7 +395,7 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
             {selectedServices.length > 0 && (
                 <div className="fixed bottom-6 left-0 w-full z-50 px-4 animate-in fade-in slide-in-from-bottom-8 duration-500">
                     <div className="container mx-auto">
-                        <Card className="bg-[#1A1B1F]/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl max-w-4xl mx-auto overflow-hidden ring-1 ring-white/5">
+                        <Card className="bg-card/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl max-w-4xl mx-auto overflow-hidden ring-1 ring-white/5">
                             <CardContent className="p-4 sm:p-5 flex items-center justify-between gap-4">
                                 <div className="flex flex-col">
                                     <p className="text-gray-400 font-medium text-xs mb-0.5 uppercase tracking-wide">{totalItems} {totalItems === 1 ? 'item selecionado' : 'itens selecionados'}</p>

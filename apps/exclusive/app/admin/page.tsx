@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-
+import Header from "../_components/header"
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Dialog, DialogContent, DialogTrigger, Calendar, Skeleton } from "@barbergo/ui"
 import {
     CalendarIcon, DollarSign, Users, ShieldCheck, User,
@@ -120,7 +120,7 @@ export default function AdminPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative">
-
+            <Header />
 
             {/* OVERLAY DE BLOQUEIO (SUSPENDED) - Z-INDEX MÁXIMO */}
             {subStatus === 'SUSPENDED' && (
@@ -357,7 +357,7 @@ function KpiCard({ title, icon: Icon, value, sub, isMoney }: any) {
 function DashboardSkeleton() {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative animate-pulse">
-
+            <Header />
             <div className="flex-1 flex flex-col p-4 md:p-6 space-y-8">
                 {/* Filter Skeleton */}
                 <Skeleton className="h-16 w-full rounded-xl bg-[#1A1B1F]/50" />

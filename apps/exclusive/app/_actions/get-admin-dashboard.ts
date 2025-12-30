@@ -66,7 +66,7 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
     let listBookingsQuery: any = {
         where: {
             barbershopId,
-            status: { notIn: ["CANCELED", "COMPLETED"] }, // User wants to hide finalized
+            status: { notIn: ["CANCELED"] }, // User wants to hide finalized
             date: { gte: viewDateIsPast ? start : now } // If viewing past, show range. If viewing present/future, show from NOW.
         },
         orderBy: { date: 'asc' },
@@ -173,6 +173,7 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
         kpi: { ...calculateKpis(shopBookings), views: viewsCount, isClosed: barbershop?.isClosed || false },
         chartData: calculateChart(shopBookings),
         viewsChartData: calculateViewsChart(),
+        shopViews: shopViews, // Exposing raw data for client-side hourly aggregation
         // Return refined list for the "Next Clients" card
         bookings: shopListBookings.map((b: any) => ({
             ...b, service: { ...b.service, price: Number(b.service.price) }

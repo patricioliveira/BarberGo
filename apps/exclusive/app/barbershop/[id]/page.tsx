@@ -1,115 +1,80 @@
-
-import { Button, SheetContent } from "@barbergo/ui"
-import { Sheet, SheetTrigger } from "@barbergo/ui"
 import { db } from "@barbergo/database"
-import { ChevronLeftIcon, MapPinIcon, MenuIcon, StarIcon } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
+import BarbershopDetails from "./_components/barbershop-details"
 import { notFound } from "next/navigation"
-import ServiceItem from "../../_components/service-item"
-import PhoneItem from "../../_components/phone-item"
-import { appConfig } from "../../config"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/_lib/auth"
+import { ViewTracker } from "../../_components/view-tracker"
 
-interface BarbershopPageProps {
-  params: {
-    id: string
-  }
+interface BarbershopDetailsPageProps {
+    params: {
+        id: string
+    }
 }
 
-const BarbershopPage = async ({ params }: BarbershopPageProps) => {
-  const barbershop = await db.barbershop.findUnique({
-    where: {
-      id: params.id,
-      isExclusive: true,
-      slug: appConfig.barbershopSlug,
-    },
-    include: {
-      services: true,
-    },
-  })
+export default async function BarbershopDetailsPage({ params }: BarbershopDetailsPageProps) {
+    if (!params.id) return notFound()
 
-  if (!barbershop) {
-    return notFound()
-  }
+    const barbershop = await db.barbershop.findUnique({
+        where: {
+            id: params.id,
+        },
+        include: {
+            services: {
+                include: {
+                    staffPrices: true
+                }
+            },
+            staff: {
+                include: {
+                    user: true
+                }
+            },
+            ratings: {
+                include: {
+                    user: true
+                }
+            },
+        },
+    })
 
-  return (
-    <div>
-      {/* IMAGEM */}
-      <div className="relative h-[250px] w-full">
-        <Image
-          alt={barbershop.name}
-          src={barbershop?.imageUrl}
-          fill
-          className="object-cover"
-        />
+    if (!barbershop) {
+        return notFound()
+    }
 
-        <Button
-          size="icon"
-          variant="secondary"
-          className="absolute left-4 top-4"
-          asChild
-        >
-          <Link href="/">
-            <ChevronLeftIcon />
-          </Link>
-        </Button>
+    const serializedBarbershop = {
+        ...barbershop,
+        services: barbershop.services.map((service) => ({
+            ...service,
+            price: Number(service.price),
+            staffPrices: service.staffPrices.map(sp => ({
+                staffId: sp.staffId,
+                price: Number(sp.price),
+                isLinked: sp.isLinked
+            }))
+        })),
+    }
 
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              size="icon"
-              variant="outline"
-              className="absolute right-4 top-4"
-            >
-              <MenuIcon />
-            </Button>
-          </SheetTrigger>
-          <SheetContent />
-        </Sheet>
-      </div>
+    let isFavorited = false
+    const session = await getServerSession(authOptions)
 
-      {/* TÍTULO */}
-      <div className="border-b border-solid p-5">
-        <h1 className="mb-3 text-xl font-bold">{barbershop.name}</h1>
-        <div className="mb-2 flex items-center gap-2">
-          <MapPinIcon className="text-primary" size={18} />
-          <p className="text-sm">{barbershop?.address}</p>
-        </div>
+    if (session?.user) {
+        const favorite = await db.favorite.findUnique({
+            where: {
+                userId_barbershopId: {
+                    userId: (session.user as any).id,
+                    barbershopId: params.id,
+                },
+            },
+        })
+        if (favorite) isFavorited = true
+    }
 
-        <div className="flex items-center gap-2">
-          <StarIcon className="fill-primary text-primary" size={18} />
-          <p className="text-sm">5,0 (499 avaliações)</p>
-        </div>
-      </div>
-
-      {/* DESCRIÇÃO */}
-      <div className="space-y-2 border-b border-solid p-5">
-        <h2 className="text-xs font-bold uppercase text-gray-400">Sobre nós</h2>
-        <p className="text-justify text-sm">{barbershop?.description}</p>
-      </div>
-
-      {/* SERVIÇOS */}
-      <div className="space-y-3 border-b border-solid p-5">
-        <h2 className="text-xs font-bold uppercase text-gray-400">Serviços</h2>
-        <div className="space-y-3">
-          {barbershop.services.map((service) => (
-            <ServiceItem
-              key={service.id}
-              barbershop={JSON.parse(JSON.stringify(barbershop))}
-              service={JSON.parse(JSON.stringify(service))}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* CONTATO */}
-      <div className="space-y-3 p-5">
-        {barbershop.phones.map((phone) => (
-          <PhoneItem key={phone} phone={phone} />
-        ))}
-      </div>
-    </div>
-  )
+    //...
+    // @ts-ignore - staff agora está incluso no objeto
+    return (
+        <>
+            <ViewTracker barbershopId={barbershop.id} />
+            <BarbershopDetails barbershop={serializedBarbershop} initialIsFavorited={isFavorited} />
+        </>
+    )
 }
-
-export default BarbershopPage

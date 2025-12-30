@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import Header from "@/_components/header"
 import { Button, Input, Sheet, SheetContent, SheetHeader, SheetTitle, Avatar, AvatarImage, AvatarFallback, Card, CardContent } from "@barbergo/ui"
-import { ArrowLeft, Search, Loader2, User, Ban, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Search, Loader2, User, Ban, CheckCircle2, XCircle, Clock, DollarSign, Calendar } from "lucide-react"
 import { getBarbershopClients, toggleClientBlock } from "@/_actions/barbershop-clients"
 import { toast } from "sonner"
 
@@ -20,10 +21,9 @@ export default function AdminClientsPage() {
     useEffect(() => {
         if (status === "unauthenticated") router.push("/")
         if (status === "authenticated") {
-            getBarbershopClients().then(data => {
-                setClients(data)
-                setIsLoading(false)
-            })
+            if ((status as any) === "authenticated" && (useSession as any)?.data?.user?.role === "STAFF") {
+                router.push("/admin")
+            }
         }
     }, [status, router])
 
@@ -47,9 +47,7 @@ export default function AdminClientsPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            {/* Header removido pois Admin layout já tem navegação ou será adicionado no sidebar */}
-            {/* Mantendo consistência com outras páginas admin do exclusive */}
-
+            <Header />
             <div className="container mx-auto p-5 md:p-8 max-w-5xl pb-24">
                 <div className="flex items-center gap-4 mb-6">
                     <Button variant="outline" size="icon" onClick={() => router.push("/admin")} className="shrink-0 border-secondary"><ArrowLeft size={20} /></Button>

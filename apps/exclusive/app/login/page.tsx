@@ -1,49 +1,71 @@
 "use client"
 
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@barbergo/ui"
-import { signIn } from "next-auth/react"
-import { ScissorsIcon } from "lucide-react"
-import Image from "next/image"
-import { appConfig } from "../config"
+import { useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useSession } from "next-auth/react"
+import AuthDialog from "../_components/auth-dialog"
+import { Loader2 } from "lucide-react"
 
-export default function LoginPage() {
-    const handleLoginClick = async () => {
-        // Redireciona para o Google e depois volta para a Home (ou Admin se preferir)
-        await signIn("google", { callbackUrl: "/admin" })
+// Criamos um sub-componente para isolar o uso do useSearchParams
+function LoginContent() {
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const { status } = useSession()
+
+    // Pega o callbackUrl da URL (se existir) ou define /admin por padrão
+    const callbackUrl = searchParams.get("callbackUrl") || "/admin"
+
+    // Se já estiver logado, manda direto para o callback ou admin
+    useEffect(() => {
+        if (status === "authenticated") {
+            router.push(callbackUrl)
+        }
+    }, [status, router, callbackUrl])
+
+    // Função para lidar com o fechamento do diálogo
+    const handleOpenChange = (open: boolean) => {
+        if (!open) {
+            // Se o usuário fechar o modal na página de login, volta para a home
+            router.push("/")
+        }
+    }
+
+    // Enquanto carrega a sessão, mostra um loading simples no fundo
+    if (status === "loading") {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-background">
+                <Loader2 className="animate-spin text-primary" size={40} />
+            </div>
+        )
     }
 
     return (
-        <div className="flex h-screen items-center justify-center bg-muted/20 p-4">
-            <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
-                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                        <ScissorsIcon className="h-6 w-6 text-primary" />
-                    </div>
-                    <CardTitle className="text-2xl">BarberGo</CardTitle>
-                    <CardDescription>
-                        Faça login para gerenciar seus agendamentos
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button
-                        className="w-full gap-2"
-                        variant="outline"
-                        onClick={handleLoginClick}
-                    >
-                        <Image
-                            src="/google.svg"
-                            alt="Google"
-                            width={18}
-                            height={18}
-                        />
-                        Entrar com Google
-                    </Button>
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            {/* O modal abre automaticamente porque isOpen é true */}
+            <AuthDialog
+                isOpen={true}
+                onOpenChange={handleOpenChange}
+                callbackUrl={callbackUrl}
+            />
 
-                    <div className="mt-4 text-center text-xs text-muted-foreground">
-                        <p>Acesso exclusivo para clientes e colaboradores.</p>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Fundo opaco para manter o foco no modal */}
+            <div className="text-center space-y-4">
+                <h1 className="text-2xl font-bold text-white opacity-20">BarberGo</h1>
+                <p className="text-muted-foreground opacity-20">Autenticação necessária...</p>
+            </div>
         </div>
+    )
+}
+
+// O componente principal agora apenas envolve o conteúdo em um Suspense
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen w-full items-center justify-center bg-background">
+                <Loader2 className="animate-spin text-primary" size={40} />
+            </div>
+        }>
+            <LoginContent />
+        </Suspense>
     )
 }
