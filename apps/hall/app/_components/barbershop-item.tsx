@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@barbergo/ui"
 import { Button } from "@barbergo/ui"
 import { Badge } from "@barbergo/ui"
-import Image from "next/image"
+import { BarbershopImage } from "./barbershop-image"
 import { StarIcon } from "lucide-react"
 import { Barbershop, Rating } from "@prisma/client"
 import Link from "next/link"
@@ -33,7 +33,7 @@ const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
                         </Badge>
                     </div>
 
-                    <Image
+                    <BarbershopImage
                         src={barbershop.imageUrl}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-110"

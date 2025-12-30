@@ -2,6 +2,7 @@
 
 import { Barbershop, BarbershopService, BarberStaff, Rating } from "@prisma/client"
 import Image from "next/image"
+import { BarbershopImage } from "@/_components/barbershop-image"
 import {
     MapPinIcon, PhoneIcon, CreditCardIcon, ChevronDownIcon, ChevronUpIcon,
     StarIcon, Wifi, Car, Baby, Accessibility, Instagram, MessageCircle, Heart,
@@ -204,7 +205,7 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
                 <div className="flex flex-col lg:flex-row gap-10">
                     <div className="flex-1">
                         <div className="relative h-[250px] md:h-[480px] w-full rounded-2xl overflow-hidden shadow-lg">
-                            <Image src={props.barbershop.imageUrl} fill alt={props.barbershop.name} className="object-cover" />
+                            <BarbershopImage src={props.barbershop.imageUrl} fill alt={props.barbershop.name} className="object-cover" />
                         </div>
 
                         <div className="mt-6 mb-8">
