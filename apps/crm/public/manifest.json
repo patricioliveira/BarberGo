@@ -1,0 +1,42 @@
+{
+    "id": "com.barbergo.crm",
+    "name": "BarberGo CRM",
+    "short_name": "CRM",
+    "description": "Ferramenta de gestão para barbearias parceiras BarberGo.",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#141518",
+    "theme_color": "#815b40",
+    "categories": [
+        "business",
+        "productivity",
+        "utilities"
+    ],
+    "icons": [
+        {
+            "src": "/manifest-icon-192.maskable.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/manifest-icon-192.maskable.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/manifest-icon-512.maskable.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/manifest-icon-512.maskable.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

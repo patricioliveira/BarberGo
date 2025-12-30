@@ -1,13 +1,55 @@
+import withPWA from 'next-pwa';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   images: {
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 's3.pulefila.com.br',
+        port: '',
+        pathname: '/barbergo/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'file.pulefila.com.br',
+        port: '',
+        pathname: '/barbergo/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '217.216.64.94',
+        port: '9000',
+        pathname: '/barbergo/**',
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "static.vecteezy.com",
+      },
+      {
+        protocol: "http",
+        hostname: "googleusercontent.com",
+      },
       {
         hostname: "utfs.io",
       },
     ],
   },
   transpilePackages: ["@barbergo/shared", "@barbergo/ui", "@barbergo/database"],
-}
+};
 
-export default nextConfig
+// Configura o PWA envolvendo a configuração original
+const pwaConfig = withPWA({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development', // Desativa em dev para evitar problemas de cache
+  importScripts: ['/sw-custom.js'],
+})(nextConfig);
+
+export default pwaConfig;

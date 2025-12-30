@@ -4,7 +4,7 @@ import { signIn, signOut, useSession } from "next-auth/react"
 import { Button, SheetHeader, SheetTitle, Avatar, AvatarImage, AvatarFallback } from "@barbergo/ui"
 import { CalendarIcon, HomeIcon, LogInIcon, LogOutIcon, UserIcon, LayoutDashboardIcon, UserRoundPen } from "lucide-react"
 import Link from "next/link"
-import PWAInstallButton from "./pwa-install-button" // Import do novo botão
+import PWAInstallButton from "./pwa-install-button"
 import AuthDialog from "./auth-dialog"
 import { useState } from "react"
 

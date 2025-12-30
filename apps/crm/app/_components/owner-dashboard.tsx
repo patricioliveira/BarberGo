@@ -9,6 +9,7 @@ import { AddPartnerDialog } from "./add-partner-dialog";
 import { LogoutButton } from "./logout-button";
 import { PartnersTable } from "./partners-table";
 import { BackupSystem } from "./backup-system";
+import PWAInstallButton from "./pwa-install-button";
 
 export default async function OwnerDashboard() {
     // Busca Clientes e Parceiros
@@ -71,6 +72,11 @@ export default async function OwnerDashboard() {
                         <AddBarbershopDialog partners={partners} />
                     </div>
                 </div>
+            </div>
+
+            {/* PWA INSTALL BUTTON (Mobile Only) */}
+            <div className="md:hidden">
+                <PWAInstallButton />
             </div>
 
             {/* KPIs FINANCEIROS: 1 col no mobile, 2 em tablets, 4 no desktop */}
