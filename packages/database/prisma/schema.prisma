@@ -146,6 +146,8 @@ model Barbershop {
   name           String
   slug           String   @unique
   address        String
+  latitude       Float?
+  longitude      Float?
   phones         Json?
   description    String
   imageUrl       String

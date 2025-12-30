@@ -3,11 +3,21 @@
 import { SearchIcon } from "lucide-react"
 import { Button, Input } from "@barbergo/ui"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
-const Search = () => {
+interface SearchProps {
+    defaultValues?: {
+        search: string
+    }
+}
+
+const Search = ({ defaultValues }: SearchProps) => {
     const router = useRouter()
-    const [search, setSearch] = useState("")
+    const [search, setSearch] = useState(defaultValues?.search || "")
+
+    useEffect(() => {
+        setSearch(defaultValues?.search || "")
+    }, [defaultValues?.search])
 
     const handleSearch = () => {
         if (!search) return

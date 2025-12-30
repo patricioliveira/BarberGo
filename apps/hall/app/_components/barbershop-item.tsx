@@ -7,14 +7,16 @@ import { BarbershopImage } from "./barbershop-image"
 import { StarIcon } from "lucide-react"
 import { Barbershop, Rating } from "@prisma/client"
 import Link from "next/link"
+import { cn } from "../_lib/utils"
 
 interface BarbershopItemProps {
     barbershop: Barbershop & {
         ratings?: Rating[] // Torna ratings opcional para compatibilidade
     }
+    className?: string
 }
 
-const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
+const BarbershopItem = ({ barbershop, className }: BarbershopItemProps) => {
     // Lógica de cálculo da média
     const ratings = barbershop.ratings || []
     const averageRating = ratings.length > 0
@@ -22,7 +24,7 @@ const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
         : 5.0
 
     return (
-        <Card className="w-[167px] min-w-[167px] rounded-2xl bg-card border-none shadow-md flex-none group">
+        <Card className={cn("w-[167px] min-w-[167px] rounded-2xl bg-card border-none shadow-md flex-none group", className)}>
             <CardContent className="px-1 py-1 pb-4">
                 {/* Imagem com Badge de Rating */}
                 <div className="relative w-full h-[159px] overflow-hidden rounded-2xl">
