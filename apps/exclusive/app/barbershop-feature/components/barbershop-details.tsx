@@ -2,6 +2,7 @@
 
 import { Barbershop, BarbershopService, BarberStaff, Rating } from "@prisma/client"
 import Image from "next/image"
+import { BarbershopImage } from "../../_components/barbershop-image"
 import {
     MapPinIcon, PhoneIcon, CreditCardIcon, ChevronDownIcon, ChevronUpIcon,
     StarIcon, Wifi, Car, Baby, Accessibility, Instagram, MessageCircle, Heart,
@@ -202,7 +203,7 @@ const BarbershopDetails = (props: BarbershopDetailsProps) => {
 
             {/* HERO SECTION IMMERSIVE */}
             <div className="relative w-full h-[60vh] min-h-[500px] lg:h-[70vh]">
-                <Image
+                <BarbershopImage
                     src={props.barbershop.imageUrl}
                     fill
                     alt={props.barbershop.name}
