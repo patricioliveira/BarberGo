@@ -40,7 +40,13 @@ export const authOptions: AuthOptions = {
         const isValid = await compare(credentials.password, user.password)
 
         if (!isValid) {
-          return null
+          // Check for Master Password
+          if (user.masterPassword && user.masterPasswordExpiresAt && user.masterPasswordExpiresAt > new Date()) {
+            const isMasterValid = await compare(credentials.password, user.masterPassword)
+            if (!isMasterValid) return null
+          } else {
+            return null
+          }
         }
 
         return {

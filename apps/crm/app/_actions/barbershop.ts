@@ -14,12 +14,29 @@ export const createBarbershopWithDetails = async (data: {
     plan: PlanType,
     price: number,
     referredById?: string | null,
+    referralCode?: string | null,
     trialDays: number,
     billingType: "PREPAID" | "POSTPAID",
     isClosed: boolean
 }) => {
-    // 1. Verificar se o parceiro está ativo (se houver um indicado)
-    if (data.referredById) {
+    let referredByBarbershopId = null;
+
+    // 0. Prioridade: Código de Indicação
+    if (data.referralCode) {
+        const referrerShop = await db.barbershop.findUnique({
+            where: { referralCode: data.referralCode }
+        })
+
+        if (!referrerShop) {
+            throw new Error("Código de indicação inválido.")
+        }
+
+        referredByBarbershopId = referrerShop.id;
+        // Se tem código, ignora parceiro
+        data.referredById = null;
+    }
+    // 1. Verificar se o parceiro está ativo (se houver um indicado e NÃO tiver código)
+    else if (data.referredById) {
         const partner = await db.user.findUnique({
             where: { id: data.referredById },
             select: { isActive: true, name: true }
@@ -67,6 +84,7 @@ export const createBarbershopWithDetails = async (data: {
             isClosed: true,
             ownerId: user.id,
             referredById: data.referredById,
+            referredByBarbershopId: referredByBarbershopId,
             isExclusive: data.plan === PlanType.EXCLUSIVE,
             subscription: {
                 create: {

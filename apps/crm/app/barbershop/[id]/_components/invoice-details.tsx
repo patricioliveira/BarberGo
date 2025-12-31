@@ -78,6 +78,11 @@ export function InvoiceDetails({ isOpen, onClose, invoice, barbershopName }: Inv
                             <h2 className="text-3xl md:text-4xl font-black text-white print:text-black">
                                 {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.amount))}
                             </h2>
+                            {Number(invoice.discount) > 0 && (
+                                <p className="text-xs text-green-500 font-bold uppercase mt-1">
+                                    Desconto aplicado: {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.discount))}
+                                </p>
+                            )}
                         </div>
                         <div className="h-[1px] bg-white/5 w-full" />
                         <div className="grid grid-cols-2 gap-4 text-left">
@@ -100,8 +105,17 @@ export function InvoiceDetails({ isOpen, onClose, invoice, barbershopName }: Inv
                                 <p className="font-bold text-white text-sm md:text-base print:text-black">Assinatura BarberGo PRO</p>
                                 <p className="text-[10px] md:text-xs text-gray-500">Mensalidade - {barbershopName}</p>
                             </div>
-                            <p className="font-bold text-sm md:text-base">{Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.amount))}</p>
+                            <p className="font-bold text-sm md:text-base">{Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.amount) + Number(invoice.discount || 0))}</p>
                         </div>
+                        {Number(invoice.discount) > 0 && (
+                            <div className="flex justify-between items-center p-4 bg-green-500/10 rounded-xl border border-green-500/20 print:bg-white print:border-green-200">
+                                <div>
+                                    <p className="font-bold text-green-500 text-sm md:text-base print:text-black">Desconto Promocional (Indicação)</p>
+                                    <p className="text-[10px] md:text-xs text-green-400/70">Recompensa aplicada</p>
+                                </div>
+                                <p className="font-bold text-sm md:text-base text-green-500">- {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.discount))}</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Método de Pagamento */}

@@ -18,7 +18,7 @@ export default function PartnerDashboard({ partner }: any) {
                 <div>
                     <h1 className="text-4xl font-black tracking-tighter italic uppercase">BarberGo <span className="text-primary">CRM</span></h1>
                     <h2 className="text-2xl font-bold mt-2">Bem-vindo, {partner.name}</h2>
-                    <p className="text-gray-500 font-medium">Painel de Afiliado e Parceiro Estratégico</p>
+                    <p className="text-gray-500 font-medium">Painel de Parceiro</p>
                 </div>
                 <LogoutButton />
             </div>

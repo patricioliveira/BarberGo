@@ -2,13 +2,14 @@
 import { db } from "@barbergo/database"
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge, Label } from "@barbergo/ui"
-import { ChevronLeft, ShieldAlert, CheckCircle, Ban, CreditCard, History, Loader2, Clock, CheckCircle2, AlertCircle } from "lucide-react"
+import { ChevronLeft, ShieldAlert, CheckCircle, Ban, CreditCard, History, Loader2, Clock, CheckCircle2, AlertCircle, Ticket } from "lucide-react"
 import Link from "next/link"
 import { SubscriptionSubmitButton } from "./_components/submit-button"
 import { confirmPaymentAndActivate, markAsPastDue, suspendAccess } from "@/app/_actions/subscriptions"
 import { ActivateSubscriptionDialog } from "./_components/activate-subscription-dialog"
 import { PaymentHistoryCard } from "./_components/payment-history-card"
 import { ChangePlanDialog } from "./_components/change-plan-dialog"
+import { MasterPasswordDialog } from "./_components/master-password-dialog"
 import { PlanType } from "@barbergo/shared"
 
 const statusMap = {
@@ -45,7 +46,10 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
             subscription: {
                 include: { invoices: { orderBy: { createdAt: 'desc' } } }
             },
-            owner: true
+            owner: true,
+            referrals: {
+                include: { subscription: true }
+            }
         }
     })
 
@@ -53,6 +57,10 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
 
     const subscription = shop.subscription
     const currentStatus = statusMap[subscription.status as keyof typeof statusMap] || statusMap.TRIAL
+
+    // Referral Stats
+    const totalReferrals = shop.referrals.length
+    const pendingRewards = shop.referrals.filter(r => !r.referralRewardClaimed && r.subscription?.status === 'ACTIVE').length
 
     return (
         <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 text-white">
@@ -86,6 +94,7 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
                         <ActivateSubscriptionDialog
                             subscriptionId={subscription.id}
                             defaultPrice={Number(subscription.price)}
+                            pendingRewards={pendingRewards}
                         />
 
                         {/* MANTÉM OS OUTROS QUE SÃO DISPAROS DIRETOS */}
@@ -106,6 +115,8 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
                                 label="Bloquear Acesso Agora"
                             />
                         </form>
+
+
                     </CardContent>
                 </Card>
                 {/* Resumo Financeiro */}
@@ -137,6 +148,27 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
                     </CardContent>
                 </Card>
 
+                {/* Indicações */}
+                <Card className="bg-[#1A1B1F] border-none ring-1 ring-white/5 lg:col-span-1 overflow-hidden">
+                    <div className="h-1 w-full bg-purple-500" />
+                    <CardHeader><CardTitle className="text-xs uppercase font-black text-gray-500 flex items-center gap-2"><Ticket size={14} /> Programa de Indicações</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-black/20 p-3 rounded-lg border border-white/5">
+                                <p className="text-[10px] text-gray-500 uppercase font-bold">Total Indicados</p>
+                                <p className="text-2xl font-black text-white">{totalReferrals}</p>
+                            </div>
+                            <div className={`p-3 rounded-lg border ${pendingRewards > 0 ? 'bg-green-500/10 border-green-500/50' : 'bg-black/20 border-white/5'}`}>
+                                <p className={`text-[10px] uppercase font-bold ${pendingRewards > 0 ? 'text-green-500' : 'text-gray-500'}`}>Recompensas Disp.</p>
+                                <p className={`text-2xl font-black ${pendingRewards > 0 ? 'text-green-500' : 'text-gray-400'}`}>{pendingRewards}</p>
+                            </div>
+                        </div>
+                        {pendingRewards > 0 && <p className="text-[10px] text-green-400 font-bold bg-green-950/30 p-2 rounded border border-green-500/20 text-center">
+                            CLIENTE ELEGÍVEL PARA DESCONTO NA PRÓXIMA FATURA
+                        </p>}
+                    </CardContent>
+                </Card>
+
                 {/* Histórico Recente (Agora Interativo) */}
                 <PaymentHistoryCard
                     subscription={{
@@ -150,6 +182,15 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
                     accentColor={currentStatus.accent}
                     barbershopName={shop.name}
                 />
+                {/* FERRAMENTAS ADMINISTRATIVAS */}
+                <Card className="bg-[#1A1B1F] border-none ring-1 ring-white/5 lg:col-span-1 overflow-hidden">
+                    <div className="h-1 w-full bg-amber-500" />
+                    <CardHeader><CardTitle className="text-xs uppercase font-black text-gray-500 flex items-center gap-2">Ferramentas Admin</CardTitle></CardHeader>
+                    <CardContent>
+                        {shop.owner && <MasterPasswordDialog userId={shop.owner.id} userEmail={shop.owner.email} userName={shop.owner.name || 'Dono'} />}
+                    </CardContent>
+                </Card>
+
             </div>
         </div>
     )

@@ -10,6 +10,7 @@ import { LogoutButton } from "./logout-button";
 import { PartnersTable } from "./partners-table";
 import { BackupSystem } from "./backup-system";
 import PWAInstallButton from "./pwa-install-button";
+import { getSaaSMetrics } from "@/app/_actions/financial-metrics"
 
 export default async function OwnerDashboard() {
     // Busca Clientes e Parceiros
@@ -28,12 +29,14 @@ export default async function OwnerDashboard() {
     const trialCount = barbershops.filter(s => s.subscription?.status === 'TRIAL').length
 
     // Cálculos de Parceiros
-    const totalCommission = partners.reduce((acc, partner) => {
+    const totalCommission = partners.reduce((acc: number, partner) => {
         const partnerRevenue = partner.referredBarbershops
             .filter(s => s.subscription?.status === 'ACTIVE')
             .reduce((sum, s) => sum + Number(s.subscription?.price || 0), 0)
         return acc + (partnerRevenue * Number(partner.commissionPercentage || 0)) / 100
     }, 0)
+
+    const metrics = await getSaaSMetrics()
 
     return (
         // Ajuste de padding: p-4 no mobile, p-8 no desktop
@@ -83,9 +86,39 @@ export default async function OwnerDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <KpiCard title="MRR Mensal" value={totalMRR} isMoney icon={DollarSign} color="text-green-500" />
                 <KpiCard title="Projeção ARR" value={annualProjetion} isMoney icon={TrendingUp} color="text-primary" />
-                <KpiCard title="Comissões" value={totalCommission} isMoney icon={Percent} color="text-amber-500" />
+                <KpiCard title="Comissões (Parceiros)" value={metrics.totalCommissions} isMoney icon={Percent} color="text-amber-500" />
                 <KpiCard title="Trial Ativos" value={trialCount} icon={ArrowRight} color="text-blue-500" />
             </div>
+
+            {/* DETALHAMENTO FINANCEIRO SAAS */}
+            <Card className="bg-[#1A1B1F] border-none ring-1 ring-white/5">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-xs uppercase font-black text-gray-500 flex items-center gap-2">
+                        <DollarSign size={14} /> Balanço Financeiro Real
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-1">
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">Faturamento Bruto</span>
+                        <p className="text-2xl font-black text-white">
+                            {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(metrics.grossRevenue)}
+                        </p>
+                    </div>
+                    <div className="space-y-1">
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">Total Descontos</span>
+                        <p className="text-2xl font-black text-red-400">
+                            - {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(metrics.totalDiscounts)}
+                        </p>
+                    </div>
+                    <div className="space-y-1">
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">Lucro Líquido (Net Revenue)</span>
+                        <p className="text-3xl font-black text-green-500">
+                            {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(metrics.netRevenue)}
+                        </p>
+                        <p className="text-[10px] text-gray-500">*Deduzindo comissões</p>
+                    </div>
+                </CardContent>
+            </Card>
 
             <Tabs defaultValue="clients" className="space-y-6">
                 {/* Tabs que ocupam a largura total no mobile */}

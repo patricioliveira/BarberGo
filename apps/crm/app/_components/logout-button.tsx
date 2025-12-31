@@ -1,20 +1,3 @@
-// "use client"
-
-// import { signOut } from "next-auth/react"
-// import { Button } from "@barbergo/ui"
-
-// export const LogoutButton = () => {
-//     return (
-//         <Button
-//             variant="link"
-//             className="mt-4 text-primary underline"
-//             onClick={() => signOut({ callbackUrl: "/" })}
-//         >
-//             Sair e voltar ao App Principal
-//         </Button>
-//     )
-// }
-
 "use client"
 
 import { signOut } from "next-auth/react"

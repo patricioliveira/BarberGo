@@ -12,24 +12,37 @@ import { toast } from "sonner"
 interface ActivateSubscriptionDialogProps {
     subscriptionId: string
     defaultPrice: number
+    pendingRewards?: number
 }
 
-export function ActivateSubscriptionDialog({ subscriptionId, defaultPrice }: ActivateSubscriptionDialogProps) {
+export function ActivateSubscriptionDialog({ subscriptionId, defaultPrice, pendingRewards = 0 }: ActivateSubscriptionDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, startTransition] = useTransition()
 
     // Estados do formulário
     const [amount, setAmount] = useState(defaultPrice.toString())
     const [method, setMethod] = useState("PIX")
+    const [redeemReward, setRedeemReward] = useState(false)
+
+    // Efeito para ajustar preço se resgatar
+    const toggleReward = (val: boolean) => {
+        setRedeemReward(val)
+        if (val) {
+            setAmount((defaultPrice / 2).toString())
+            toast.info("Desconto de 50% aplicado!")
+        } else {
+            setAmount(defaultPrice.toString())
+        }
+    }
 
     const handleActivate = async () => {
         startTransition(async () => {
             try {
-                await confirmPaymentAndActivate(subscriptionId, Number(amount), method)
+                await confirmPaymentAndActivate(subscriptionId, Number(amount), method, redeemReward)
                 toast.success("Pagamento confirmado e assinatura ativada!")
                 setIsOpen(false)
-            } catch (error) {
-                toast.error("Erro ao processar ativação.")
+            } catch (error: any) {
+                toast.error(error.message || "Erro ao processar ativação.")
             }
         })
     }
@@ -47,6 +60,27 @@ export function ActivateSubscriptionDialog({ subscriptionId, defaultPrice }: Act
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
+                    {/* Recompensa */}
+                    {pendingRewards > 0 && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-amber-500 p-2 rounded-full text-black"><CheckCircle size={16} /></div>
+                                <div>
+                                    <p className="font-bold text-amber-500 text-sm">Recompensa Disponível</p>
+                                    <p className="text-[10px] text-gray-400">Você tem {pendingRewards} indicações aprovadas.</p>
+                                </div>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant={redeemReward ? "default" : "outline"}
+                                className={redeemReward ? "bg-amber-500 text-black hover:bg-amber-600 font-bold" : "border-amber-500/50 text-amber-500"}
+                                onClick={() => toggleReward(!redeemReward)}
+                            >
+                                {redeemReward ? "Resgatando (50% OFF)" : "Usar Recompensa"}
+                            </Button>
+                        </div>
+                    )}
+
                     <div className="space-y-2">
                         <Label htmlFor="amount">Valor Recebido (R$)</Label>
                         <Input

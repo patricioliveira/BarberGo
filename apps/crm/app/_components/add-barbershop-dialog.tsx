@@ -37,7 +37,8 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                 referredById: fd.get("referredById") === "direct" ? null : fd.get("referredById") as string,
                 trialDays: Number(fd.get("trialDays")),
                 billingType: fd.get("billingType") as "PREPAID" | "POSTPAID",
-                isClosed: false
+                isClosed: false,
+                referralCode: fd.get("referralCode") as string
             })
             setResult({ ...res, email: fd.get("email") })
             toast.success("Unidade e Dono registrados!")
@@ -77,7 +78,7 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
             </DialogTrigger>
             <DialogContent className="bg-[#1A1B1F] border-secondary text-white max-w-md p-0 overflow-hidden rounded-[32px]">
                 <DialogHeader className="p-6 pb-2">
-                    <DialogTitle className="text-xl font-black italic uppercase">Novo Cliente SaaS</DialogTitle>
+                    <DialogTitle className="text-xl font-black italic uppercase">Nova Barbearia</DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="flex flex-col max-h-[80vh]">
@@ -173,6 +174,22 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            <div className="space-y-1">
+                                <Label className="text-gray-400 text-xs font-bold uppercase">Código de Indicação (Opcional)</Label>
+                                <Input
+                                    name="referralCode"
+                                    placeholder="Código da Barbearia Indicante"
+                                    className="bg-black/20 border-white/10 h-11 uppercase"
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val && val.length > 0) {
+                                            // Select "direct" logic could be enforced here or just ignored by backend priority
+                                        }
+                                    }}
+                                />
+                                <p className="text-[10px] text-gray-500">* Se informado, ignora o parceiro selecionado.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -183,6 +200,6 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                     </div>
                 </form>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     )
 }

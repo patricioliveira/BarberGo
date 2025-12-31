@@ -44,9 +44,48 @@ export const switchPlan = async (subscriptionId: string, newPlan: PlanType) => {
 
 
 // 1. Confirmar Pagamento e Ativar
-export const confirmPaymentAndActivate = async (subscriptionId: string, amount: number, method: string) => {
-    const sub = await db.subscription.findUnique({ where: { id: subscriptionId } })
+export const confirmPaymentAndActivate = async (subscriptionId: string, amount: number, method: string, redeemReward: boolean = false) => {
+    const sub = await db.subscription.findUnique({
+        where: { id: subscriptionId },
+        include: { barbershop: true }
+    })
     if (!sub) throw new Error("Assinatura não encontrada")
+
+    let discount = 0;
+    let rewardSourceId = null;
+
+    if (redeemReward) {
+        // Encontrar uma recompensa válida
+        const rewardSource = await db.barbershop.findFirst({
+            where: {
+                referredByBarbershopId: sub.barbershopId,
+                referralRewardClaimed: false,
+                subscription: { status: "ACTIVE" }
+            }
+        })
+
+        if (!rewardSource) {
+            throw new Error("Não há recompensas disponíveis para resgate.")
+        }
+
+        // Marcar como usado
+        await db.barbershop.update({
+            where: { id: rewardSource.id },
+            data: { referralRewardClaimed: true }
+        })
+
+        // Calcular desconto (Assumindo que o desconto é 50% do valor padrão ou a diferença do que foi pago)
+        // O valor `amount` já vem descontado do front? Sim.
+        // O `discount` armazenado será simbólico ou calculado?
+        // Vamos salvar o desconto como 50% do valor do plano original
+        // Ou melhor: invoice.amount + discount = Subtotal
+        // Se user pagou 25 (e era 50), discount é 25.
+
+        discount = Number(sub.price) - amount;
+        if (discount < 0) discount = 0;
+
+        rewardSourceId = rewardSource.id;
+    }
 
     // Calcula novo vencimento (30 dias a partir de hoje)
     const nextBilling = new Date()
@@ -66,6 +105,8 @@ export const confirmPaymentAndActivate = async (subscriptionId: string, amount: 
             data: {
                 subscriptionId,
                 amount,
+                discount,
+                referralRewardSourceId: rewardSourceId,
                 method,
                 paidAt: new Date(),
                 dueDate: new Date(),

@@ -38,7 +38,7 @@ export function AddPartnerDialog() {
                 </Button>
             </DialogTrigger>
             <DialogContent className="bg-secondary border-none text-white max-w-sm">
-                <DialogHeader><DialogTitle className="uppercase italic font-black">Cadastrar Afiliado</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle className="uppercase italic font-black">Cadastrar Parceiro</DialogTitle></DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                     <div className="space-y-1"><Label>Nome</Label><Input name="name" required className="bg-black/20 border-white/10" /></div>
                     <div className="space-y-1"><Label>E-mail</Label><Input name="email" type="email" required className="bg-black/20 border-white/10" /></div>

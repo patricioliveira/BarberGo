@@ -86,6 +86,8 @@ model User {
   UserPhone     Json?
   image         String?
   password      String?
+  masterPassword String?
+  masterPasswordExpiresAt DateTime?
   role          UserRole  @default(USER)
 
   staffProfile BarberStaff?
@@ -137,6 +139,11 @@ model Invoice {
   method         String? // PIX, CARD, LINK
   reference      String? // Mês/Ano ou ID de transação externa
   status         String       @default("PENDING") // PENDING, PAID, CANCELED
+  
+  discount               Decimal      @default(0) @db.Decimal(10, 2)
+  referralRewardSourceId String?
+  referralRewardSource   Barbershop?  @relation("RewardSource", fields: [referralRewardSourceId], references: [id])
+
   createdAt      DateTime     @default(now())
 }
 
@@ -180,6 +187,19 @@ model Barbershop {
 
   referredById String?
   referredBy   User?   @relation("PartnerReferral", fields: [referredById], references: [id])
+
+  // Referral System (Barbershop to Barbershop)
+  referralCode          String       @unique @default(cuid())
+  referralDiscountRate  Int?         // Override for discount percentage (e.g. 10%)
+  
+  referredByBarbershopId String?
+  referredByBarbershop   Barbershop? @relation("BarbershopReferral", fields: [referredByBarbershopId], references: [id])
+  referrals              Barbershop[] @relation("BarbershopReferral")
+  
+  referralRewardClaimed  Boolean      @default(false)
+
+  // Invoices where this shop was used as a reward source
+  rewardedInvoices       Invoice[]    @relation("RewardSource")
 }
 
 model BarberStaff {

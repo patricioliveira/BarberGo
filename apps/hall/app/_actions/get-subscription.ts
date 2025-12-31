@@ -16,7 +16,8 @@ export const getBarbershopSubscription = async () => {
                     subscription: {
                         include: {
                             invoices: {
-                                orderBy: { createdAt: 'desc' }
+                                orderBy: { createdAt: 'desc' },
+                                include: { referralRewardSource: true }
                             }
                         }
                     }

@@ -1,4 +1,3 @@
-// apps/hall/app/admin/manage-barbershop/[id]/_components/submit-button.tsx
 "use client"
 
 import { useFormStatus } from "react-dom"

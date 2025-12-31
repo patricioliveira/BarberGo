@@ -95,12 +95,36 @@ export function InvoiceDetails({ isOpen, onClose, invoice, barbershopName }: Inv
                     {/* Detalhes do Item */}
                     <div className="space-y-3">
                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Itens do Pedido</h3>
-                        <div className="flex justify-between items-center p-4 bg-[#1A1B1F] rounded-xl border border-white/5 print:bg-white print:border-gray-200">
+
+                        {/* Subtotal / Preço Original */}
+                        <div className="flex justify-between items-center p-4 bg-[#1A1B1F] rounded-t-xl border border-white/5 border-b-0 print:bg-white print:border-gray-200">
                             <div>
                                 <p className="font-bold text-white text-sm md:text-base print:text-black">Assinatura BarberGo PRO</p>
                                 <p className="text-[10px] md:text-xs text-gray-500">Mensalidade - {barbershopName}</p>
                             </div>
-                            <p className="font-bold text-sm md:text-base">{Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.amount))}</p>
+                            <p className="font-bold text-sm md:text-base">{Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.amount) + Number(invoice.discount || 0))}</p>
+                        </div>
+
+                        {/* Descontos */}
+                        {Number(invoice.discount) > 0 && (
+                            <div className="flex justify-between items-center p-4 bg-green-500/5 border border-white/5 border-y-0 print:bg-white print:border-gray-200">
+                                <div>
+                                    <p className="font-bold text-green-500 text-sm md:text-base print:text-black flex items-center gap-2">
+                                        <Badge className="bg-green-500 text-white border-none text-[9px] h-4 px-1">PROMO</Badge>
+                                        Desconto Aplicado
+                                    </p>
+                                    <p className="text-[10px] md:text-xs text-green-400/70">
+                                        {invoice.referralRewardSource ? `Indicação: ${invoice.referralRewardSource.name}` : "Cupom Promocional"}
+                                    </p>
+                                </div>
+                                <p className="font-bold text-sm md:text-base text-green-500">- {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.discount))}</p>
+                            </div>
+                        )}
+
+                        {/* Total Final */}
+                        <div className="flex justify-between items-center p-4 bg-black/40 rounded-b-xl border border-white/5 print:bg-white print:border-gray-200">
+                            <p className="font-black text-white text-sm md:text-base uppercase print:text-black">Total a Pagar</p>
+                            <p className="font-black text-lg md:text-xl text-white print:text-black">{Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.amount))}</p>
                         </div>
                     </div>
 
