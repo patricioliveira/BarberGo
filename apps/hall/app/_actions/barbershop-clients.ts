@@ -22,8 +22,8 @@ export const getBarbershopClients = async () => {
         include: { service: true }
     })
 
-    // Extrai IDs únicos de usuários
-    const userIds = Array.from(new Set(bookings.map(b => b.userId)))
+    // Extrai IDs únicos de usuários (filtrando nulos de agendamentos manuais)
+    const userIds = Array.from(new Set(bookings.map(b => b.userId).filter(id => id !== null))) as string[]
 
     // Busca dados dos usuários
     const users = await db.user.findMany({

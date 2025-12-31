@@ -26,7 +26,9 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-    Badge
+    Badge,
+    CurrencyInput,
+    Textarea
 } from "@barbergo/ui"
 import {
     Save,
@@ -61,7 +63,8 @@ import {
     Copy,
     Share2,
     AlertTriangle,
-    Palette
+    Palette,
+    Percent
 } from "lucide-react"
 import { PLANS, PlanType } from "@barbergo/shared"
 import Header from "../../_components/header"
@@ -73,6 +76,7 @@ import { addOrUpdateStaff, toggleStaffStatus, deleteStaff } from "@/_actions/man
 import { uploadImageAction } from "../../_actions/upload-image"
 import { updateBarbershopLogo, updateServiceImage } from "@/_actions/update-images"
 import { toast } from "sonner"
+import { PromotionDialog } from "./_components/promotion-dialog"
 
 const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (c: boolean) => void }) => (
     <button
@@ -87,7 +91,7 @@ const Switch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChang
 type StaffMember = { id: string; name: string; email: string; jobTitle: string; isActive: boolean }
 // Correção: imageUrl agora é obrigatório (string), usamos string vazia quando não houver imagem
 type ServiceStaffPrice = { staffId: string; price: string; isLinked: boolean }
-type Service = { id: string; name: string; description: string; price: string; duration: number; imageUrl: string; staffPrices: ServiceStaffPrice[] }
+type Service = { id: string; name: string; description: string; price: string; duration: number; imageUrl: string; staffPrices: ServiceStaffPrice[]; promotion?: any }
 type WorkingHour = { day: string; open: string; close: string; isOpen: boolean }
 type PhoneInput = { number: string; isWhatsapp: boolean }
 
@@ -117,6 +121,10 @@ export default function SettingsPage() {
         isOpen: boolean; title: string; description: string; onConfirm: () => void; variant?: "default" | "destructive";
     }>({ isOpen: false, title: "", description: "", onConfirm: () => { } })
 
+    // PROMOTION STATES
+    const [isPromotionOpen, setIsPromotionOpen] = useState(false)
+    const [selectedServiceForPromotion, setSelectedServiceForPromotion] = useState<any>(null)
+
     const [newStaff, setNewStaff] = useState({ name: "", email: "", jobTitle: "" })
     const [customPayment, setCustomPayment] = useState("")
     const [isSubmittingStaff, setIsSubmittingStaff] = useState(false)
@@ -124,6 +132,7 @@ export default function SettingsPage() {
     const [storeData, setStoreData] = useState({
         id: "",
         name: "",
+        description: "",
         address: "",
         imageUrl: "",
         phones: [] as PhoneInput[],
@@ -177,6 +186,7 @@ export default function SettingsPage() {
                         setStoreData({
                             id: data.id,
                             name: data.name || "",
+                            description: data.description || "",
                             address: data.address || "",
                             imageUrl: data.imageUrl || "",
                             phones: loadedPhones,
@@ -210,7 +220,8 @@ export default function SettingsPage() {
                                 staffId: sp.staffId,
                                 price: sp.price ? String(sp.price) : "",
                                 isLinked: sp.isLinked
-                            })) : []
+                            })) : [],
+                            promotion: (s as any).promotion // Mapeia promoção
                         })))
 
                         if (data.subscription) {
@@ -535,6 +546,16 @@ export default function SettingsPage() {
                                     <div className="space-y-2"><Label>Endereço</Label><Input value={storeData.address} onChange={e => { setStoreData({ ...storeData, address: e.target.value }); setIsDirty(true) }} className="bg-secondary border-none" /></div>
                                 </div>
 
+                                <div className="space-y-2">
+                                    <Label>Descrição da Barbearia</Label>
+                                    <Textarea
+                                        value={storeData.description}
+                                        onChange={e => { setStoreData({ ...storeData, description: e.target.value }); setIsDirty(true) }}
+                                        className="bg-secondary border-none min-h-[100px] text-sm"
+                                        placeholder="Conte um pouco sobre sua barbearia..."
+                                    />
+                                </div>
+
                                 {/* Contatos e Redes Sociais */}
                                 <div className="space-y-4 pt-4 border-t border-secondary">
                                     <Label className="flex items-center gap-2"><PhoneIcon size={16} /> Contatos & Redes</Label>
@@ -706,7 +727,7 @@ export default function SettingsPage() {
                                             <div className="grid md:grid-cols-2 gap-4">
                                                 <div><Label className="text-xs">Nome</Label><Input value={s.name} onChange={e => { const n = [...services]; n[i].name = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
                                                 <div className="grid grid-cols-2 gap-4">
-                                                    <div><Label className="text-xs">Preço</Label><Input type="number" value={s.price} onChange={e => { const n = [...services]; n[i].price = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
+                                                    <div><Label className="text-xs">Preço (R$)</Label><CurrencyInput value={Number(s.price)} onChange={val => { const n = [...services]; n[i].price = val.toString(); setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
                                                     <div><Label className="text-xs">Minutos</Label><Input type="number" value={s.duration} onChange={e => { const n = [...services]; n[i].duration = parseInt(e.target.value); setServices(n); setIsDirty(true) }} className="bg-secondary border-none" /></div>
                                                 </div>
                                             </div>
@@ -743,6 +764,15 @@ export default function SettingsPage() {
 
                                             <div className="flex gap-2">
                                                 <Input placeholder="Descrição..." value={s.description} onChange={e => { const n = [...services]; n[i].description = e.target.value; setServices(n); setIsDirty(true) }} className="bg-secondary border-none flex-1 h-8 text-xs" />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className={`h-8 w-8 ${s.promotion?.isActive ? "text-green-500 bg-green-500/10" : "text-gray-500 hover:text-white"}`}
+                                                    onClick={() => { setSelectedServiceForPromotion(s); setIsPromotionOpen(true) }}
+                                                    title="Promoção"
+                                                >
+                                                    <Percent size={14} />
+                                                </Button>
                                                 <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => { setServices(services.filter(x => x.id !== s.id)); setIsDirty(true) }}><Trash2 size={14} /></Button>
                                             </div>
                                         </div>
@@ -751,6 +781,16 @@ export default function SettingsPage() {
                             )
                         })}
                     </TabsContent>
+
+                    {/* MODAL DE PROMOÇÃO */}
+                    {selectedServiceForPromotion && (
+                        <PromotionDialog
+                            isOpen={isPromotionOpen}
+                            onOpenChange={setIsPromotionOpen}
+                            service={selectedServiceForPromotion}
+                            promotion={selectedServiceForPromotion.promotion}
+                        />
+                    )}
 
                     <TabsContent value="staff" className="space-y-4">
                         <div className="flex flex-col sm:flex-row justify-between gap-3 mb-6">

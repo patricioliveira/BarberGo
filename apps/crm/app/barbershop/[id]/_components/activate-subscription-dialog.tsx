@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-    Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+    Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, CurrencyInput
 } from "@barbergo/ui"
 import { CheckCircle, Loader2 } from "lucide-react"
 import { confirmPaymentAndActivate } from "@/app/_actions/subscriptions"
@@ -83,11 +83,10 @@ export function ActivateSubscriptionDialog({ subscriptionId, defaultPrice, pendi
 
                     <div className="space-y-2">
                         <Label htmlFor="amount">Valor Recebido (R$)</Label>
-                        <Input
+                        <CurrencyInput
                             id="amount"
-                            type="number"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
+                            value={Number(amount)}
+                            onChange={(val) => setAmount(val.toString())}
                             className="bg-black/20 border-white/10 focus:border-green-500"
                         />
                     </div>

@@ -165,21 +165,24 @@ export default function HomeClient({ initialBarbershops, initialFavorites, userN
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+                    <div className="relative">
                         {loading ? (
-                            Array.from({ length: 10 }).map((_, i) => (
-                                <div key={i} className="aspect-[3/4] w-full bg-secondary/30 rounded-2xl animate-pulse" />
-                            ))
+                            <div className="flex gap-4 overflow-hidden">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <div key={i} className="min-w-[160px] md:min-w-[200px] aspect-[3/4] bg-secondary/30 rounded-2xl animate-pulse" />
+                                ))}
+                            </div>
                         ) : barbershops.length > 0 ? (
-                            barbershops.map((shop) => (
-                                <BarbershopItem
-                                    key={shop.id}
-                                    barbershop={shop}
-                                    className="w-full min-w-0 shadow-lg hover:shadow-xl transition-all"
-                                />
-                            ))
+                            <HorizontalScroll>
+                                {barbershops.map((shop) => (
+                                    <BarbershopItem
+                                        key={shop.id}
+                                        barbershop={shop}
+                                    />
+                                ))}
+                            </HorizontalScroll>
                         ) : (
-                            <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-400 bg-secondary/10 rounded-3xl border border-secondary/20">
+                            <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-secondary/10 rounded-3xl border border-secondary/20">
                                 <AlertCircle size={40} className="mb-4 opacity-50" />
                                 <p className="font-medium">Nenhuma barbearia encontrada.</p>
                                 {defaultSearch && <Button variant="link" className="text-primary mt-2" onClick={() => window.location.href = '/'}>Limpar busca</Button>}

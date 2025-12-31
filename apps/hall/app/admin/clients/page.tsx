@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Header from "@/_components/header"
 import { Button, Input, Sheet, SheetContent, SheetHeader, SheetTitle, Avatar, AvatarImage, AvatarFallback, Card, CardContent } from "@barbergo/ui"
-import { ArrowLeft, Search, Loader2, User, Ban, CheckCircle2, XCircle, Clock, DollarSign, Calendar } from "lucide-react"
+import { ArrowLeft, Search, Loader2, User, Ban, CheckCircle2, XCircle, Clock, DollarSign, Calendar, Users } from "lucide-react"
 import { getBarbershopClients, toggleClientBlock } from "@/_actions/barbershop-clients"
 import { toast } from "sonner"
 
@@ -23,9 +23,22 @@ export default function AdminClientsPage() {
         if (status === "authenticated") {
             if ((status as any) === "authenticated" && (useSession as any)?.data?.user?.role === "STAFF") {
                 router.push("/admin")
+            } else {
+                fetchData()
             }
         }
     }, [status, router])
+
+    const fetchData = async () => {
+        try {
+            const data = await getBarbershopClients()
+            setClients(data)
+        } catch (error) {
+            toast.error("Erro ao carregar clientes.")
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     const handleBlockToggle = async () => {
         if (!selectedClient) return
@@ -60,28 +73,47 @@ export default function AdminClientsPage() {
                 </div>
 
                 <div className="grid gap-3">
-                    {filtered.map((client) => (
-                        <div key={client.user.id} className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all hover:bg-white/5 ${client.isBlocked ? 'bg-red-950/20 border-red-900/50' : 'bg-[#1A1B1F] border-secondary'}`} onClick={() => { setSelectedClient(client); setIsSheetOpen(true); }}>
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-12 w-12 border border-secondary/50">
-                                    <AvatarImage src={client.user.image} />
-                                    <AvatarFallback><User /></AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-bold text-white">{client.user.name}</p>
-                                        {client.isBlocked && <span className="text-[10px] bg-red-600 px-2 py-0.5 rounded text-white font-bold">BLOQUEADO</span>}
-                                    </div>
-                                    <p className="text-xs text-gray-400">{client.user.email}</p>
-                                    <div className="flex gap-3 mt-1 text-[10px] text-gray-500">
-                                        <span>Total: {Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(client.stats.totalSpent)}</span>
-                                        <span>•</span>
-                                        <span>{client.stats.completedCount} visitas</span>
+                    {filtered.length === 0 && !isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 rounded-xl border border-dashed border-white/5 bg-[#1A1B1F]/50">
+                            <div className="p-4 bg-black/40 rounded-full border border-white/5">
+                                <Users size={32} className="text-gray-500" />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-sm font-bold text-white">Nenhum cliente encontrado</p>
+                                <p className="text-xs text-gray-500 max-w-xs mx-auto">
+                                    {searchTerm ? "Tente buscar por outro nome ou e-mail." : "Sua carteira de clientes ainda está vazia. Agendamentos concluídos aparecerão aqui."}
+                                </p>
+                            </div>
+                            {searchTerm && (
+                                <Button variant="outline" size="sm" onClick={() => setSearchTerm("")} className="border-secondary text-xs h-8">
+                                    Limpar busca
+                                </Button>
+                            )}
+                        </div>
+                    ) : (
+                        filtered.map((client) => (
+                            <div key={client.user.id} className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all hover:bg-white/5 ${client.isBlocked ? 'bg-red-950/20 border-red-900/50' : 'bg-[#1A1B1F] border-secondary'}`} onClick={() => { setSelectedClient(client); setIsSheetOpen(true); }}>
+                                <div className="flex items-center gap-4">
+                                    <Avatar className="h-12 w-12 border border-secondary/50">
+                                        <AvatarImage src={client.user.image} />
+                                        <AvatarFallback><User /></AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-bold text-white">{client.user.name}</p>
+                                            {client.isBlocked && <span className="text-[10px] bg-red-600 px-2 py-0.5 rounded text-white font-bold">BLOQUEADO</span>}
+                                        </div>
+                                        <p className="text-xs text-gray-400">{client.user.email}</p>
+                                        <div className="flex gap-3 mt-1 text-[10px] text-gray-500">
+                                            <span>Total: {Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(client.stats.totalSpent)}</span>
+                                            <span>•</span>
+                                            <span>{client.stats.completedCount} visitas</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
 

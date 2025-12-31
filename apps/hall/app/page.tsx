@@ -20,8 +20,21 @@ export default async function Home({ searchParams }: HomeProps) {
       name: {
         contains: searchParams.search,
         mode: 'insensitive',
+      },
+      isExclusive: false,
+      subscription: {
+        status: {
+          not: 'CANCELED'
+        }
       }
-    } : {},
+    } : {
+      isExclusive: false,
+      subscription: {
+        status: {
+          not: 'CANCELED'
+        }
+      }
+    },
     include: {
       ratings: true,
     }

@@ -76,14 +76,42 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
 
     const totalDuration = useMemo(() => services.reduce((acc, s) => acc + s.duration, 0), [services])
 
-    // Cálculo de Preço considerando Override por Barbeiro
+    // Cálculo de Preço considerando Override por Barbeiro e Promoções
     const totalPrice = useMemo(() => {
         return services.reduce((acc, s) => {
+            let itemPrice = s.price // This is already the final price (promotional or base)
+
+            // Check for Staff Price Override
             if (selectedBarber && s.staffPrices) {
-                const staffPrice = s.staffPrices.find(sp => sp.staffId === selectedBarber.id)
-                if (staffPrice) return acc + Number(staffPrice.price)
+                const staffPriceObj = s.staffPrices.find(sp => sp.staffId === selectedBarber.id)
+                if (staffPriceObj) {
+                    let staffPrice = Number(staffPriceObj.price)
+
+                    // Apply active promotion to staff price if it exists
+                    const serviceAny = s as any
+                    const promotion = serviceAny.promotion
+
+                    if (promotion && promotion.isActive) {
+                        // Verifica validade de data novamente ou assume validade pois service.price já veio ajustado?
+                        // O 'promotion' que vem do service já deve ser o validado se passarmos o 'isPromotionValid' flag
+                        // Mas aqui recebemos service cru. Precisamos saber se a promoção é válida.
+                        // O componente pai (page.tsx) ajusta 'price' do serviço. Mas 'staffPrices' é raw.
+                        // O ideal é o page.tsx já passar os staffPrices com desconto aplicado ou uma flag.
+                        // Vamos confiar que se 'promotion' existe no objeto serviço modificado pelo page.tsx, é porque é válida.
+
+                        if (promotion.discountPercentage) {
+                            staffPrice = staffPrice * (1 - (promotion.discountPercentage / 100))
+                        } else if (promotion.promotionalPrice) {
+                            // Se for preço fixo, substituímos o preço do staff?
+                            // O usuário disse: "show the price ... or the registered value".
+                            // Geralmente promoção fixa domina.
+                            staffPrice = Number(promotion.promotionalPrice)
+                        }
+                    }
+                    return acc + staffPrice
+                }
             }
-            return acc + s.price
+            return acc + itemPrice
         }, 0)
     }, [services, selectedBarber])
 
@@ -495,7 +523,14 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
                                                 <div className="space-y-2">
                                                     {services.map((service) => (
                                                         <div key={service.id} className="flex justify-between items-center text-sm">
-                                                            <span className="text-gray-400 flex items-center gap-2"><ScissorsIcon size={12} /> {service.name}</span>
+                                                            <span className="text-gray-400 flex items-center gap-2">
+                                                                <ScissorsIcon size={12} /> {service.name}
+                                                                {(service as any).promotion && (
+                                                                    <span className="bg-green-500/10 text-green-500 text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+                                                                        PROMO
+                                                                    </span>
+                                                                )}
+                                                            </span>
                                                             <span className="text-white font-bold">
                                                                 {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(service.price)}
                                                             </span>

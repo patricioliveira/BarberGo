@@ -122,7 +122,8 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
         personalListQuery.where = { ...listBookingsQuery.where, staffId: staffProfile!.id }
         delete personalListQuery.where.barbershopId // Remove shop filter replacement
 
-        personalListBookings = await db.booking.findMany(personalListQuery)
+        const result = await db.booking.findMany(personalListQuery)
+        personalListBookings = result
     }
 
     const filterActive = (list: any[]) => list.filter(b => b.status !== "CANCELED")
@@ -182,6 +183,11 @@ export const getAdminDashboard = async (targetDate: Date = new Date(), period: "
         personalChartData: isBarber ? calculateChart(personalBookings) : null,
         personalBookings: personalListBookings.map((b: any) => ({
             ...b, service: { ...b.service, price: Number(b.service.price) }
-        }))
+        })),
+        services: barbershop ? (await db.barbershopService.findMany({ where: { barbershopId } })).map(s => ({ ...s, price: Number(s.price) })) : [],
+        staff: barbershop ? await db.barberStaff.findMany({
+            where: { barbershopId, isActive: true },
+            include: { user: { select: { name: true } } }
+        }) : []
     }
 }

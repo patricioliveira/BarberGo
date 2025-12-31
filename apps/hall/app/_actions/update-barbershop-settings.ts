@@ -16,6 +16,7 @@ export const updateBarbershopSettings = async (params: {
     barbershopId: string
     storeData: {
         name: string
+        description: string
         address: string
         imageUrl: string
         phones: PhoneInput[] // Agora é um array de objetos
@@ -41,6 +42,7 @@ export const updateBarbershopSettings = async (params: {
                 where: { id: params.barbershopId },
                 data: {
                     name: params.storeData.name,
+                    description: params.storeData.description,
                     address: params.storeData.address,
                     imageUrl: params.storeData.imageUrl,
                     phones: params.storeData.phones as unknown as Prisma.InputJsonValue,

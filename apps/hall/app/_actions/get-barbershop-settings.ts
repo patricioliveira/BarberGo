@@ -16,9 +16,14 @@ export const getBarbershopSettings = async () => {
         include: {
             services: {
                 include: {
-                    staffPrices: true
+                    staffPrices: true,
+                    promotions: {
+                        where: { isActive: true },
+                        orderBy: { createdAt: 'desc' },
+                        take: 1
+                    }
                 }
-            },
+            } as any,
             staff: true,
             subscription: true
         },
@@ -28,14 +33,15 @@ export const getBarbershopSettings = async () => {
 
     return {
         ...barbershop,
-        services: barbershop.services.map((s) => ({
+        services: barbershop.services.map((s: any) => ({
             ...s,
             price: s.price.toString(),
             description: s.description || "",
-            staffPrices: s.staffPrices.map(sp => ({
+            staffPrices: s.staffPrices.map((sp: { price: { toString: () => any } }) => ({
                 ...sp,
                 price: sp.price.toString()
-            }))
+            })),
+            promotion: s.promotions[0] // Attach the active promotion if any
         })),
         staff: barbershop.staff.map((st) => ({
             ...st,

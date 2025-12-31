@@ -21,7 +21,12 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
         include: {
             services: {
                 include: {
-                    staffPrices: true
+                    staffPrices: true,
+                    promotions: {
+                        where: { isActive: true },
+                        orderBy: { createdAt: 'desc' },
+                        take: 1
+                    }
                 }
             },
             staff: {
@@ -43,15 +48,56 @@ export default async function BarbershopDetailsPage({ params }: BarbershopDetail
 
     const serializedBarbershop = {
         ...barbershop,
-        services: barbershop.services.map((service) => ({
-            ...service,
-            price: Number(service.price),
-            staffPrices: service.staffPrices.map(sp => ({
-                staffId: sp.staffId,
-                price: Number(sp.price),
-                isLinked: sp.isLinked
-            }))
-        })),
+        services: barbershop.services.map((service: any) => {
+            const promotion = service.promotions[0]
+            let finalPrice = Number(service.price)
+
+            // Calculate promotional price if valid
+            // Check dates and specific days
+            let isPromotionValid = false
+            if (promotion) {
+                const now = new Date()
+                const start = new Date(promotion.startDate)
+                // Ajuste para início do dia (00:00:00) para garantir que 'hoje' seja incluído se start == hoje
+                start.setHours(0, 0, 0, 0)
+
+                const end = promotion.endDate ? new Date(promotion.endDate) : null
+                if (end) end.setHours(23, 59, 59, 999)
+
+                // Ajuste para Timezone do Brasil para verificar o dia da semana correto
+                const brazilDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }))
+                const day = brazilDate.getDay() // 0-6
+
+                // Verifica se está dentro do intervalo de datas
+                const isDateValid = now >= start && (!end || now <= end)
+
+                if (isDateValid) {
+                    if (!promotion.specificDays || promotion.specificDays.length === 0 || promotion.specificDays.includes(day)) {
+                        isPromotionValid = true
+                    }
+                }
+            }
+
+            if (isPromotionValid && promotion) {
+                if (promotion.promotionalPrice) {
+                    finalPrice = Number(promotion.promotionalPrice)
+                } else if (promotion.discountPercentage) {
+                    finalPrice = Number(service.price) * (1 - (promotion.discountPercentage / 100))
+                }
+            }
+
+            return {
+                ...service,
+                price: finalPrice,
+                originalPrice: isPromotionValid ? Number(service.price) : undefined,
+                staffPrices: service.staffPrices.map((sp: any) => ({
+                    staffId: sp.staffId,
+                    price: Number(sp.price), // Note: Staff price logic with promotion? Usually base price promtion applies to staff too or not? Start with base service promotion.
+                    isLinked: sp.isLinked
+                })),
+                promotion: isPromotionValid ? promotion : undefined
+            }
+        }),
     }
 
     let isFavorited = false

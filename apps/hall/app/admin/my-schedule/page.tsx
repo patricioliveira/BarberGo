@@ -12,7 +12,7 @@ import {
     ChevronLeft, CheckCircle2, Clock, XCircle, User,
     CalendarCheck2, AlertTriangle, Check, X, Loader2,
     MessageCircle, Phone, Trash2, Search, ArrowUpDown,
-    ChevronRight, Calendar as CalendarIcon, VolumeX, FileText
+    ChevronRight, Calendar as CalendarIcon, VolumeX, FileText, Plus
 } from "lucide-react"
 import Link from "next/link"
 import { getAdminDashboard } from "@/_actions/get-admin-dashboard"
@@ -23,19 +23,26 @@ import { toast } from "sonner"
 import Footer from "@/_components/footer"
 import HorizontalScroll from "../../_components/horizontal-scroll"
 import { ConfirmDialog } from "../../_components/confirm-dialog"
+import { ManualBookingDialog } from "./_components/manual-booking-dialog"
 
 export default function MySchedulePage() {
     const { status } = useSession()
     const router = useRouter()
 
     const [bookings, setBookings] = useState<any[]>([])
+    const [services, setServices] = useState<any[]>([])
+    const [staff, setStaff] = useState<any[]>([])
+    const [currentBarberId, setCurrentBarberId] = useState<string | undefined>(undefined)
+    const [isAdmin, setIsAdmin] = useState(false)
+
+    // ... filters
     const [filter, setFilter] = useState<"CONFIRMED" | "COMPLETED" | "CANCELED" | "WAITING_CANCELLATION">("CONFIRMED")
     const [period, setPeriod] = useState<"day" | "week" | "month">("day")
     const [viewDate, setViewDate] = useState(new Date())
     const [searchQuery, setSearchQuery] = useState("")
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
-    // Estados de Loading separados para evitar "pulo" de tela
+    // ... loaders
     const [isInitialLoading, setIsInitialLoading] = useState(true)
     const [isFetching, setIsFetching] = useState(false)
     const [isProcessing, setIsProcessing] = useState<string | null>(null)
@@ -44,12 +51,19 @@ export default function MySchedulePage() {
     const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
     const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
+    // Manual Booking State
+    const [isManualBookingOpen, setIsManualBookingOpen] = useState(false)
+
     const loadData = useCallback(async (fullLoader = false) => {
         try {
             if (fullLoader) setIsInitialLoading(true)
             setIsFetching(true)
             const data = await getAdminDashboard(viewDate)
             setBookings(data.personalBookings || [])
+            setServices(data.services || [])
+            setStaff(data.staff || [])
+            setCurrentBarberId(data.barberId)
+            setIsAdmin(data.role === "ADMIN")
         } catch (error) {
             console.error(error)
             toast.error("Erro ao sincronizar dados.")
@@ -64,6 +78,8 @@ export default function MySchedulePage() {
         if (status === "authenticated") loadData(bookings.length === 0)
     }, [status, viewDate, loadData])
 
+    // ... (rest of effect)
+
     // --- SISTEMA DE NOTIFICAÇÃO DO PRÓXIMO CLIENTE ---
     useEffect(() => {
         const checkReminders = () => {
@@ -77,12 +93,12 @@ export default function MySchedulePage() {
                         // Tenta tocar um som discreto se o navegador permitir
                         try { new Audio('/notification.mp3').play() } catch (e) { }
 
-                        toast.info(`PRÓXIMO CLIENTE EM 15 MIN: ${booking.user.name}`, {
+                        toast.info(`PRÓXIMO CLIENTE EM 15 MIN: ${booking.user?.name || "Cliente"}`, {
                             description: `Serviço: ${booking.service.name}`,
                             duration: 15000,
                             action: {
                                 label: "Avisar WhatsApp",
-                                onClick: () => handleContactWhatsApp((booking.user as any).UserPhone || [], booking.user.name)
+                                onClick: () => handleContactWhatsApp((booking.user as any)?.UserPhone || [], booking.user?.name || "Cliente")
                             }
                         })
                     }
@@ -148,7 +164,7 @@ export default function MySchedulePage() {
 
         if (searchQuery) {
             const q = searchQuery.toLowerCase()
-            result = result.filter(b => b.user.name.toLowerCase().includes(q) || b.service.name.toLowerCase().includes(q))
+            result = result.filter(b => (b.user?.name || "").toLowerCase().includes(q) || b.service.name.toLowerCase().includes(q))
         }
 
         return result.sort((a, b) => {
@@ -197,6 +213,13 @@ export default function MySchedulePage() {
                             />
                         </div>
                         <Button
+                            variant="default"
+                            className="bg-primary text-white hover:bg-primary/90 hidden sm:flex h-11"
+                            onClick={() => setIsManualBookingOpen(true)}
+                        >
+                            <Plus size={18} className="mr-2" /> Novo
+                        </Button>
+                        <Button
                             variant="outline" size="icon" className="border-secondary h-11 w-11"
                             onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
                         >
@@ -204,6 +227,25 @@ export default function MySchedulePage() {
                         </Button>
                     </div>
                 </div>
+
+                {/* FAB Mobile */}
+                <Button
+                    className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-xl bg-primary text-white z-50 sm:hidden flex items-center justify-center"
+                    onClick={() => setIsManualBookingOpen(true)}
+                >
+                    <Plus size={24} />
+                </Button>
+
+                {/* MANUAL BOOKING DIALOG */}
+                <ManualBookingDialog
+                    isOpen={isManualBookingOpen}
+                    onOpenChange={(open) => { setIsManualBookingOpen(open); if (!open) loadData(); }}
+                    services={services}
+                    staff={staff}
+                    preSelectedDate={viewDate}
+                    currentStaffId={currentBarberId}
+                    isAdmin={isAdmin}
+                />
 
                 {/* NAVEGAÇÃO DE PERÍODO */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#1A1B1F] p-3 rounded-2xl border border-white/5">
@@ -247,8 +289,10 @@ export default function MySchedulePage() {
                     )}
 
                     {processedBookings.length > 0 ? processedBookings.map((booking) => {
-                        const userPhones = (booking.user as any).UserPhone || []
+                        const user = booking.user || {}
+                        const userPhones = (user as any).UserPhone || []
                         const hasPhone = userPhones.length > 0
+                        const userName = user.name || "Cliente (Manual)"
 
                         return (
                             <Card key={booking.id} className="bg-[#1A1B1F] border-none ring-1 ring-white/5 overflow-hidden shadow-lg transition-all">
@@ -268,7 +312,7 @@ export default function MySchedulePage() {
                                             <div>
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <User size={14} className="text-primary" />
-                                                    <p className="font-bold text-white text-sm">{booking.user.name}</p>
+                                                    <p className="font-bold text-white text-sm">{userName}</p>
                                                 </div>
                                                 <p className="text-xs text-gray-400">{booking.service.name}</p>
 
@@ -293,7 +337,7 @@ export default function MySchedulePage() {
                                         <div className="flex flex-wrap items-center gap-2 justify-end">
                                             {booking.status === "CONFIRMED" && (
                                                 <div className="flex items-center gap-1 bg-black/30 p-1 rounded-xl border border-white/5 mr-2">
-                                                    <Button size="icon" variant="ghost" className={`h-9 w-9 ${hasPhone ? 'text-green-500' : 'text-gray-700'}`} onClick={() => handleContactWhatsApp(userPhones, booking.user.name)} disabled={!hasPhone}><MessageCircle size={18} /></Button>
+                                                    <Button size="icon" variant="ghost" className={`h-9 w-9 ${hasPhone ? 'text-green-500' : 'text-gray-700'}`} onClick={() => handleContactWhatsApp(userPhones, userName)} disabled={!hasPhone}><MessageCircle size={18} /></Button>
                                                     <Button size="icon" variant="ghost" className={`h-9 w-9 ${hasPhone ? 'text-blue-400' : 'text-gray-700'}`} onClick={() => handleCopyPhone(userPhones)} disabled={!hasPhone}><Phone size={18} /></Button>
                                                 </div>
                                             )}

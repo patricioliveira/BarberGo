@@ -9,7 +9,8 @@ import {
     Button,
     Input,
     Label,
-    Switch
+    Switch,
+    CurrencyInput
 } from "@barbergo/ui"
 import { User, Link as LinkIcon, DollarSign } from "lucide-react"
 
@@ -128,12 +129,10 @@ export function ServicePriceDialog({
                                 </div>
                                 <div className="col-span-4 flex items-center justify-center">
                                     <div className="relative w-24">
-                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">R$</span>
-                                        <Input
-                                            type="number"
-                                            value={currentPrice}
-                                            onChange={(e) => updatePrice(member.id, e.target.value)}
-                                            className={`pl-8 h-9 text-sm font-bold border-none text-center ${isCustom ? 'text-primary bg-primary/10' : 'text-gray-400 bg-black/20'}`}
+                                        <CurrencyInput
+                                            value={Number(currentPrice)}
+                                            onChange={(val) => updatePrice(member.id, val.toString())}
+                                            className={`pl-4 h-9 text-sm font-bold border-none text-center ${isCustom ? 'text-primary bg-primary/10' : 'text-gray-400 bg-black/20'}`}
                                         />
                                     </div>
                                 </div>

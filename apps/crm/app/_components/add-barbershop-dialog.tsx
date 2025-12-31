@@ -2,7 +2,7 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@barbergo/ui"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, CurrencyInput } from "@barbergo/ui"
 import { UserPlus, Copy, CheckCircle2, Loader2 } from "lucide-react"
 import { createBarbershopWithDetails } from "../_actions/barbershop"
 import { toast } from "sonner"
@@ -132,14 +132,19 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
                                     <Label className="text-gray-400 text-xs font-bold uppercase">Mensalidade (R$)</Label>
-                                    <Input
-                                        name="price"
-                                        type="number"
-                                        step="0.01"
+                                    <CurrencyInput
+                                        // name="price" // CurrencyInput doesn't support name directly for FormData yet easily without hidden input, but state is used.
+                                        // Actually `CurrencyInput` uses `value` and `onChange`.
+                                        // But the form uses FormData.
+                                        // I should add a hidden input for the form submission or rely on creating logic update.
+                                        // In handleSubmit, `price` is read from `price` state is not used in payload directly?
+                                        // Wait, line 36 uses `fd.get("price")`.
+                                        // So I need a hidden input with the raw value.
                                         value={price}
-                                        onChange={(e) => setPrice(Number(e.target.value))}
+                                        onChange={(val) => setPrice(val)}
                                         className="bg-black/20 border-white/10 text-primary font-bold h-11"
                                     />
+                                    <input type="hidden" name="price" value={price} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label className="text-gray-400 text-xs font-bold uppercase">Dias de Trial</Label>

@@ -4,13 +4,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@barbergo/ui"
 import { Badge } from "@barbergo/ui"
 import { Booking, BarbershopService, User, BarberStaff } from "@prisma/client"
 import { format, isToday } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { Scissors } from "lucide-react"
 
 // Tipo estendido para incluir relacionamentos, preço corrigido e o profissional (staff)
 type AdminBooking = Booking & {
     service: Omit<BarbershopService, "price"> & { price: number }
-    user: User
+    user: User | null
     staff?: BarberStaff // Adicionado para identificar o barbeiro
 }
 
@@ -30,49 +29,55 @@ const AdminBookingList = ({ bookings }: AdminBookingListProps) => {
 
     return (
         <div className="space-y-4">
-            {displayBookings.map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between p-3 bg-[#141518] border border-[#26272B] rounded-xl transition-all hover:border-primary/20">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-10 w-10 border border-[#26272B]">
-                            <AvatarImage src={booking.user.image || ""} />
-                            <AvatarFallback className="bg-primary/20 text-primary font-bold">
-                                {booking.user.name?.[0] || "C"}
-                            </AvatarFallback>
-                        </Avatar>
+            {displayBookings.map((booking) => {
+                const displayName = booking.user?.name || booking.customerName || "Cliente sem cadastro"
+                const displayImage = booking.user?.image || ""
+                const displayInitial = displayName[0] || "C"
 
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium leading-none text-white">
-                                {booking.user.name || "Cliente sem nome"}
-                            </p>
-                            <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">{booking.service.name}</span>
-                                    {isToday(new Date(booking.date)) && (
-                                        <Badge variant="default" className="h-4 px-1 text-[10px] bg-green-500/20 text-green-500 hover:bg-green-500/20 border-none">Hoje</Badge>
+                return (
+                    <div key={booking.id} className="flex items-center justify-between p-3 bg-[#141518] border border-[#26272B] rounded-xl transition-all hover:border-primary/20">
+                        <div className="flex items-center gap-4">
+                            <Avatar className="h-10 w-10 border border-[#26272B]">
+                                <AvatarImage src={displayImage} />
+                                <AvatarFallback className="bg-primary/20 text-primary font-bold">
+                                    {displayInitial}
+                                </AvatarFallback>
+                            </Avatar>
+
+                            <div className="space-y-1">
+                                <p className="text-sm font-medium leading-none text-white">
+                                    {displayName}
+                                </p>
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-muted-foreground">{booking.service.name}</span>
+                                        {isToday(new Date(booking.date)) && (
+                                            <Badge variant="default" className="h-4 px-1 text-[10px] bg-green-500/20 text-green-500 hover:bg-green-500/20 border-none">Hoje</Badge>
+                                        )}
+                                    </div>
+
+                                    {/* EXIBIÇÃO DO BARBEIRO */}
+                                    {booking.staff && (
+                                        <div className="flex items-center gap-1 text-[10px] text-primary/80 font-medium">
+                                            <Scissors size={10} />
+                                            <span>Profissional: {booking.staff.name.split(" ")[0]}</span>
+                                        </div>
                                     )}
                                 </div>
+                            </div>
+                        </div>
 
-                                {/* EXIBIÇÃO DO BARBEIRO */}
-                                {booking.staff && (
-                                    <div className="flex items-center gap-1 text-[10px] text-primary/80 font-medium">
-                                        <Scissors size={10} />
-                                        <span>Profissional: {booking.staff.name.split(" ")[0]}</span>
-                                    </div>
-                                )}
+                        <div className="text-right">
+                            <div className="text-sm font-bold text-white">
+                                {format(new Date(booking.date), "HH:mm")}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                {format(new Date(booking.date), "dd/MM")}
                             </div>
                         </div>
                     </div>
-
-                    <div className="text-right">
-                        <div className="text-sm font-bold text-white">
-                            {format(new Date(booking.date), "HH:mm")}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                            {format(new Date(booking.date), "dd/MM")}
-                        </div>
-                    </div>
-                </div>
-            ))}
+                )
+            })}
         </div>
     )
 }

@@ -29,7 +29,9 @@ import { toggleFavorite } from "@/_actions/toggle-favorite"
 
 type ServiceWithNumberPrice = Omit<BarbershopService, "price"> & {
     price: number
+    originalPrice?: number
     staffPrices?: { staffId: string; price: number; isLinked: boolean }[]
+    promotion?: any
 }
 type PhoneObj = { number: string; isWhatsapp: boolean }
 
