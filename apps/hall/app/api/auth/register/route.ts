@@ -4,10 +4,14 @@ import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
     try {
-        const { name, email, password } = await req.json()
+        const { name, email, password, phones } = await req.json()
 
         if (!email || !password || !name) {
             return new NextResponse("Dados inválidos", { status: 400 })
+        }
+
+        if (!phones || !Array.isArray(phones) || phones.length === 0) {
+            return new NextResponse("Telefone obrigatório", { status: 400 })
         }
 
         const userExists = await db.user.findUnique({
@@ -25,6 +29,7 @@ export async function POST(req: Request) {
                 name,
                 email,
                 password: hashedPassword,
+                UserPhone: phones,
             },
         })
 

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Input, Label } from "@barbergo/ui"
 import Image from "next/image"
-import { Loader2 } from "lucide-react"
+import { Loader2, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
@@ -22,6 +22,8 @@ const AuthDialog = ({ isOpen, onOpenChange, callbackUrl = "/" }: AuthDialogProps
     const [name, setName] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [phone, setPhone] = useState("")
+    const [isWhatsApp, setIsWhatsApp] = useState(true)
 
     const toggleVariant = () => {
         setVariant(variant === "LOGIN" ? "REGISTER" : "LOGIN")
@@ -41,7 +43,12 @@ const AuthDialog = ({ isOpen, onOpenChange, callbackUrl = "/" }: AuthDialogProps
                 const res = await fetch("/api/auth/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name, email, password }),
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        password,
+                        phones: [{ number: phone, isWhatsApp: isWhatsApp }]
+                    }),
                 })
 
                 if (!res.ok) {
@@ -146,6 +153,38 @@ const AuthDialog = ({ isOpen, onOpenChange, callbackUrl = "/" }: AuthDialogProps
                                 minLength={6}
                             />
                         </div>
+
+                        {variant === "REGISTER" && (
+                            <div className="space-y-1">
+                                <Label className="text-xs text-gray-400">Celular / WhatsApp</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        disabled={isLoading}
+                                        type="tel"
+                                        placeholder="(00) 00000-0000"
+                                        className="bg-[#141518] border-[#26272B] text-white rounded-xl h-11"
+                                        value={phone}
+                                        onChange={(e) => {
+                                            let v = e.target.value.replace(/\D/g, "")
+                                            if (v.length > 11) v = v.slice(0, 11)
+                                            v = v.replace(/^(\d{2})(\d)/g, "($1) $2")
+                                            v = v.replace(/(\d)(\d{4})$/, "$1-$2")
+                                            setPhone(v)
+                                        }}
+                                        required
+                                        minLength={14} // (11) 91234-5678 = 15 chars, (11) 1234-5678 = 14 chars
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsWhatsApp(!isWhatsApp)}
+                                        className={`h-11 border-none transition-all gap-2 ${isWhatsApp ? 'bg-green-500/20 text-green-500 hover:bg-green-500/30' : 'bg-[#141518] border-[#26272B] text-gray-500'}`}
+                                    >
+                                        <MessageCircle size={18} />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
 
                         <Button
                             type="submit"

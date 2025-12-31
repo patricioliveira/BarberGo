@@ -87,3 +87,27 @@ export const getUserProfile = async () => {
         }
     })
 }
+
+export const saveUserPhone = async (phones: UserPhone[]) => {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) return { error: "Não autorizado" }
+
+    const userId = (session.user as any).id
+
+    try {
+        await db.user.update({
+            where: { id: userId },
+            data: {
+                UserPhone: phones as unknown as Prisma.InputJsonValue,
+            },
+        })
+
+        // Atualiza a sessão (Hack: Session update usually requires client side trigger or re-login, 
+        // but this updates DB so next session fetch is correct)
+
+        return { success: true }
+    } catch (error) {
+        console.error("Erro ao salvar telefone:", error)
+        return { error: "Erro ao salvar telefone." }
+    }
+}

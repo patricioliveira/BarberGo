@@ -1,6 +1,7 @@
 "use client"
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@barbergo/ui"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Input, Label, buttonVariants } from "@barbergo/ui"
+import { MessageCircle } from "lucide-react"
 import { Calendar } from "@barbergo/ui"
 import { Button, Card, CardContent, Avatar, AvatarImage, AvatarFallback } from "@barbergo/ui"
 import { Barbershop, BarbershopService, BarberStaff, User as PrismaUser } from "@prisma/client"
@@ -30,7 +31,7 @@ interface BookingSheetProps {
 }
 
 export default function BookingSheet({ services, barbershop, isOpen, onOpenChange }: BookingSheetProps) {
-    const { data: session } = useSession()
+    const { data: session, update } = useSession()
     const router = useRouter()
     const barberScrollRef = useRef<HTMLDivElement>(null)
 
@@ -248,19 +249,41 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
         return list
     }, [date, dayBookings, totalDuration, selectedBarber, barbershop.openingHours, barbershop])
 
+
+    // --- LÓGICA DE TELEFONE OBRIGATÓRIO (Interceptador) ---
+    const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState(false)
+    const [missingPhone, setMissingPhone] = useState("")
+    const [missingIsWhats, setMissingIsWhats] = useState(true)
+
     const handleBookingSubmit = async () => {
         if (!date || !hour || !session?.user || !selectedBarber) return
+
+        // 1. Validação de Telefone (Google Login etc)
+        // Se o usuário não tiver telefone salvo, abrimos o modal
+        const userPhones = (session.user as any).UserPhone as any[]
+        const hasPhone = userPhones && Array.isArray(userPhones) && userPhones.length > 0 && userPhones[0].number
+
+        if (!hasPhone) {
+            setIsPhoneDialogOpen(true)
+            return
+        }
+
+        // 2. Fluxo Normal
+        await processBooking()
+    }
+
+    const processBooking = async () => {
         try {
             setIsLoading(true)
-            const [h, m] = hour.split(":").map(Number)
-            const newDate = setMinutes(setHours(date, h), m)
+            const [h, m] = hour!.split(":").map(Number)
+            const newDate = setMinutes(setHours(date!, h), m)
 
             const result = await saveBooking({
                 serviceIds: services.map(s => s.id),
                 barbershopId: barbershop.id,
-                staffId: selectedBarber.id,
+                staffId: selectedBarber!.id,
                 date: newDate,
-                userId: session.user.id,
+                userId: session!.user.id,
                 observation,
                 silentAppointment,
             })
@@ -271,10 +294,50 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
             }
 
             onOpenChange(false)
-            toast.success("Reserva realizada com sucesso!")
+            toast.success("Agendamento realizado com sucesso!")
             router.push("/appointments")
         } catch (error: any) {
-            toast.error("Erro inesperado ao realizar reserva.")
+            toast.error("Erro inesperado ao realizar agendamento.")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleSavePhone = async () => {
+        // Validação básica
+        const cleanPhone = missingPhone.replace(/\D/g, "")
+        if (cleanPhone.length < 10) {
+            toast.error("Telefone inválido.")
+            return
+        }
+
+        setIsLoading(true)
+        try {
+            const { saveUserPhone } = await import("@/_actions/update-user")
+            const res = await saveUserPhone([{ number: missingPhone, isWhatsApp: missingIsWhats }])
+
+            if (res.success) {
+                // Atualiza sessão localmente para permitir o agendamento imediato sem refresh
+                if (session) {
+                    await update({
+                        ...session,
+                        user: {
+                            ...session.user,
+                            UserPhone: [{ number: missingPhone, isWhatsApp: missingIsWhats }]
+                        }
+                    })
+                }
+
+                setIsPhoneDialogOpen(false)
+                toast.success("Telefone salvo! Finalizando agendamento...")
+
+                // Prossegue com o agendamento automaticamente
+                await processBooking()
+            } else {
+                toast.error("Erro ao salvar telefone.")
+            }
+        } catch (error) {
+            toast.error("Erro ao salvar.")
         } finally {
             setIsLoading(false)
         }
@@ -517,7 +580,58 @@ export default function BookingSheet({ services, barbershop, isOpen, onOpenChang
                         </>
                     )}
                 </div>
+
             </SheetContent>
-        </Sheet>
+
+            {/* DIALOG DE TELEFONE OBRIGATÓRIO (Em cima do Sheet) */}
+            <Dialog open={isPhoneDialogOpen} onOpenChange={setIsPhoneDialogOpen}>
+                <DialogContent className="w-[90%] max-w-[350px] bg-[#1A1B1F] border border-[#26272B] text-white z-[9999]">
+                    <DialogHeader>
+                        <DialogTitle className="text-center font-bold">Contato Obrigatório 📞</DialogTitle>
+                        <DialogDescription className="text-center text-xs text-gray-400">
+                            Para confirmar seu agendamento, precisamos de um número para contato em caso de imprevistos.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-1">
+                            <Label className="text-xs text-gray-400">Celular / WhatsApp</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="tel"
+                                    placeholder="(00) 00000-0000"
+                                    className="bg-[#141518] border-[#26272B] text-white rounded-xl h-11"
+                                    value={missingPhone}
+                                    onChange={(e) => {
+                                        let v = e.target.value.replace(/\D/g, "")
+                                        if (v.length > 11) v = v.slice(0, 11)
+                                        v = v.replace(/^(\d{2})(\d)/g, "($1) $2")
+                                        v = v.replace(/(\d)(\d{4})$/, "$1-$2")
+                                        setMissingPhone(v)
+                                    }}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setMissingIsWhats(!missingIsWhats)}
+                                    className={`h-11 border-none transition-all gap-2 ${missingIsWhats ? 'bg-green-500/20 text-green-500 hover:bg-green-500/30' : 'bg-[#141518] border-[#26272B] text-gray-500'}`}
+                                >
+                                    <MessageCircle size={18} />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            onClick={handleSavePhone}
+                            disabled={isLoading || missingPhone.length < 14}
+                            className="w-full bg-primary hover:bg-primary/90 font-bold h-11 rounded-xl"
+                        >
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Salvar e Agendar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </Sheet >
     )
 }
