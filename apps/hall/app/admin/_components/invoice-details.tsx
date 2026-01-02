@@ -100,7 +100,7 @@ export function InvoiceDetails({ isOpen, onClose, invoice, barbershopName }: Inv
                         <div className="flex justify-between items-center p-4 bg-[#1A1B1F] rounded-t-xl border border-white/5 border-b-0 print:bg-white print:border-gray-200">
                             <div>
                                 <p className="font-bold text-white text-sm md:text-base print:text-black">Assinatura BarberGo PRO</p>
-                                <p className="text-[10px] md:text-xs text-gray-500">Mensalidade - {barbershopName}</p>
+                                <p className="text-[10px] md:text-xs text-gray-500">Assinatura - {barbershopName}</p>
                             </div>
                             <p className="font-bold text-sm md:text-base">{Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(invoice.amount) + Number(invoice.discount || 0))}</p>
                         </div>

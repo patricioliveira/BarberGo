@@ -20,7 +20,7 @@ import { ptBR } from "date-fns/locale"
 import Footer from "@/_components/footer"
 import { toast } from "sonner"
 import { InvoiceDetails } from "../_components/invoice-details"
-import { PLANS, PlanType } from "@barbergo/shared"
+import { PLANS, PlanType, BillingCycle } from "@barbergo/shared"
 
 export default function BillingPage() {
     const router = useRouter()
@@ -145,7 +145,14 @@ export default function BillingPage() {
                                 <div className="space-y-1">
                                     <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Plano Atual</p>
                                     <p className="text-xl font-bold text-white uppercase italic">{planDetails.name || subscription?.plan}</p>
-                                    <p className="text-xs text-gray-400 mt-1">{planDetails.description}</p>
+                                    <div className="flex flex-col gap-1 mt-1">
+                                        <p className="text-xs text-gray-400">{planDetails.description}</p>
+                                        <Badge variant="secondary" className="w-fit text-[10px] px-2 h-5 bg-white/10 hover:bg-white/20">
+                                            {subscription?.billingCycle === BillingCycle.MONTHLY ? 'Ciclo Mensal' :
+                                                subscription?.billingCycle === BillingCycle.SEMIANNUALLY ? 'Ciclo Semestral' :
+                                                    subscription?.billingCycle === BillingCycle.ANNUALLY ? 'Ciclo Anual' : 'Ciclo Mensal'}
+                                        </Badge>
+                                    </div>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <Badge variant="outline" className="text-[10px] border-white/10 text-gray-400">
                                             {planDetails.maxProfessionals === Infinity ? '∞ Profissionais' : `Até ${planDetails.maxProfessionals} prof.`}
@@ -153,7 +160,7 @@ export default function BillingPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-1 text-right">
-                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Valor Mensal</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Valor do Plano</p>
                                     <p className="text-xl font-bold text-white">
                                         {formatCurrency(subscription?.price)}
                                     </p>

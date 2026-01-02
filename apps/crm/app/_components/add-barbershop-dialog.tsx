@@ -6,18 +6,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Button
 import { UserPlus, Copy, CheckCircle2, Loader2 } from "lucide-react"
 import { createBarbershopWithDetails } from "../_actions/barbershop"
 import { toast } from "sonner"
-import { PLANS, PlanType } from "@barbergo/shared"
+import { PLANS, PlanType, BillingCycle } from "@barbergo/shared"
 
 export function AddBarbershopDialog({ partners }: { partners: any[] }) {
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState<any>(null)
     const [plan, setPlan] = useState<PlanType>(PlanType.PRO)
-    const [price, setPrice] = useState(PLANS[PlanType.PRO].price)
+    const [cycle, setCycle] = useState<BillingCycle>(BillingCycle.MONTHLY)
+    const [price, setPrice] = useState(PLANS[PlanType.PRO].prices[BillingCycle.MONTHLY])
 
     const handlePlanChange = (val: PlanType) => {
         setPlan(val)
-        setPrice(PLANS[val].price)
+        setPrice(PLANS[val].prices[cycle])
+    }
+
+    const handleCycleChange = (val: BillingCycle) => {
+        setCycle(val)
+        // Ensure plan is set, though it should be
+        setPrice(PLANS[plan].prices[val])
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -33,6 +40,7 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                 ownerEmail: fd.get("email") as string,
                 ownerName: fd.get("ownerName") as string,
                 plan: fd.get("plan") as any,
+                billingCycle: fd.get("billingCycle") as any,
                 price: Number(fd.get("price")),
                 referredById: fd.get("referredById") === "direct" ? null : fd.get("referredById") as string,
                 trialDays: Number(fd.get("trialDays")),
@@ -108,6 +116,18 @@ export function AddBarbershopDialog({ partners }: { partners: any[] }) {
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label className="text-gray-400 text-xs font-bold uppercase">Ciclo de Cobrança</Label>
+                            <Select name="billingCycle" value={cycle} onValueChange={(v) => handleCycleChange(v as BillingCycle)}>
+                                <SelectTrigger className="bg-black/20 border-white/10 h-11"><SelectValue /></SelectTrigger>
+                                <SelectContent className="bg-secondary text-white border-white/10">
+                                    <SelectItem value={BillingCycle.MONTHLY}>Mensal</SelectItem>
+                                    <SelectItem value={BillingCycle.SEMIANNUALLY}>Semestral (Pagamento Único)</SelectItem>
+                                    <SelectItem value={BillingCycle.ANNUALLY}>Anual (Pagamento Único)</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="space-y-1">

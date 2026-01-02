@@ -10,6 +10,7 @@ import { ActivateSubscriptionDialog } from "./_components/activate-subscription-
 import { PaymentHistoryCard } from "./_components/payment-history-card"
 import { ChangePlanDialog } from "./_components/change-plan-dialog"
 import { MasterPasswordDialog } from "./_components/master-password-dialog"
+import { ChangeDueDateDialog } from "./_components/change-due-date-dialog"
 import { PlanType } from "@barbergo/shared"
 
 const statusMap = {
@@ -126,16 +127,19 @@ export default async function ManageBarbershopPage({ params }: { params: { id: s
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label className="text-[10px] text-gray-500 uppercase font-bold">Valor Mensal</Label>
+                                <Label className="text-[10px] text-gray-500 uppercase font-bold">Valor do Plano</Label>
                                 <p className="text-xl font-black text-white">
                                     {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(subscription.price))}
                                 </p>
                             </div>
                             <div>
                                 <Label className="text-[10px] text-gray-500 uppercase font-bold">Vencimento</Label>
-                                <p className="text-sm font-mono font-bold text-gray-200">
-                                    {subscription.endDate?.toLocaleDateString('pt-BR')}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm font-mono font-bold text-gray-200">
+                                        {subscription.endDate?.toLocaleDateString('pt-BR')}
+                                    </p>
+                                    <ChangeDueDateDialog subscriptionId={subscription.id} currentDueDate={subscription.endDate || new Date()} />
+                                </div>
                             </div>
                         </div>
                         <div className="pt-4 border-t border-white/5 space-y-2 text-xs text-gray-400">

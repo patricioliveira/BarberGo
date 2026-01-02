@@ -29,13 +29,7 @@ export default async function OwnerDashboard() {
     const trialCount = barbershops.filter(s => s.subscription?.status === 'TRIAL').length
 
     // Cálculos de Parceiros
-    const totalCommission = partners.reduce((acc: number, partner) => {
-        const partnerRevenue = partner.referredBarbershops
-            .filter(s => s.subscription?.status === 'ACTIVE')
-            .reduce((sum, s) => sum + Number(s.subscription?.price || 0), 0)
-        return acc + (partnerRevenue * Number(partner.commissionPercentage || 0)) / 100
-    }, 0)
-
+    // (Buscando dados reais via server action agora)
     const metrics = await getSaaSMetrics()
 
     return (
@@ -111,11 +105,17 @@ export default async function OwnerDashboard() {
                         </p>
                     </div>
                     <div className="space-y-1">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold">Lucro Líquido (Net Revenue)</span>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">Passivo Futuro (Comissões)</span>
+                        <p className="text-2xl font-black text-amber-500">
+                            - {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(metrics.futureLiability)}
+                        </p>
+                    </div>
+                    <div className="space-y-1">
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">Lucro Líquido Real</span>
                         <p className="text-3xl font-black text-green-500">
                             {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(metrics.netRevenue)}
                         </p>
-                        <p className="text-[10px] text-gray-500">*Deduzindo comissões</p>
+                        <p className="text-[10px] text-gray-500">*Deduzindo comissões pagas e futuras</p>
                     </div>
                 </CardContent>
             </Card>

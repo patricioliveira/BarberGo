@@ -153,7 +153,7 @@ export default function BillingPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-1 text-right">
-                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Valor Mensal</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Valor do Plano</p>
                                     <p className="text-xl font-bold text-white">
                                         {formatCurrency(subscription?.price)}
                                     </p>

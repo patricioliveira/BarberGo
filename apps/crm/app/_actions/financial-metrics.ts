@@ -3,51 +3,43 @@
 import { db } from "@barbergo/database"
 
 export async function getSaaSMetrics() {
-    // 1. Fetch all PAID invoices
+    // 1. Receita Bruta (Faturas Pagas)
     const paidInvoices = await db.invoice.findMany({
-        where: { status: "PAID" },
-        include: {
-            subscription: {
-                include: {
-                    barbershop: {
-                        include: {
-                            referredBy: true // Partner
-                        }
-                    }
-                }
-            }
-        }
+        where: { status: "PAID" }
     })
 
-    // 2. Calculate Gross Revenue (Sum of amounts paid)
     const grossRevenue = paidInvoices.reduce((acc, inv) => acc + Number(inv.amount), 0)
 
-    // 3. Calculate Total Discounts (Sum of discounts applied)
+    // 2. Descontos Aplicados
     const totalDiscounts = paidInvoices.reduce((acc, inv) => acc + Number(inv.discount || 0), 0)
 
-    // 4. Calculate Commissions
-    let totalCommissions = 0
+    // 3. Comissões Pagas (Já liquidadas)
+    const paidCommissions = await db.commissionPayout.aggregate({
+        where: { status: "PAID" },
+        _sum: { amount: true }
+    })
+    const totalPaidCommissions = Number(paidCommissions._sum.amount || 0)
 
-    for (const invoice of paidInvoices) {
-        const partner = invoice.subscription.barbershop.referredBy
+    // 4. Passivo Futuro (Comissões Agendadas/Pendentes)
+    const pendingCommissions = await db.commissionPayout.aggregate({
+        where: { status: "PENDING" },
+        _sum: { amount: true }
+    })
+    const futureLiability = Number(pendingCommissions._sum.amount || 0)
 
-        if (partner && partner.role === "PARTNER") { // Ensure it's a partner referral
-            const commissionRate = Number(partner.commissionPercentage || 0) / 100
-            const commissionAmount = Number(invoice.amount) * commissionRate
-            totalCommissions += commissionAmount
-        }
-    }
+    // 5. Receita Líquida Real (Gross - PaidCommissions - Liability)
+    // Considerando que Liability é dívida certa a menos que cancelem, para gestão conservadora deduzimos tudo.
+    const netRevenue = grossRevenue - totalPaidCommissions - futureLiability
 
-    // 5. Net Revenue (Gross - Commissions)
-    // Note: Discounts are already deducted from 'amount' usually, or 'amount' is final paid.
-    // If 'amount' is what they paid, then Gross is what entered the bank.
-    // Net = Gross - Commissions (Operational Cost).
-    const netRevenue = grossRevenue - totalCommissions
+    // 6. Total Comissões (Pagas + Pendentes)
+    const totalCommissions = totalPaidCommissions + futureLiability
 
     return {
         grossRevenue,
-        netRevenue,
         totalDiscounts,
+        totalPaidCommissions,
+        futureLiability,
+        netRevenue,
         totalCommissions
     }
 }

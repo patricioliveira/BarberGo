@@ -44,6 +44,12 @@ enum BillingType {
   POSTPAID
 }
 
+enum BillingCycle {
+  MONTHLY
+  SEMIANNUALLY
+  ANNUALLY
+}
+
 enum NotificationType {
   NEW_BOOKING
   CANCEL_REQUEST
@@ -101,6 +107,7 @@ model User {
 
   managedBarbershops Barbershop[] @relation("BarbershopOwner")
   referredBarbershops Barbershop[] @relation("PartnerReferral")
+  commissions        CommissionPayout[] @relation("PartnerCommissions")
 
   ratings   Rating[]
   favorites Favorite[]
@@ -123,6 +130,7 @@ model Subscription {
   startDate    DateTime           @default(now())
   endDate      DateTime?
   trialDays    Int                @default(7)
+  billingCycle BillingCycle       @default(MONTHLY)
   billingType  BillingType        @default(POSTPAID)
   invoices     Invoice[]
   createdAt    DateTime           @default(now())
@@ -145,6 +153,7 @@ model Invoice {
   referralRewardSource   Barbershop?  @relation("RewardSource", fields: [referralRewardSourceId], references: [id])
 
   createdAt      DateTime     @default(now())
+  commissions    CommissionPayout[]
 }
 
 model Barbershop {
@@ -372,4 +381,30 @@ model BarbershopView {
   
   @@index([barbershopId])
   @@index([date])
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  CANCELED
+}
+
+model CommissionPayout {
+  id             String           @id @default(cuid())
+  partnerId      String
+  partner        User             @relation("PartnerCommissions", fields: [partnerId], references: [id])
+  invoiceId      String
+  invoice        Invoice          @relation(fields: [invoiceId], references: [id])
+  
+  amount         Decimal          @db.Decimal(10, 2)
+  dueDate        DateTime
+  status         CommissionStatus @default(PENDING)
+  referenceMonth DateTime         @default(now())
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([partnerId])
+  @@index([dueDate])
+  @@index([status])
 }
